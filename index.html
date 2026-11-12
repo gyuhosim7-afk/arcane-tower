@@ -641,6 +641,7 @@ const protCost=()=>({gold:3000+S.maxFloor*200,ess:30});
 const reinfCost=it=>({gold:Math.round(30*Math.pow(it.up+1,1.7)*(1+it.r*.6)*(1+it.il/20)),ore:2+it.up*2});
 /* ---- 신화: 보스마다 하나, 황금 상자에서 0.5% ---- */
 const MYTH_RATE=.005;
+const MYTH_CHEST={wood:.0003,iron:.0015};
 const MYTH={
   slimeRing:{boss:'kingslime',slot:'ring',n:'젤리왕의 왕관 반지',fx:'처치한 적이 터지며 주변에 마력 x3 폭발',a:{crit:8,hp:120,int:6}},
   spiderRobe:{boss:'arachne',slot:'robe',n:'아라크네의 비단 로브',fx:'적중 시 15% 확률로 거미줄 속박(2초) · 받는 피해 -15%',a:{vit:10,wis:6,cdr:6}},
@@ -1298,6 +1299,7 @@ function openChest(c){
   if(c.chest==='gold'||(c.chest==='iron'&&Math.random()<.12))drop('prot',x,y,1);
   const items=({wood:Math.random()<.5?1:0,iron:1+(Math.random()<.4?1:0),gold:2})[c.chest],minR=({wood:0,iron:1,gold:2})[c.chest];
   for(let i=0;i<items;i++)drop('item',x,y,0,mkItem(f,minR));
+  if(c.chest!=='gold'&&Math.random()<MYTH_CHEST[c.chest]){const keys=Object.keys(MYTH).filter(k=>BOSSES.indexOf(MYTH[k].boss)*10+10<=Math.max(10,S.maxFloor));const key=pick(keys.length?keys:['slimeRing']);later(.6,()=>{drop('item',x,y,0,mkMyth(key,f));G.flash=.5;G.flashCol='#ff4a6a';shake(12);banner('신화 등장!',MYTH[key].n);sfx.circle();for(let i=0;i<3;i++)later(i*.15,()=>ringFx(x,y,50+i*30,['#ffffff','#ff7ad9','#ff4a6a','#9a1a3a'],.7,{top:1}))})}
   if(c.chest==='gold'){const key=Object.keys(MYTH).find(k=>MYTH[k].boss===bossOf(f));if(key&&Math.random()<MYTH_RATE){later(.6,()=>{const it=mkMyth(key,f);drop('item',x,y,0,it);G.flash=.5;G.flashCol='#ff4a6a';shake(14);banner('신화 등장!',MYTH[key].n);sfx.circle();for(let i=0;i<4;i++)later(i*.15,()=>ringFx(x,y,60+i*30,['#ffffff','#ff7ad9','#ff4a6a','#9a1a3a'],.7,{top:1}))})}}
 }
 function updWave(dt){
@@ -1627,7 +1629,7 @@ const PANELS={
     h+=`<div class="hd">출발 층</div><div class="li"><div class="gr"><b>1층</b> <span class="dim">· ${THEMES[0].n}</span></div><div class="bt">${btn('입장','enter:1',true,'go')}</div></div>`;
     for(let k=10;k<=Math.min(90,S.maxFloor);k+=10)h+=`<div class="li"><div class="gr"><b>${k+1}층</b> 체크포인트 <span class="dim">· ${themeOf(k+1).n}</span></div><div class="bt">${btn('입장','enter:'+(k+1),true,'go')}</div></div>`;
     const beaten=[];for(let k=5;k<=Math.min(100,S.maxFloor);k+=5)beaten.push(k);
-    if(beaten.length){h+=`<div class="hd">보스 재도전 <span>황금 보물상자에서 신화 ${MYTH_RATE*100}%</span></div>`;
+    if(beaten.length){h+=`<div class="hd">보스 재도전 <span>황금 상자 신화 ${MYTH_RATE*100}% · 강철 상자 ${MYTH_CHEST.iron*100}% · 나무 상자 ${MYTH_CHEST.wood*100}%</span></div>`;
       for(const k of beaten){const b=bossOf(k),mk=Object.keys(MYTH).find(x=>MYTH[x].boss===b);h+=`<div class="li"><img src="${ICON['mon_'+b]||ICON.chest}" alt=""><div class="gr"><b>${k}층 · ${MON[b].n}</b>${mk?`<div class="ds">신화: <span style="color:${RAR[5].c}">${MYTH[mk].n}</span> — ${MYTH[mk].fx}</div>`:'<div class="ds">중간 보스 · 강철 상자 2개</div>'}</div><div class="bt">${btn('도전','enter:'+k,true,'go')}</div></div>`}}
     return h}},
   char:{t:'메뉴',r(){
