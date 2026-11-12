@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>아케인 타워</title>
+<meta name="description" content="아홉 개의 서클, 백 층의 탑. 브라우저에서 바로 하는 픽셀 마법사 RPG.">
+<meta property="og:title" content="아케인 타워">
+<meta property="og:description" content="8속성 · 마법 50개 · 보스 20마리 · 신화 장비. 브라우저에서 바로 하는 픽셀 마법사 RPG.">
+<meta name="theme-color" content="#0c1240">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap">
 <style>
 /* 레이아웃: 480x270 픽셀 캔버스를 정수배 확대. 1em = 게임 픽셀 8칸. HUD는 캔버스에, 글이 많은 창만 DOM. */
@@ -537,6 +541,16 @@ function buildAssets(){
   A.demon=sprSet(R_DEMON);A.ifrit=sprSet(R_DEMON,{map:{r:'#ff7a2a',R:'#c0392b',P:'#ffd24a',Y:'#fff6c0',y:'#ffffff'}});
   A.demonLord=sprSet(R_DEMON,{map:{r:'#5a1a2a',R:'#2a0a14',P:'#3a1258',Y:'#ffd84a',y:'#ff3a3a',k:'#ff3a3a'}});
   A.imp=sprSet(R_IMP);A.lizard=sprSet(R_LIZARD);A.dragon=sprSet(R_DRAGON,{map:{r:'#3a2a5a',R:'#1c1230',P:'#5a2a7a',y:'#ff3a3a',k:'#ffd84a',w:'#c94cff'}});
+  A.ratKing=sprSet(R_RAT,{map:{g:'#b08a6a',G:'#6a4a32',k:'#ff3a3a',m:'#ffd84a'}});
+  A.shroomLord=sprSet(R_SHROOM,{map:{r:'#3a8a2a',R:'#1f5a1a',w:'#d8ff9a',k:'#7a26c8'}});
+  A.gargLord=sprSet(R_GARG,{map:{g:'#5a6a7a',G:'#2a3442',r:'#ffd84a'}});
+  A.wispLord=sprSet(R_WISP,{map:{c:'#6fd3ff',C:'#1a4aa8',w:'#ffffff',k:'#0a1a48'}});
+  A.pharaoh=sprSet(R_MUMMY,{map:{v:'#ffd84a',V:'#c9972a',y:'#3fd9c0'}});
+  A.cerberus=sprSet(R_WOLF,{map:{g:'#3a1a1a',G:'#1a0a0a',k:'#ff5a1a',W:'#ffd24a'}});
+  A.stormKing=sprSet(R_WISP,{map:{c:'#fff38a',C:'#6a3ad8',w:'#ffffff',k:'#3a1a8a'}});
+  A.deathLord=sprSet(R_KNIGHT,{map:{d:'#1a1420',G:'#4a2a5a',R:'#ff3a3a',r:'#ffd84a',w:'#c94cff',W:'#ffffff'}});
+  A.magmaTitan=sprSet(R_TROLL,{map:{g:'#5a2a1a',G:'#2a120a',k:'#ffd24a',W:'#ff7a2a',n:'#ff5a1a'}});
+  A.shadowKing=sprSet(HOOD,{map:hoodPal(['#3a2a4a','#22162e','#0e0814','#c94cff'],'#ff3a3a')});
   A.chest={};for(const k in CHEST_PAL){A.chest[k]=[mkSprite(R_CHEST,{map:CHEST_PAL[k]}),mkSprite(R_CHEST_OPEN,{map:CHEST_PAL[k]})]}
   const it={robe:R_ROBE,staff:R_STAFF,ring:R_RING,hpPot:R_POT,gold:R_COIN,xp:R_GEM,ess:R_ESS,ore:R_ORE,core:R_CORE,heart:R_HEART,scroll:R_SCROLL,blink:R_BLINK};
   for(const k in it){A[k]=mkSprite(it[k]);ICON[k]=iconURL(A[k])}
@@ -567,19 +581,19 @@ const STN={pow:'마력',hp:'생명력',def:'방어',mp:'마나',crit:'치명타%
 const MAX_LVL=99;
 const floorCount=f=>Math.min(36,8+Math.floor(f*.3));
 const curve=(T,f)=>{for(let i=1;i<T.length;i++)if(f<=T[i][0]){const a=T[i-1],b=T[i],k=(f-a[0])/(b[0]-a[0]);return a[1]+(b[1]-a[1])*k}return T[T.length-1][1]};
-const HPC=[[1,2],[8,2.3],[15,1.4],[25,1.07],[35,1],[48,1.9],[62,1.2],[75,1.1],[88,1.45],[100,1.6]];
+const HPC=[[1,2],[8,2.1],[15,1.1],[25,.85],[35,1],[48,1.9],[62,1.2],[75,1.1],[88,1.45],[100,1.6]];
 const DMC=[[1,2],[8,2],[15,1.1],[25,.65],[35,.6],[48,1],[62,1],[75,1.2],[88,1.5],[100,1.5]];
 const hpScale=f=>(1+.056*Math.pow(f-1,2.2))*curve(HPC,f);
 const dmgScale=f=>(1+.32*Math.pow(f-1,1.02))*curve(DMC,f);
-const bossHp=f=>1.5+f/25;
-const bossDmg=f=>.55+f/220;
+const bossHp=f=>1.2+f/40;
+const bossDmg=f=>.5+f/300;
 const xpScale=f=>1+.2*(f-1);
 const XPN=(function(){const fx=f=>floorCount(Math.max(1,Math.round(f)))*9*xpScale(f)*1.4+60*xpScale(f)/10;
   const cum=f=>{let s=0;const n=Math.floor(f);for(let i=1;i<=n;i++)s+=fx(i);return s+fx(n+1)*(f-n)};
-  const t=[0];let prev=0;for(let l=1;l<MAX_LVL;l++){const need=cum(l/.82);t[l]=Math.max(25,Math.round(need-prev),t[l-1]||0);prev+=t[l]}return t})();
+  const t=[0];let prev=0;for(let l=1;l<MAX_LVL;l++){const need=cum(l/.7);t[l]=Math.max(25,Math.round((need-prev)*(1+Math.max(0,l-60)*.08)),t[l-1]||0);prev+=Math.round(need-prev)-t[l];prev+=t[l]}return t})();
 const xpNeed=l=>XPN[l]||1e12;
-const CIRC_LVL=[0,0,8,16,25,35,46,57,69,80];
-const CIRC_MAST=[0,0,800,2000,7500,10000,17000,20000,24000,30000];
+const CIRC_LVL=[0,0,10,20,32,45,58,70,82,95];
+const CIRC_MAST=[0,0,1200,3500,12000,22000,40000,65000,100000,160000];
 /* ---- 강화: 단계가 오를수록 확률이 떨어지고, +6부터 실패하면 한 단계 내려간다 ---- */
 const MAX_UP=15;
 const ENH_RATE=[1,.95,.9,.85,.8,.7,.6,.5,.42,.35,.28,.22,.16,.11,.07];
@@ -668,8 +682,21 @@ const MON={
   harpyQ:{n:'폭풍여왕 실피드',hp:850,dmg:16,spd:60,xp:620,r:12,boss:1,sc:2.2,spr:'harpyQ',pat:['charge','fan','blink','ring'],sum:'harpy',bc:'#ffe27a',fly:1,weak:['thunder','earth'],res:['wind']},
   archon:{n:'암흑 대사제 벨가르',hp:1000,dmg:16,spd:34,xp:700,r:12,boss:1,sc:2,weak:['holy','wind'],res:['thunder']},
   dragon:{n:'심연룡 니드',hp:1300,dmg:22,spd:30,xp:820,r:18,boss:1,sc:2.4,spr:'dragon',pat:['breath','rain','ring','charge','lasers'],bc:'#c94cff',weak:['ice','thunder'],res:['fire']},
-  demonLord:{n:'심연의 마왕 바알',hp:1600,dmg:24,spd:36,xp:1200,r:16,boss:1,sc:3,spr:'demonLord',pat:['lasers','spiral','summon','rain','blink','ring'],sum:'demon',bc:'#ff3a3a',weak:['holy','dark'],res:['wind']}
+  demonLord:{n:'심연의 마왕 바알',hp:1300,dmg:24,spd:36,xp:1200,r:16,boss:1,sc:3,spr:'demonLord',pat:['lasers','spiral','summon','rain','blink','ring'],sum:'demon',bc:'#ff3a3a',weak:['holy','dark'],res:['wind']}
 };
+Object.assign(MON,{
+  ratKing:{n:'시궁쥐 왕',hp:420,dmg:12,spd:50,xp:120,r:13,boss:1,mid:1,sc:2.6,spr:'ratKing',pat:['charge','summon','fan'],sum:'rat',bc:'#c9a07a',weak:['fire','wind'],res:['earth']},
+  shroomLord:{n:'독버섯 군주',hp:500,dmg:12,spd:0,xp:200,r:14,boss:1,mid:1,sc:2.6,spr:'shroomLord',pat:['spores','ring','summon','homing'],sum:'pslime',bc:'#7ae05a',weak:['ice','wind'],res:['water']},
+  gargLord:{n:'가고일 대장',hp:560,dmg:15,spd:46,xp:270,r:13,boss:1,mid:1,sc:2.2,fly:1,spr:'gargLord',pat:['charge','slam','blink','fan'],sum:'gargoyle',bc:'#9aa0b0',weak:['fire','thunder'],res:['wind']},
+  wispLord:{n:'빙결 위습 군주',hp:600,dmg:15,spd:34,xp:340,r:13,boss:1,mid:1,sc:2.6,fly:1,spr:'wispLord',pat:['spiral','wall','ring','homing'],bc:'#bfe9ff',weak:['fire','earth'],res:['ice']},
+  pharaoh:{n:'파라오 네페르',hp:440,dmg:17,spd:30,xp:420,r:13,boss:1,mid:1,sc:2.3,spr:'pharaoh',pat:['summon','rain','cross','lasers'],sum:'scarab',bc:'#ffd84a',weak:['holy','water'],res:['dark']},
+  cerberus:{n:'케르베로스',hp:640,dmg:19,spd:60,xp:500,r:14,boss:1,mid:1,sc:2.6,spr:'cerberus',pat:['combo','breath','ring','summon'],sum:'hound',bc:'#ff7a2a',weak:['water','ice'],res:['fire']},
+  stormKing:{n:'폭풍 정령왕',hp:640,dmg:18,spd:40,xp:580,r:14,boss:1,mid:1,sc:2.8,fly:1,spr:'stormKing',pat:['cross','lasers','homing','ring','wall'],bc:'#fff38a',weak:['earth','dark'],res:['thunder']},
+  deathLord:{n:'죽음의 기사단장',hp:720,dmg:22,spd:36,xp:660,r:14,boss:1,mid:1,sc:2.4,spr:'deathLord',pat:['slam','combo','wall','lasers'],sum:'knight',bc:'#ff3a3a',weak:['holy','thunder'],res:['ice']},
+  magmaTitan:{n:'용암 거신',hp:780,dmg:24,spd:24,xp:760,r:16,boss:1,mid:1,sc:2.4,spr:'magmaTitan',pat:['rain','slam','breath','wall','summon'],sum:'fwisp',bc:'#ff5a1a',weak:['water','wind'],res:['fire']},
+  shadowKing:{n:'마왕의 그림자',hp:820,dmg:22,spd:40,xp:900,r:14,boss:1,mid:1,sc:2.6,fly:1,spr:'shadowKing',pat:['blink','cross','homing','spiral','wall','combo'],sum:'wraith',bc:'#c94cff',weak:['holy','water'],res:['dark']}
+});
+const MIDS=['ratKing','shroomLord','gargLord','wispLord','pharaoh','cerberus','stormKing','deathLord','magmaTitan','shadowKing'];
 const BOSSES=['kingslime','arachne','golemlord','ymir','lich','ifrit','harpyQ','archon','dragon','demonLord'];
 const THEMES=[
   {n:'망자의 지하묘지',fl:'#2b2844',fa:'#322f50',ln:'#1d1b30',wl:'#5a5380',wd:'#3b3658',wh:'#7a72a6',dark:'rgba(6,4,18,.6)',pool:['slime','slime','bat','rat','skel','skel']},
@@ -684,7 +711,7 @@ const THEMES=[
   {n:'심연의 왕좌',fl:'#20101e',fa:'#281426',ln:'#120810',wl:'#5a2448',wd:'#3a1630',wh:'#8a3a6a',dark:'rgba(8,0,6,.62)',pool:['demon','demon','knight','wraith','darkmage','hound'],cr:'#c94cff'}
 ];
 const themeOf=f=>THEMES[Math.min(9,(f-1)/10|0)];
-const bossOf=f=>BOSSES[Math.min(9,f/10-1)];
+const bossOf=f=>f%10===0?BOSSES[Math.min(9,f/10-1)]:MIDS[Math.min(9,(f-5)/10)];
 
 /* ============================ RUNTIME STATE ============================ */
 const G={zone:'',floor:0,time:0,p:null,en:[],pr:[],ep:[],parts:[],texts:[],picks:[],fx:[],fxNew:[],lights:[],cam:{x:0,y:0},shake:0,hitstop:0,flash:0,flashCol:'#fff',pending:0,wave:null,dead:0,map:null,started:false,title:true};
@@ -925,7 +952,7 @@ function kill(e){
     if(d.ore&&Math.random()<d.ore||e.boss||e.elite)drop('ore',e.x,e.y,e.boss?5+(f>>1):1+(f/12|0));
     if(Math.random()<.03)drop('heart',e.x,e.y,0);
     if(e.elite)drop('item',e.x,e.y,0,mkItem(f,1));
-    else if(!e.boss&&Math.random()<.03+Math.min(.03,f*.0003))drop('item',e.x,e.y,0,mkItem(f));
+    else if(!e.boss&&!e.minion&&Math.random()<.03+Math.min(.03,f*.0003))drop('item',e.x,e.y,0,mkItem(f));
   }
   if(e.boss){shake(10);G.hitstop=.12;sfx.bigboom();boom(e.x,e.y-e.r,50,['#ffffff','#ffe27a','#c04cff','#4a2fa0'],true);qEvent('boss')}
   qEvent('kill',e.type);
@@ -1064,17 +1091,17 @@ function usePot(k){const p=G.p;if(G.dead||p.pcd>0)return;if(k==='hp'){if(S.hpPot
   p.pcd=3;sfx.potion()}
 
 /* ============================ ENEMIES ============================ */
-const ECOL={slime:['#5ed36b','#2f8f4a','#b8f27a'],pslime:['#b06cf0','#63309e','#7ae05a'],bat:['#a45cf0','#63309e'],rat:['#8a7a6a','#5a4a3e'],skel:['#e9e2c8','#a89f84'],spider:['#4a3a52','#c94cff'],mushroom:['#8a3ac8','#e9e2c8','#7ae05a'],golem:['#8b93a7','#565c73','#6fd3ff'],gargoyle:['#7a7a88','#4a4a58'],frostwolf:['#e2ecff','#8aa2cc'],iwisp:['#8ee0ff','#eafcff'],troll:['#8aa6c8','#4a6488'],mummy:['#e9e2c8','#a89f84','#7ae05a'],scarab:['#3fd9c0','#ffd84a'],wraith:['#9ad8d0','#d8fff8'],imp:['#e5484d','#ffd84a'],hound:['#6a2a2a','#ffd24a'],fwisp:['#ff9a3c','#ffe27a','#c0392b'],lizard:['#ff9a3c','#c75f1a'],harpy:['#5ed36b','#f2c9a0'],swisp:['#fff38a','#3a62d8'],cultist:['#4a3d5c','#ff3a3a','#8a2030'],darkmage:['#3c3048','#ff3a3a','#7a3ac8'],knight:['#33384d','#9b2335','#565c73'],mgolem:['#4a3a36','#ff5a1a','#ffd24a'],demon:['#e5484d','#9b2335','#a45cf0'],
+const ECOL={ratKing:['#b08a6a','#ff3a3a'],shroomLord:['#3a8a2a','#7ae05a'],gargLord:['#5a6a7a','#ffd84a'],wispLord:['#6fd3ff','#ffffff'],pharaoh:['#ffd84a','#3fd9c0'],cerberus:['#3a1a1a','#ff5a1a'],stormKing:['#fff38a','#6a3ad8'],deathLord:['#4a2a5a','#ff3a3a'],magmaTitan:['#5a2a1a','#ff5a1a'],shadowKing:['#3a2a4a','#c94cff'],slime:['#5ed36b','#2f8f4a','#b8f27a'],pslime:['#b06cf0','#63309e','#7ae05a'],bat:['#a45cf0','#63309e'],rat:['#8a7a6a','#5a4a3e'],skel:['#e9e2c8','#a89f84'],spider:['#4a3a52','#c94cff'],mushroom:['#8a3ac8','#e9e2c8','#7ae05a'],golem:['#8b93a7','#565c73','#6fd3ff'],gargoyle:['#7a7a88','#4a4a58'],frostwolf:['#e2ecff','#8aa2cc'],iwisp:['#8ee0ff','#eafcff'],troll:['#8aa6c8','#4a6488'],mummy:['#e9e2c8','#a89f84','#7ae05a'],scarab:['#3fd9c0','#ffd84a'],wraith:['#9ad8d0','#d8fff8'],imp:['#e5484d','#ffd84a'],hound:['#6a2a2a','#ffd24a'],fwisp:['#ff9a3c','#ffe27a','#c0392b'],lizard:['#ff9a3c','#c75f1a'],harpy:['#5ed36b','#f2c9a0'],swisp:['#fff38a','#3a62d8'],cultist:['#4a3d5c','#ff3a3a','#8a2030'],darkmage:['#3c3048','#ff3a3a','#7a3ac8'],knight:['#33384d','#9b2335','#565c73'],mgolem:['#4a3a36','#ff5a1a','#ffd24a'],demon:['#e5484d','#9b2335','#a45cf0'],
   kingslime:['#ffcf4a','#c98a1a','#fff0a8'],arachne:['#7a3ac8','#ffd84a'],golemlord:['#6a4252','#ffb23c','#ff5a2a'],ymir:['#c4e4ff','#6a9ad0','#ffffff'],lich:['#63309e','#b8f27a','#e9e2c8','#ffd84a'],ifrit:['#ff7a2a','#ffd24a','#fff6c0'],harpyQ:['#ffe27a','#ff7ad9'],archon:['#2e2230','#ff2a2a','#d8a03a','#c94cff'],dragon:['#3a2a5a','#c94cff','#ff3a3a'],demonLord:['#5a1a2a','#ff3a3a','#ffd84a','#3a1258']};
-const FLYERS=new Set(['bat','iwisp','fwisp','swisp','imp','harpy','wraith','harpyQ']);
+const FLYERS=new Set(['wispLord','stormKing','shadowKing','bat','iwisp','fwisp','swisp','imp','harpy','wraith','harpyQ']);
 function mkEnemy(type,x,y,elite){
   const d=MON[type],f=G.floor,sc=(d.sc||1)*(elite?1.4:1),hm=hpScale(f)*(elite?6:1)*(d.boss?bossHp(f):1),dm=dmgScale(f)*(elite?1.4:1)*(d.boss?bossDmg(f):1);
   const spr=type==='bat'?A.bat[0]:A[d.spr||type];
   return{type,x,y,hp:d.hp*hm,max:d.hp*hm,dmg:d.dmg*dm,spd:d.spd*(1+Math.min(.25,f*.003)),r:d.r*(elite?1.3:1),xp:d.xp*xpScale(f)*(elite?5:1),t:rnd(10),kx:0,ky:0,flash:0,frozen:0,slow:0,stun:0,root:0,burn:0,bt:0,poi:0,pt:0,weak:0,z:0,face:1,cd:rnd(1.2,2.4),boss:d.boss,elite,sc,spr,hh:spr.H*sc,cols:ECOL[type]||['#fff','#888'],st:'idle',stT:1,atk:0,ph:0,dead:false};
 }
-function spawnMon(type,x,y,elite){
+function spawnMon(type,x,y,elite,minion){
   G.pending++;sfx.spawn();
-  addFx({layer:'g',t:0,upd(dt){this.t+=dt;if(Math.random()<.5)part(x+rnd(-8,8),y+rnd(-3,3),0,-rnd(10,34),.4,elite?'#ffd84a':'#c04cff');if(this.t>=.7){G.pending--;G.en.push(mkEnemy(type,x,y,elite));burst(x,y-6,12,elite?['#ffd84a','#ffffff']:['#c04cff','#ff7ad9','#ffffff'],60,.4);return false}return true},
+  addFx({layer:'g',t:0,upd(dt){this.t+=dt;if(Math.random()<.5)part(x+rnd(-8,8),y+rnd(-3,3),0,-rnd(10,34),.4,elite?'#ffd84a':'#c04cff');if(this.t>=.7){G.pending--;const en=mkEnemy(type,x,y,elite);if(minion){en.hp*=.4;en.max*=.4;en.xp*=.3;en.minion=1}G.en.push(en);burst(x,y-6,12,elite?['#ffd84a','#ffffff']:['#c04cff','#ff7ad9','#ffffff'],60,.4);return false}return true},
     draw(){const r=4+this.t/.7*(elite?16:9);pxRing(ctx,x,y,r,r*.5,elite?'#ffd84a':'#c04cff');pxRing(ctx,x,y,r*.6,r*.3,'#ff7ad9')}});
 }
 function spawnPos(minD){const m=G.map,p=G.p;for(let i=0;i<60;i++){const x=rnd(28,m.pw-28),y=rnd(52,m.ph-28);if(boxSol(x,y-3,8))continue;if(Math.hypot(x-p.x,y-p.y)<minD)continue;return{x,y}}return{x:m.pw/2,y:60}}
@@ -1096,7 +1123,7 @@ function updEnemy(e,dt){
   if(e.slow>0){e.slow-=dt;if(Math.random()<.08)part(e.x+rnd(-e.r,e.r),e.y-rnd(0,e.hh),0,10,.4,'#8fdcff',1)}
   const dx=p.x-e.x,dy=p.y-e.y,d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d,sp=e.spd*(e.slow>0?.5:1),fire=!G.dead;
   if(e.st!=='jump'&&e.st!=='dash')e.face=dx<0?-1:1;
-  if(e.boss){({kingslime:bossSlime,golemlord:bossGolem,lich:bossLich,archon:bossArchon}[e.type]||bossGeneric)(e,dt,p,d,ux,uy,sp);if(d<e.r+6&&e.z<12)hurtPlayer(e.dmg);return}
+  if(e.boss){({kingslime:bossSlime,golemlord:bossGolem,lich:bossLich,archon:bossArchon}[e.type]||bossGeneric)(e,dt,p,d,ux,uy,sp);if(BOSS_EXTRA[e.type])bossExtra(e,dt,p);if(d<e.r+6&&e.z<12)hurtPlayer(e.dmg);return}
   if(FLYERS.has(e.type))e.z=6+Math.sin(e.t*4)*2;
   switch(d0.ai){
     case'hop':{const ph=(e.t*1.5)%1;if(ph<.6){chase(e,ux*sp*1.7*dt,uy*sp*1.7*dt,e.r-1);e.z=Math.sin(ph/.6*Math.PI)*5}else e.z=0;break}
@@ -1117,7 +1144,7 @@ function updEnemy(e,dt){
   }
   if(d0.ai!=='bomb'&&!(d0.ai==='blink'&&e.st==='fade')&&d<e.r+6&&e.z<12)hurtPlayer(e.dmg);
 }
-function minions(e,type,n){for(let i=0;i<n;i++){const a=rnd(TAU);let x=e.x+Math.cos(a)*40,y=e.y+Math.sin(a)*30;if(boxSol(x,y-3,8)){const s=spawnPos(60);x=s.x;y=s.y}spawnMon(type,x,y)}}
+function minions(e,type,n){const cap=7+Math.floor(bossT()*4);n=Math.min(n,cap-G.en.length-G.pending);for(let i=0;i<n;i++){const a=rnd(TAU);let x=e.x+Math.cos(a)*40,y=e.y+Math.sin(a)*30;if(boxSol(x,y-3,8)){const s=spawnPos(60);x=s.x;y=s.y}spawnMon(type,x,y,false,true)}}
 function bossSlime(e,dt,p){
   const ph2=e.hp<e.max*.5;e.stT-=dt;
   if(e.ph<1&&e.hp<e.max*.66){e.ph=1;minions(e,'slime',4);sfx.roar()}
@@ -1156,31 +1183,45 @@ function bossArchon(e,dt,p,d,ux,uy,sp){
     else{darkBurst(e.x,e.y,30,null,false);const s=spawnPos(110);e.x=s.x;e.y=s.y;darkBurst(e.x,e.y,30,null,false);sfx.blink();const n=ph2?6:4;for(let i=0;i<n;i++){const b=ebullet(e.x,e.y-30,i/n*TAU,70,e.dmg,'#c94cff',3);b.hm=1.8}}}
 }
 
-/* 새 보스들의 공용 패턴 엔진: 패턴 목록을 차례로 돌리고, 체력 절반부터 빨라진다 */
+/* 보스 패턴 엔진. T = 층/100: 높을수록 탄 수·속도↑, 예고 시간↓, 체력 30% 아래에선 패턴을 이어서 쓴다 */
+const bossT=()=>clamp(G.floor/100,0,1);
+function bossPattern(e,p,pat,ph2){
+  const d0=MON[e.type],T=bossT(),col=d0.bc||e.cols[1]||'#ff3a3a',oy=e.y-e.hh*.55,m=1+T*1.2,sv=1+T*.5,td=1-T*.3,a0=Math.atan2(p.y-10-oy,p.x-e.x);
+  switch(pat){
+    case'ring':{const n=Math.round((ph2?20:14)*m),o=rnd(TAU),ring=off=>{for(let i=0;i<n;i++)ebullet(e.x,e.y-e.hh*.55,o+off+i/n*TAU,80*sv,e.dmg,col,3)};ring(0);if(T>.45)later(.3,()=>{if(!e.dead)ring(Math.PI/n)});ringFx(e.x,e.y,40,['#ffffff',col,col,'#000'],.4,{top:1});sfx.roar();break}
+    case'fan':{const n=(ph2?9:6)+Math.floor(T*6);for(let i=0;i<n;i++)ebullet(e.x,oy,a0+(i-(n-1)/2)*.15,130*sv,e.dmg,col,3);tone('square',400,200,.2,.05);break}
+    case'spiral':e.st='spiral';e.stT=1.8+T;e.atk=0;e.arms=(ph2?3:2)+(T>.6?1:0);tone('square',300,900,.5,.04);break;
+    case'slam':for(let i=0;i<(ph2?4:3)+Math.floor(T*3);i++)later(i*.34*td,()=>{if(!e.dead)telegraph(G.p.x,G.p.y-2,40,.75*td,e.dmg*1.3,col)});break;
+    case'rain':for(let i=0;i<(ph2?12:8)+Math.floor(T*10);i++){const tx=clamp(p.x+rnd(-150,150),30,G.map.pw-30),ty=clamp(p.y+rnd(-85,85),56,G.map.ph-30);later(i*.07,()=>{if(!e.dead)telegraph(tx,ty,28,.9*td,e.dmg,col)})}sfx.roar();break;
+    case'summon':minions(e,d0.sum||'skel',(ph2?4:3)+Math.floor(T*3));sfx.roar();break;
+    case'blink':{burst(e.x,e.y-20,30,[col,'#ffffff'],90,.5);let s=spawnPos(100);e.x=s.x;e.y=s.y;burst(e.x,e.y-20,30,[col,'#ffffff'],90,.5);sfx.blink();const b=Math.atan2(p.y-10-(e.y-e.hh*.55),p.x-e.x),k=2+Math.floor(T*2);for(let i=-k;i<=k;i++)ebullet(e.x,e.y-e.hh*.55,b+i*.18,120*sv,e.dmg,col,3);break}
+    case'charge':e.st='wind';e.stT=.65*td;e.dx=Math.cos(a0);e.dy=Math.sin(a0);e.combo=T>.5?1:0;tlLine(e.x,e.y-6,a0,220,e.r,.65*td,e.dmg*1.3,col);tone('sawtooth',120,400,.6,.05);break;
+    case'combo':e.st='wind';e.stT=.55*td;e.dx=Math.cos(a0);e.dy=Math.sin(a0);e.combo=2+(T>.6?1:0);tlLine(e.x,e.y-6,a0,220,e.r,.55*td,e.dmg*1.3,col);tone('sawtooth',120,400,.5,.05);break;
+    case'lasers':{const k=(ph2?6:4)+Math.floor(T*4);for(let i=0;i<k;i++)tlLine(e.x,oy,a0+(i-(k-1)/2)*.36,440,9,.9*td,e.dmg*1.4,col);tone('square',200,800,.6,.04);break}
+    case'cross':{const o=rnd(TAU),k=ph2||T>.5?8:4;for(let i=0;i<k;i++)tlLine(e.x,oy,o+i/k*TAU,460,10,1*td,e.dmg*1.5,col);if(T>.55)later(1.1*td,()=>{if(!e.dead)for(let i=0;i<k;i++)tlLine(e.x,e.y-e.hh*.55,o+(i+.5)/k*TAU,460,10,.8*td,e.dmg*1.5,col)});tone('square',150,900,.7,.05);break}
+    case'wall':{const walls=T>.6?2:1;for(let w=0;w<walls;w++)later(w*.9,()=>{if(e.dead)return;const a=Math.atan2(G.p.y-oy,G.p.x-e.x),nx=-Math.sin(a),ny=Math.cos(a),N=22,gap=rint(4,N-7);for(let i=0;i<N;i++){if(i>=gap&&i<gap+4)continue;const o=(i-N/2)*14;ebullet(e.x+nx*o-Math.cos(a)*30,oy+ny*o-Math.sin(a)*30,a,(70+T*30),e.dmg,col,3)}tone('square',90,60,.4,.08)});break}
+    case'homing':{const k=3+Math.floor(T*4);for(let i=0;i<k;i++){const b=ebullet(e.x,oy,i/k*TAU,70,e.dmg*1.2,col,4);b.hm=2.6+T*1.5;b.life=6}sfx.dark();break}
+    case'spores':{for(let i=0;i<4+Math.floor(T*5);i++){const tx=clamp(p.x+rnd(-110,110),30,G.map.pw-30),ty=clamp(p.y+rnd(-60,60),56,G.map.ph-30);later(i*.1,()=>{if(!e.dead)ezone(tx,ty,30,4,e.dmg*.5,'#3a8a2a','#7ae05a')})}tone('sine',200,120,.3,.06);break}
+    case'web':{const k=1+Math.floor(T*2);for(let i=-k;i<=k;i++){const b=ebullet(e.x,oy,a0+i*.28,120*sv,e.dmg*.6,'#eaeaf0',4);b.slow=1}tone('sine',800,300,.2,.05);break}
+    case'breath':{for(let i=0;i<(ph2?24:16)+Math.floor(T*16);i++)later(i*.04,()=>{if(!e.dead){const b=Math.atan2(G.p.y-10-oy,G.p.x-e.x)+rnd(-.35,.35);ebullet(e.x+e.face*e.r,oy,b,rnd(110,170)*sv,e.dmg*.6,pick([col,'#ff3a3a','#ffd84a']),3)}});sfx.fire();break}
+  }
+}
 function bossGeneric(e,dt,p,d,ux,uy,sp){
-  const d0=MON[e.type],ph2=e.hp<e.max*.5,col=d0.bc,oy=e.y-e.hh*.55;
+  const d0=MON[e.type],ph2=e.hp<e.max*.5,rage=e.hp<e.max*.3,col=d0.bc,oy=e.y-e.hh*.55,T=bossT();
   if(d0.fly)e.z=6+Math.sin(e.t*2.4)*3;
-  if(Math.random()<.3)part(e.x+rnd(-e.r,e.r),e.y-rnd(0,e.hh),rnd(-6,6),rnd(-24,-8),.5,pick(e.cols),1);
-  if(e.st==='spiral'){e.stT-=dt;e.atk-=dt;if(e.atk<=0){e.atk=ph2?.05:.08;const a=e.t*3.6;for(let k=0;k<(ph2?3:2);k++)ebullet(e.x,oy,a+k*TAU/(ph2?3:2),85,e.dmg*.7,col,3)}if(e.stT<=0)e.st='idle';return}
-  if(e.st==='dash'){e.stT-=dt;chase(e,e.dx*360*dt,e.dy*360*dt,e.r-2);if(Math.random()<.8)part(e.x,e.y-10,rnd(-20,20),rnd(-20,20),.35,col,2);if(e.stT<=0)e.st='idle';return}
+  if(Math.random()<(rage?.6:.3))part(e.x+rnd(-e.r,e.r),e.y-rnd(0,e.hh),rnd(-6,6),rnd(-24,-8),.5,rage?'#ff3a3a':pick(e.cols),1);
+  if(e.st==='spiral'){e.stT-=dt;e.atk-=dt;if(e.atk<=0){e.atk=ph2?.05:.08;const a=e.t*(3.6+T*1.5),n=e.arms||2;for(let k=0;k<n;k++)ebullet(e.x,oy,a+k*TAU/n,85*(1+T*.5),e.dmg*.7,col,3)}if(e.stT<=0)e.st='idle';return}
+  if(e.st==='dash'){e.stT-=dt;chase(e,e.dx*(360+T*120)*dt,e.dy*(360+T*120)*dt,e.r-2);if(Math.random()<.8)part(e.x,e.y-10,rnd(-20,20),rnd(-20,20),.35,col,2);
+    if(e.stT<=0){if(e.combo>0){e.combo--;const a=Math.atan2(p.y-e.y,p.x-e.x);e.st='wind';e.stT=.4*(1-T*.3);e.dx=Math.cos(a);e.dy=Math.sin(a);tlLine(e.x,e.y-6,a,220,e.r,e.stT,e.dmg*1.3,col)}else e.st='idle'}return}
   if(e.st==='wind'){e.stT-=dt;if(e.stT<=0){e.st='dash';e.stT=.5}return}
   const m=d>140?1:d<90?-1:0;chase(e,(ux*m-uy*.5)*sp*dt,(uy*m+ux*.5)*sp*dt,e.r-2);
   e.cd-=dt;if(e.cd>0||G.dead)return;
-  e.cd=(ph2?1.5:2.3);const pat=d0.pat[e.ph%d0.pat.length];e.ph++;const a0=Math.atan2(p.y-10-oy,p.x-e.x);
-  switch(pat){
-    case'ring':{const n=ph2?22:14,o=rnd(TAU);for(let i=0;i<n;i++)ebullet(e.x,oy,o+i/n*TAU,80,e.dmg,col,3);ringFx(e.x,e.y,40,[ '#ffffff',col,col,'#000'],.4,{top:1});sfx.roar();break}
-    case'fan':{const n=ph2?9:6;for(let i=0;i<n;i++)ebullet(e.x,oy,a0+(i-(n-1)/2)*.16,130,e.dmg,col,3);tone('square',400,200,.2,.05);break}
-    case'spiral':e.st='spiral';e.stT=1.8;e.atk=0;tone('square',300,900,.5,.04);break;
-    case'slam':for(let i=0;i<(ph2?4:3);i++)later(i*.36,()=>{if(!e.dead)telegraph(G.p.x,G.p.y-2,40,.75,e.dmg*1.3,col)});break;
-    case'rain':for(let i=0;i<(ph2?12:8);i++){const tx=clamp(p.x+rnd(-140,140),30,G.map.pw-30),ty=clamp(p.y+rnd(-80,80),56,G.map.ph-30);later(i*.08,()=>{if(!e.dead)telegraph(tx,ty,28,.9,e.dmg,col)})}sfx.roar();break;
-    case'summon':if(G.en.length<10)minions(e,d0.sum,ph2?4:3);sfx.roar();break;
-    case'blink':{burst(e.x,e.y-20,30,[col,'#ffffff'],90,.5);const s=spawnPos(100);e.x=s.x;e.y=s.y;burst(e.x,e.y-20,30,[col,'#ffffff'],90,.5);sfx.blink();const b=Math.atan2(p.y-10-(e.y-e.hh*.55),p.x-e.x);for(let i=-2;i<=2;i++)ebullet(e.x,e.y-e.hh*.55,b+i*.2,120,e.dmg,col,3);break}
-    case'charge':{e.st='wind';e.stT=.65;e.dx=ux;e.dy=uy;tlLine(e.x,e.y-6,a0,200,e.r,.65,e.dmg*1.3,col);tone('sawtooth',120,400,.6,.05);break}
-    case'lasers':{const k=ph2?6:4;for(let i=0;i<k;i++)tlLine(e.x,oy,a0+(i-(k-1)/2)*.4,440,9,.9,e.dmg*1.4,col);tone('square',200,800,.6,.04);break}
-    case'web':{for(let i=-1;i<=1;i++){const b=ebullet(e.x,oy,a0+i*.3,120,e.dmg*.6,'#eaeaf0',4);b.slow=1}tone('sine',800,300,.2,.05);break}
-    case'breath':{for(let i=0;i<(ph2?24:16);i++)later(i*.04,()=>{if(!e.dead){const b=Math.atan2(G.p.y-10-oy,G.p.x-e.x)+rnd(-.35,.35);ebullet(e.x+e.face*e.r,oy,b,rnd(110,170),e.dmg*.6,pick(['#c94cff','#ff3a3a','#ffd84a']),3)}});sfx.fire();break}
-  }
+  e.cd=(ph2?1.5:2.3)*(1-T*.35)*(rage?.7:1);const pat=d0.pat[e.ph%d0.pat.length];e.ph++;bossPattern(e,p,pat,ph2);
+  if(rage&&T>.2){const nx=d0.pat[(e.ph+1)%d0.pat.length];if(nx!=='charge'&&nx!=='combo'&&nx!=='spiral'&&nx!=='blink')later(.55,()=>{if(!e.dead&&e.st==='idle')bossPattern(e,G.p,nx,ph2)})}
 }
+/* 원래 보스 4마리도 체력이 절반 아래로 떨어지면 추가 패턴을 섞는다 */
+const BOSS_EXTRA={kingslime:['ring','rain'],golemlord:['rain','wall','slam'],lich:['homing','cross','wall'],archon:['cross','wall','homing','lasers']};
+function bossExtra(e,dt,p){const L=BOSS_EXTRA[e.type];if(!L||e.hp>e.max*.5||G.dead)return;e.cd2=(e.cd2===undefined?1.5:e.cd2)-dt;if(e.cd2<=0){const T=bossT();e.cd2=(3.4-T*1.4)*(e.hp<e.max*.3?.7:1);e.ph2i=(e.ph2i||0)+1;bossPattern(e,p,L[e.ph2i%L.length],true)}}
 
 /* ============================ ZONES / WAVES ============================ */
 function clearWorld(){G.en=[];G.pr=[];G.ep=[];G.parts=[];G.texts=[];G.picks=[];G.fx=[];G.fxNew=[];G.pending=0;G.wave=null;G.dead=0;if(G.p){G.p.shield=0;G.p.regen=0;G.p.revived=false;G.p.slowT=0}}
@@ -1190,9 +1231,9 @@ function enterTown(){clearWorld();G.zone='town';G.floor=0;G.map=TOWN;const p=G.p
 function enterFloor(f){
   f=clamp(f,1,100);clearWorld();G.zone='tower';G.floor=f;G.map=buildFloor(f);const p=G.p,m=G.map;p.x=m.pw/2;p.y=m.ph-70;setLabels();
   const th=themeOf(f);
-  if(f%10===0){const b=bossOf(f);G.wave={q:[],t:1.2,boss:b,bossSp:false,cleared:false};banner(`${f}층 · 보스`,MON[b].n);setMusic('boss')}
-  else{const q=[],n=floorCount(f);for(let i=0;i<n;i++)q.push(pick(th.pool));G.wave={q,t:1.4,cleared:false,elite:f%10===5?pick(th.pool.filter(k=>MON[k].ai!=='bomb')):null};
-    banner(`${f}층`,th.n+(f%10===5?' · 정예 출현':''));setMusic('battle')}
+  if(f%5===0){const b=bossOf(f);G.wave={q:[],t:1.2,boss:b,bossSp:false,cleared:false};banner(`${f}층 · ${f%10===0?'보스':'중간 보스'}`,MON[b].n);setMusic('boss')}
+  else{const q=[],n=floorCount(f);for(let i=0;i<n;i++)q.push(pick(th.pool));G.wave={q,t:1.4,cleared:false,elite:f%10===8?pick(th.pool.filter(k=>MON[k].ai!=='bomb')):null};
+    banner(`${f}층`,th.n+(f%10===8?' · 정예 출현':''));setMusic('battle')}
 }
 function spawnChest(kind,x,y){const m=G.map;const c={x,y,r:16,chest:kind,open:false,label:CHEST_N[kind],pr:'[F] 열기',act(){openChest(c)}};m.inter.push(c);setLabels();burst(x,y-8,20,kind==='gold'?['#ffd84a','#ffffff']:['#c9d0dc','#ffffff'],70,.5);sfx.item()}
 function openChest(c){
@@ -1218,7 +1259,7 @@ function updWave(dt){
     if(f<100)m.inter.push({x:m.pw/2,y:66,r:24,label:`${f+1}층으로`,pr:'[F] 올라가기',portal:['#6fd3ff','#3b6cf0','#ffffff'],act:()=>{sfx.portal();fadeTo(()=>enterFloor(f+1))}});
     m.inter.push({x:m.pw/2,y:m.ph-44,r:24,label:'마을 귀환',pr:'[F] 돌아가기',portal:['#5ed36b','#b8f27a','#ffffff'],act:()=>{sfx.portal();fadeTo(enterTown)}});
     const cx=m.pw/2+70,cy=m.ph/2+10;
-    if(f%10===0)spawnChest('gold',m.pw/2,m.ph/2);else if(f%10===5)spawnChest('iron',cx,cy);else{const r=Math.random();if(r<.06)spawnChest('iron',cx,cy);else if(r<.36)spawnChest('wood',cx,cy)}
+    if(f%10===0)spawnChest('gold',m.pw/2,m.ph/2);else if(f%10===5){spawnChest('iron',m.pw/2-30,m.ph/2);spawnChest('iron',m.pw/2+30,m.ph/2)}else if(f%10===8)spawnChest('iron',cx,cy);else{const r=Math.random();if(r<.06)spawnChest('iron',cx,cy);else if(r<.36)spawnChest('wood',cx,cy)}
     banner(f===100?'심연의 탑 정복!':`${f}층 클리어`,f===100?'마왕 바알을 쓰러뜨렸습니다':`보너스 골드 +${bonus}`);
     setLabels();for(const k of G.picks)k.vac=true;if(w.boss)setMusic('battle');save();
   }
@@ -1524,12 +1565,12 @@ const PANELS={
     S.quests.forEach((q,i)=>{h+=`<div class="li"><img src="${ICON.scroll}" alt=""><div class="gr"><b>${questText(q)}</b> <span class="${q.done?'gold':'dim'}">${q.cur}/${q.n}</span><div class="ds">보상 ${ic('gold')}${q.gold} ${ic('ess')}${q.ess}${q.ore?' '+ic('ore')+q.ore:''} ${ic('xp')}${q.xp}</div></div><div class="bt">${btn('보상 받기','claim:'+i,q.done,'go')}</div></div>`});
     return h}},
   tower:{t:'심연의 탑',r(){
-    let h=`<p>100층까지 있습니다. 층마다 몰려오는 적을 모두 쓰러뜨리면 다음 층 포탈이 열립니다. 5층마다 정예, 10층마다 보스가 나옵니다. 쓰러지면 골드의 10%를 잃습니다.</p><div>최고 기록 <b class="gold">${S.maxFloor}층</b> / 100층</div>`;
+    let h=`<p>100층까지 있습니다. 층마다 몰려오는 적을 모두 쓰러뜨리면 다음 층 포탈이 열립니다. 5층마다 보스가 나오고(10층마다 대보스), 높이 올라갈수록 보스 패턴이 거세집니다. 쓰러지면 골드의 10%를 잃습니다.</p><div>최고 기록 <b class="gold">${S.maxFloor}층</b> / 100층</div>`;
     h+=`<div class="hd">출발 층</div><div class="li"><div class="gr"><b>1층</b> <span class="dim">· ${THEMES[0].n}</span></div><div class="bt">${btn('입장','enter:1',true,'go')}</div></div>`;
     for(let k=10;k<=Math.min(90,S.maxFloor);k+=10)h+=`<div class="li"><div class="gr"><b>${k+1}층</b> 체크포인트 <span class="dim">· ${themeOf(k+1).n}</span></div><div class="bt">${btn('입장','enter:'+(k+1),true,'go')}</div></div>`;
-    const beaten=[];for(let k=10;k<=Math.min(100,S.maxFloor);k+=10)beaten.push(k);
+    const beaten=[];for(let k=5;k<=Math.min(100,S.maxFloor);k+=5)beaten.push(k);
     if(beaten.length){h+=`<div class="hd">보스 재도전 <span>황금 보물상자에서 신화 ${MYTH_RATE*100}%</span></div>`;
-      for(const k of beaten){const b=bossOf(k),mk=Object.keys(MYTH).find(x=>MYTH[x].boss===b);h+=`<div class="li"><img src="${ICON['mon_'+b]||ICON.chest}" alt=""><div class="gr"><b>${k}층 · ${MON[b].n}</b><div class="ds">신화: <span style="color:${RAR[5].c}">${MYTH[mk].n}</span> — ${MYTH[mk].fx}</div></div><div class="bt">${btn('도전','enter:'+k,true,'go')}</div></div>`}}
+      for(const k of beaten){const b=bossOf(k),mk=Object.keys(MYTH).find(x=>MYTH[x].boss===b);h+=`<div class="li"><img src="${ICON['mon_'+b]||ICON.chest}" alt=""><div class="gr"><b>${k}층 · ${MON[b].n}</b>${mk?`<div class="ds">신화: <span style="color:${RAR[5].c}">${MYTH[mk].n}</span> — ${MYTH[mk].fx}</div>`:'<div class="ds">중간 보스 · 강철 상자 2개</div>'}</div><div class="bt">${btn('도전','enter:'+k,true,'go')}</div></div>`}}
     return h}},
   char:{t:'메뉴',r(){
     let h=`<div class="tabs">${btn('능력치','tab:stat',true,ui.tab==='stat'?'on':'')}${btn('장비·가방','tab:inv',true,ui.tab==='inv'?'on':'')}${btn('마법','tab:grim',true,ui.tab==='grim'?'on':'')}</div>`;
