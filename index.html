@@ -332,7 +332,7 @@ const EL={
   wind:{n:'바람',c:['#ffffff','#d8ffe6','#7ee0a6','#2a9a66'],d:'꿰뚫는 칼날, 강한 넉백'},
   earth:{n:'대지',c:['#f4e2b0','#d0a468','#8e6236','#4a2e16'],d:'묵직한 한 방과 기절'},
   thunder:{n:'번개',c:['#ffffff','#fff38a','#7fd2ff','#3a62d8'],d:'연쇄 공격과 감전'},
-  holy:{n:'신성',c:['#ffffff','#fff2b0','#ffd04a','#c88a20'],d:'회복, 언데드에 큰 피해'},
+  holy:{n:'신성',c:['#ffffff','#fff2b0','#ffd04a','#c88a20'],d:'회복, 해골·교단에 강함'},
   dark:{n:'암흑',c:['#f2c8ff','#c94cff','#7a26c8','#32085c'],d:'흡혈, 약화, 중력'}
 };
 const ELS=['fire','water','ice','wind','earth','thunder','holy','dark'];
@@ -340,56 +340,56 @@ const HERO={fire:['#e65a4a','#a82c30','#5e1620','#ffcf7a'],water:['#5aa6ff','#2c
 const START={fire:'fire',water:'aqua',ice:'ice',wind:'wind',earth:'rock',thunder:'lightning',holy:'light',dark:'heavy'};
 // [id, 이름, 속성, 서클, 종류, 마나, 쿨, 배율, 옵션, 설명]
 const SPELL_DATA=[
-  ['arrow','매직 애로우','none',1,'bolt',0,.3,1,{spd:300,kb:40},'마나 덩어리를 쏘는 기본 공격. 좌클릭으로 쓴다.'],
+  ['arrow','매직 애로우','none',1,'bolt',0,.3,1.0,{spd:300,kb:40},'마나 덩어리를 쏘는 기본 공격. 좌클릭으로 쓴다.'],
   ['shield','쉴드','none',2,'shield',18,14,2.5,{dur:8},'마나의 막이 피해를 흡수한다.'],
-  ['meteorS','메테오 스트라이크','none',9,'meteor',150,45,30,{R:100},'우주에서 거대한 운석을 떨어뜨린다.'],
-  ['punish','엘리멘탈 퍼니쉬먼트','none',9,'ult',200,60,7,{},'여섯 원소가 모든 적을 심판한다.'],
-  ['fire','파이어','fire',1,'cone',8,1.6,1.4,{range:56,arc:.5,st:'burn'},'손끝에서 불꽃을 뿜어 화상을 입힌다.'],
-  ['fireArrow','파이어 애로우','fire',2,'bolt',10,1.2,2.4,{spd:260,st:'burn',size:2},'불꽃 화살을 쏜다.'],
-  ['fireball','파이어 볼','fire',3,'orb',16,2.2,3,{spd:200,R:32,st:'burn'},'폭발하는 화염구.'],
-  ['explosion','익스플로젼','fire',5,'strike',34,6,7,{R:58,delay:.45,st:'burn',big:1},'지정한 곳에 대폭발을 일으킨다.'],
-  ['ringFire','링 오브 파이어','fire',6,'nova',45,9,6,{R:88,st:'burn'},'몸 주변으로 불꽃의 고리를 터뜨린다.'],
-  ['hellfire','헬파이어','fire',8,'zone',90,24,2.2,{R:96,dur:5,tick:.3,v:'hell'},'지옥의 불꽃이 대지를 태운다.'],
-  ['aqua','아쿠아','water',1,'bolt',6,.9,1.5,{spd:230,kb:170,st:'slow',size:2},'물줄기로 적을 밀어낸다.'],
-  ['aquaArrow','아쿠아 애로우','water',2,'bolt',12,1.6,1.8,{spd:250,n:3,spread:.22,kb:90,st:'slow'},'물의 화살 세 발.'],
-  ['waterStrike','워터 스트라이크','water',4,'strike',24,4.5,5,{R:36,delay:.3,st:'stun',stT:.7},'물기둥이 솟구쳐 적을 띄운다.'],
-  ['waveWall','웨이브 월','water',5,'wave',32,7,4.5,{wd:84,dist:240,spd:200},'파도의 벽으로 적을 쓸어낸다.'],
-  ['seaBlast','씨 블라스트','water',8,'wave',100,28,12,{wd:300,dist:520,spd:260,big:1},'해일이 앞에 있는 모든 것을 휩쓴다.'],
-  ['ice','아이스','ice',1,'bolt',6,.8,1.6,{spd:280,st:'slow'},'날카로운 얼음 조각을 날린다.'],
-  ['iceArrow','아이스 애로우','ice',2,'bolt',11,1.4,2.2,{spd:300,pierce:2,st:'slow',size:2},'적을 꿰뚫는 얼음 화살.'],
-  ['iceMissile','아이스 미사일','ice',3,'bolt',18,3,1.6,{spd:200,n:5,spread:.5,homing:1,st:'slow'},'적을 쫓아가는 얼음 미사일 다섯 발.'],
-  ['iceSpear','아이스 스피어','ice',4,'spikes',26,5,3.2,{n:6,gap:22,R:16,st:'freeze',stT:1.6},'얼음 창이 땅에서 줄지어 솟는다.'],
-  ['iceCannon','아이스 캐논','ice',5,'orb',36,7,6,{spd:170,R:54,st:'freeze',stT:2.6},'초저온 구가 터지며 주변을 얼린다.'],
-  ['blizzard','블리자드','ice',7,'zone',70,20,1.6,{R:110,dur:6,tick:.35,v:'bliz',fz:.2},'극한의 눈보라를 일으킨다.'],
-  ['wind','윈드','wind',1,'wave',6,1.4,1,{wd:46,dist:120,spd:240},'돌풍으로 적을 밀어낸다.'],
-  ['windCutter','윈드 커터','wind',3,'bolt',14,1.8,2.8,{spd:330,pierce:99,size:2},'모든 적을 꿰뚫는 바람의 칼날.'],
-  ['airBomb','에어 밤','wind',4,'strike',24,5,4.2,{R:52,delay:.12,kb:260,st:'stun',stT:.6},'공기를 폭발시켜 날려버린다.'],
-  ['windBlade','윈드 블레이드','wind',5,'bolt',30,5,2.6,{spd:320,n:5,spread:.28,pierce:99,size:2},'바람의 칼날 다섯 줄기.'],
-  ['tornado','토네이도','wind',6,'zone',48,12,1.4,{R:42,dur:5,tick:.2,v:'torn',n:1},'적을 쫓아다니는 회오리.'],
-  ['despair','디스페어 오브 윈드','wind',8,'zone',95,26,1.8,{R:46,dur:6,tick:.2,v:'torn',n:3},'절망의 태풍 세 개를 부른다.'],
-  ['rock','록','earth',1,'strike',7,1.6,2.2,{R:18,delay:.2,st:'stun',stT:.5},'발밑에서 돌을 솟구쳐 걸려 넘어지게 한다.'],
-  ['rockArrow','록 애로우','earth',2,'bolt',12,1.6,3.2,{spd:220,kb:130,size:2},'묵직한 돌 화살.'],
-  ['stoneSpike','스톤 스파이크','earth',3,'spikes',18,3.5,2.6,{n:5,gap:20,R:15,st:'stun',stT:.6},'돌가시가 줄지어 솟는다.'],
-  ['earthBreak','어스 브레이크','earth',4,'strike',28,6,5.5,{R:60,delay:.35,st:'stun',stT:1,kb:120,big:1},'대지를 폭발시켜 뒤집는다.'],
-  ['quake','어스퀘이크','earth',7,'zone',75,22,2.4,{R:170,dur:4,tick:.45,v:'quake',stT:.4,self:1},'땅을 갈라 주변 전체를 뒤흔든다.'],
-  ['lightning','라이트닝','thunder',1,'chain',6,1,1.8,{jumps:0,range:120},'가장 가까운 적에게 전기를 흘린다.'],
-  ['lightArrow','라이트닝 애로우','thunder',2,'bolt',11,1.2,2.2,{spd:420,arc:1,st:'stun',stT:.2},'번개 화살. 맞으면 옆 적에게 튄다.'],
-  ['raidane','라이데인','thunder',3,'strike',18,3.2,4,{R:30,delay:.3,st:'stun',stT:.5},'한 곳에 벼락을 떨어뜨린다.'],
-  ['chainL','체인 라이트닝','thunder',5,'chain',28,4,2.6,{jumps:6,range:150},'적과 적 사이를 잇는 번개.'],
-  ['gigaRaidane','기가 라이데인','thunder',6,'strike',50,10,10,{R:66,delay:.6,st:'stun',stT:1.2,big:1},'수만 볼트의 거대한 벼락.'],
-  ['fury','퓨리 오브 더 헤븐','thunder',8,'rain',100,26,3.5,{dur:5,rate:.12,R:28,v:'thunder'},'하늘의 분노가 벼락으로 쏟아진다.'],
-  ['light','라이트','holy',1,'summon',10,8,.9,{dur:10,rate:.5},'빛의 광구가 따라다니며 적을 쏜다.'],
-  ['heal','힐','holy',2,'heal',14,8,.25,{},'생명력을 25% 회복한다.'],
-  ['flash','플래시 붐','holy',3,'nova',18,6,2,{R:74,st:'stun',stT:1.3},'섬광으로 눈을 멀게 한다. 언데드에 큰 피해.'],
-  ['critHeal','크리티컬 힐','holy',4,'heal',28,14,.5,{regen:1},'생명력 50% 회복 후 잠시 재생.'],
-  ['greatHeal','그레이트 힐','holy',6,'heal',50,22,1,{inv:1.2},'생명력을 모두 회복하고 잠시 무적.'],
-  ['shining','샤이닝 샤워','holy',8,'rain',95,26,3.2,{dur:5,rate:.1,R:26,v:'holy'},'빛의 결정이 유성우처럼 내린다.'],
-  ['heavy','헤비','dark',1,'strike',7,2,1.2,{R:30,delay:.1,st:'slow',stT:3,st2:'weak'},'대상을 무겁게 짓눌러 느리게 한다.'],
-  ['wounds','라이트 운즈','dark',2,'bolt',10,1.2,2.2,{spd:240,st:'weak'},'저주로 상처를 입히고 약하게 만든다.'],
-  ['poison','커스 포이즌','dark',3,'zone',18,6,.8,{R:44,dur:5,tick:.5,v:'poison'},'독의 저주 구름을 깐다.'],
-  ['vampire','뱀파이어릭 터치','dark',4,'bolt',24,4,3.6,{spd:220,homing:1,drain:.35,size:3},'생명력을 빼앗아 회복한다.'],
-  ['gravity','그래비티','dark',6,'zone',50,12,1.6,{R:72,dur:3,tick:.25,v:'grav',crush:6},'중력으로 적을 끌어모아 짓누른다.'],
-  ['gravWave','그래비티 웨이브','dark',8,'nova',95,24,7,{R:200,pulses:3,st:'slow',stT:2},'중력의 파동이 세 번 퍼진다.']
+  ['meteorS','메테오 스트라이크','none',9,'meteor',150,45,75.8,{R:100},'우주에서 거대한 운석을 떨어뜨린다.'],
+  ['punish','엘리멘탈 퍼니쉬먼트','none',9,'ult',200,60,70.05,{},'여섯 원소가 모든 적을 심판한다.'],
+  ['fire','파이어','fire',1,'cone',8,1.6,0.77,{range:56,arc:.5,st:'burn'},'손끝에서 불꽃을 뿜어 화상을 입힌다.'],
+  ['fireArrow','파이어 애로우','fire',2,'bolt',9,1.2,1.67,{spd:260,st:'burn',size:2},'불꽃 화살을 쏜다.'],
+  ['fireball','파이어 볼','fire',3,'orb',17,2.2,1.47,{spd:200,R:32,st:'burn'},'폭발하는 화염구.'],
+  ['explosion','익스플로젼','fire',5,'strike',44,6,4.13,{R:58,delay:.45,st:'burn',big:1},'지정한 곳에 대폭발을 일으킨다.'],
+  ['ringFire','링 오브 파이어','fire',6,'nova',64,9,7.75,{R:88,st:'burn'},'몸 주변으로 불꽃의 고리를 터뜨린다.'],
+  ['hellfire','헬파이어','fire',8,'zone',145,24,2.46,{R:96,dur:5,tick:.3,v:'hell'},'지옥의 불꽃이 대지를 태운다.'],
+  ['aqua','아쿠아','water',1,'bolt',6,.9,1.54,{spd:230,kb:170,st:'slow',size:2},'물줄기로 적을 밀어낸다.'],
+  ['aquaArrow','아쿠아 애로우','water',2,'bolt',11,1.6,1.61,{spd:250,n:3,spread:.22,kb:90,st:'slow'},'물의 화살 세 발.'],
+  ['waterStrike','워터 스트라이크','water',4,'strike',32,4.5,5.14,{R:36,delay:.3,st:'stun',stT:.7},'물기둥이 솟구쳐 적을 띄운다.'],
+  ['waveWall','웨이브 월','water',5,'wave',48,7,9.9,{wd:84,dist:240,spd:200},'파도의 벽으로 적을 쓸어낸다.'],
+  ['seaBlast','씨 블라스트','water',8,'wave',159,28,30.46,{wd:300,dist:520,spd:260,big:1},'해일이 앞에 있는 모든 것을 휩쓴다.'],
+  ['ice','아이스','ice',1,'bolt',5,.8,1.44,{spd:280,st:'slow'},'날카로운 얼음 조각을 날린다.'],
+  ['iceArrow','아이스 애로우','ice',2,'bolt',10,1.4,1.34,{spd:300,pierce:2,st:'slow',size:2},'적을 꿰뚫는 얼음 화살.'],
+  ['iceMissile','아이스 미사일','ice',3,'bolt',20,3,1.41,{spd:200,n:5,spread:.5,homing:1,st:'slow'},'적을 쫓아가는 얼음 미사일 다섯 발.'],
+  ['iceSpear','아이스 스피어','ice',4,'spikes',34,5,4.31,{n:6,gap:22,R:16,st:'freeze',stT:1.6},'얼음 창이 땅에서 줄지어 솟는다.'],
+  ['iceCannon','아이스 캐논','ice',5,'orb',48,7,6.13,{spd:170,R:54,st:'freeze',stT:2.6},'초저온 구가 터지며 주변을 얼린다.'],
+  ['blizzard','블리자드','ice',7,'zone',117,20,1.26,{R:110,dur:6,tick:.35,v:'bliz',fz:.2},'극한의 눈보라를 일으킨다.'],
+  ['wind','윈드','wind',1,'wave',8,1.4,1.3,{wd:46,dist:120,spd:240},'돌풍으로 적을 밀어낸다.'],
+  ['windCutter','윈드 커터','wind',3,'bolt',15,1.8,1.67,{spd:330,pierce:99,size:2},'모든 적을 꿰뚫는 바람의 칼날.'],
+  ['airBomb','에어 밤','wind',4,'strike',34,5,3.87,{R:52,delay:.12,kb:260,st:'stun',stT:.6},'공기를 폭발시켜 날려버린다.'],
+  ['windBlade','윈드 블레이드','wind',5,'bolt',39,5,1.82,{spd:320,n:5,spread:.28,pierce:99,size:2},'바람의 칼날 다섯 줄기.'],
+  ['tornado','토네이도','wind',6,'zone',76,12,1.25,{R:42,dur:5,tick:.2,v:'torn',n:1},'적을 쫓아다니는 회오리.'],
+  ['despair','디스페어 오브 윈드','wind',8,'zone',153,26,1.03,{R:46,dur:6,tick:.2,v:'torn',n:3},'절망의 태풍 세 개를 부른다.'],
+  ['rock','록','earth',1,'strike',8,1.6,1.5,{R:18,delay:.2,st:'stun',stT:.5},'발밑에서 돌을 솟구쳐 걸려 넘어지게 한다.'],
+  ['rockArrow','록 애로우','earth',2,'bolt',11,1.6,3.56,{spd:220,kb:130,size:2},'묵직한 돌 화살.'],
+  ['stoneSpike','스톤 스파이크','earth',3,'spikes',22,3.5,3.28,{n:5,gap:20,R:15,st:'stun',stT:.6},'돌가시가 줄지어 솟는다.'],
+  ['earthBreak','어스 브레이크','earth',4,'strike',38,6,4.41,{R:60,delay:.35,st:'stun',stT:1,kb:120,big:1},'대지를 폭발시켜 뒤집는다.'],
+  ['quake','어스퀘이크','earth',7,'zone',124,22,2.84,{R:170,dur:4,tick:.45,v:'quake',stT:.4,self:1},'땅을 갈라 주변 전체를 뒤흔든다.'],
+  ['lightning','라이트닝','thunder',1,'chain',6,1,1.62,{jumps:0,range:120},'가장 가까운 적에게 전기를 흘린다.'],
+  ['lightArrow','라이트닝 애로우','thunder',2,'bolt',9,1.2,1.42,{spd:420,arc:1,st:'stun',stT:.1},'번개 화살. 맞으면 옆 적에게 튄다.'],
+  ['raidane','라이데인','thunder',3,'strike',21,3.2,2.71,{R:30,delay:.3,st:'stun',stT:.5},'한 곳에 벼락을 떨어뜨린다.'],
+  ['chainL','체인 라이트닝','thunder',5,'chain',34,4,2.47,{jumps:6,range:150},'적과 적 사이를 잇는 번개.'],
+  ['gigaRaidane','기가 라이데인','thunder',6,'strike',68,10,8.01,{R:66,delay:.6,st:'stun',stT:1.2,big:1},'수만 볼트의 거대한 벼락.'],
+  ['fury','퓨리 오브 더 헤븐','thunder',8,'rain',153,26,2.76,{dur:5,rate:.12,R:28,v:'thunder'},'하늘의 분노가 벼락으로 쏟아진다.'],
+  ['light','라이트','holy',1,'summon',10,8,1.0,{dur:10,rate:.5},'빛의 광구가 따라다니며 적을 쏜다.'],
+  ['heal','힐','holy',2,'heal',14,8,0.25,{},'생명력을 25% 회복한다.'],
+  ['flash','플래시 붐','holy',3,'nova',31,6,6.7,{R:74,st:'stun',stT:1.3},'섬광으로 눈을 멀게 한다. 언데드에 큰 피해.'],
+  ['critHeal','크리티컬 힐','holy',4,'heal',28,14,0.5,{regen:1,R:60,dm:18},'생명력 50% 회복, 잠시 재생. 주변 적을 빛으로 태운다.'],
+  ['greatHeal','그레이트 힐','holy',6,'heal',50,22,1.0,{inv:1.2,R:80,dm:34},'생명력을 모두 회복, 잠시 무적. 주변 적을 빛으로 태운다.'],
+  ['shining','샤이닝 샤워','holy',8,'rain',153,26,3.23,{dur:5,rate:.1,R:26,v:'holy'},'빛의 결정이 유성우처럼 내린다.'],
+  ['heavy','헤비','dark',1,'strike',9,2,1.45,{R:30,delay:.1,st:'slow',stT:3,st2:'weak'},'대상을 무겁게 짓눌러 느리게 한다.'],
+  ['wounds','라이트 운즈','dark',2,'bolt',9,1.2,2.53,{spd:240,st:'weak'},'저주로 상처를 입히고 약하게 만든다.'],
+  ['poison','커스 포이즌','dark',3,'zone',31,6,0.36,{R:44,dur:5,tick:.5,v:'poison'},'독의 저주 구름을 깐다.'],
+  ['vampire','뱀파이어릭 터치','dark',4,'bolt',29,4,9.83,{spd:220,homing:1,drain:.35,size:3},'생명력을 빼앗아 회복한다.'],
+  ['gravity','그래비티','dark',6,'zone',76,12,0.65,{R:72,dur:3,tick:.25,v:'grav',crush:6},'중력으로 적을 끌어모아 짓누른다.'],
+  ['gravWave','그래비티 웨이브','dark',8,'nova',145,24,7.22,{R:200,pulses:3,st:'slow',stT:2},'중력의 파동이 세 번 퍼진다.']
 ];
 const SP={},SPL=[];
 for(const r of SPELL_DATA){const s={id:r[0],n:r[1],el:r[2],c:r[3],k:r[4],mp:r[5],cd:r[6],m:r[7],o:r[8],d:r[9]};SP[s.id]=s;SPL.push(s)}
@@ -483,16 +483,16 @@ const spellDmg=sp=>D.pow*sp.m*(1+.12*((S.grim[sp.id]||1)-1))*(sp.el===S.aff[0]?1
 const craftCost=sp=>({gold:Math.round(50*Math.pow(sp.c,2.4)),ess:Math.round(2*Math.pow(sp.c,1.8))});
 const enhCost=sp=>{const lv=S.grim[sp.id]||1;return{gold:Math.round(40*Math.pow(lv,1.6)*(1+sp.c*.5)),ess:2*lv+sp.c*2}};
 const MON={
-  slime:{n:'슬라임',hp:22,dmg:6,spd:34,xp:5,r:6},
-  bat:{n:'동굴 박쥐',hp:14,dmg:5,spd:60,xp:5,r:5,weak:['wind']},
-  skel:{n:'해골 병사',hp:40,dmg:9,spd:42,xp:9,r:6,ore:.3,undead:1},
-  cultist:{n:'암흑 교단원',hp:46,dmg:10,spd:46,xp:12,r:6,res:['dark'],weak:['holy']},
-  darkmage:{n:'흑마법사',hp:34,dmg:10,spd:34,xp:14,r:6,res:['dark'],weak:['holy']},
-  golem:{n:'골렘',hp:150,dmg:18,spd:22,xp:30,r:9,ore:.9,res:['earth'],weak:['water','thunder']},
-  kingslime:{n:'킹 슬라임',hp:560,dmg:14,spd:0,xp:160,r:17,boss:1,sc:3},
-  golemlord:{n:'고대 골렘 군주',hp:800,dmg:18,spd:20,xp:220,r:14,boss:1,sc:2,res:['earth'],weak:['water']},
-  lich:{n:'리치 왕 모르가스',hp:660,dmg:13,spd:30,xp:280,r:12,boss:1,sc:2,undead:1},
-  archon:{n:'암흑 대사제 벨가르',hp:900,dmg:15,spd:34,xp:360,r:12,boss:1,sc:2,res:['dark'],weak:['holy']}
+  slime:{n:'슬라임',hp:22,dmg:6,spd:34,xp:5,r:6,weak:['fire','thunder'],res:['holy']},
+  bat:{n:'동굴 박쥐',hp:14,dmg:5,spd:60,xp:5,r:5,weak:['wind','dark'],res:['ice']},
+  skel:{n:'해골 병사',hp:40,dmg:9,spd:42,xp:9,r:6,ore:.3,weak:['holy','earth'],res:['fire']},
+  cultist:{n:'암흑 교단원',hp:46,dmg:10,spd:46,xp:12,r:6,weak:['holy','ice'],res:['dark']},
+  darkmage:{n:'흑마법사',hp:34,dmg:10,spd:34,xp:14,r:6,weak:['water','dark'],res:['thunder']},
+  golem:{n:'골렘',hp:150,dmg:18,spd:22,xp:30,r:9,ore:.9,weak:['water','ice'],res:['earth']},
+  kingslime:{n:'킹 슬라임',hp:560,dmg:14,spd:0,xp:160,r:17,boss:1,sc:3,weak:['fire','thunder'],res:['holy','water']},
+  golemlord:{n:'고대 골렘 군주',hp:800,dmg:18,spd:20,xp:220,r:14,boss:1,sc:2,weak:['water','ice'],res:['holy','fire']},
+  lich:{n:'리치 왕 모르가스',hp:660,dmg:13,spd:30,xp:280,r:12,boss:1,sc:2,weak:['holy','earth'],res:['ice','wind']},
+  archon:{n:'암흑 대사제 벨가르',hp:900,dmg:15,spd:34,xp:360,r:12,boss:1,sc:2,weak:['holy','wind'],res:['earth','thunder']}
 };
 const BOSSES=['kingslime','golemlord','lich','archon'];
 const THEMES=[
@@ -606,6 +606,7 @@ function buildFloor(f){
 function solAt(x,y){const m=G.map,tx=Math.floor(x/16),ty=Math.floor(y/16);if(tx<0||ty<0||tx>=m.w||ty>=m.h)return true;return m.solid[ty*m.w+tx]===1}
 const boxSol=(x,y,r)=>solAt(x-r,y-r)||solAt(x+r,y-r)||solAt(x-r,y+r)||solAt(x+r,y+r);
 function moveEnt(e,dx,dy,r){if(!boxSol(e.x+dx,e.y-3,r))e.x+=dx;if(!boxSol(e.x,e.y-3+dy,r))e.y+=dy}
+function chase(e,dx,dy,r){const ox=e.x,oy=e.y,L=Math.hypot(dx,dy);moveEnt(e,dx,dy,r);if(L>0&&Math.abs(e.x-ox)+Math.abs(e.y-oy)<L*.3){if(!e.side)e.side=Math.random()<.5?1:-1;e.sideT=.8;moveEnt(e,-dy/L*L*e.side*1.3,dx/L*L*e.side*1.3,r)}else if(e.sideT>0){e.sideT-=1/60;moveEnt(e,-dy*e.side*.8,dx*e.side*.8,r)}else e.side=0}
 
 /* ============================ PARTICLES / FX ============================ */
 function part(x,y,vx,vy,life,col,size=1,o){if(G.parts.length>1800)return;o=o||{};G.parts.push({x,y,vx,vy,life,max:life,col,size,g:o.g||0,drag:o.drag||0,add:o.add!==false&&!o.pf,st:o.st,pf:o.pf})}
@@ -708,7 +709,7 @@ function status(e,st,t,dmg){
 }
 function hurt(e,dmg,o={}){
   if(e.dead||e.hp<=0)return 0;const d0=MON[e.type];let mul=1,weak=false;
-  if(o.el){if(d0.weak&&d0.weak.includes(o.el)){mul*=1.5;weak=true}if(d0.res&&d0.res.includes(o.el))mul*=.6;if(o.el==='holy'&&d0.undead){mul*=1.6;weak=true}}
+  if(o.el){if(d0.weak&&d0.weak.includes(o.el)){mul*=1.5;weak=true}if(d0.res&&d0.res.includes(o.el))mul*=.6;}
   if(e.weak>0)mul*=1.25;
   const c=!o.dot&&Math.random()*100<D.crit;const d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
   e.hp-=d;if(!o.dot)e.flash=.1;
@@ -762,7 +763,7 @@ const KIND={
     shake(5);impSfx(sp.el,true)})},
   spikes(sp,p,tg,dmg){const o=sp.o,C=EL[sp.el].c,a=Math.atan2(tg.y-p.y,tg.x-p.x),sx=p.x,sy=p.y;for(let i=0;i<o.n;i++)later(i*.07,()=>{const x=sx+Math.cos(a)*(18+i*o.gap),y=sy+Math.sin(a)*(18+i*o.gap);if(solAt(x,y))return;if(sp.el==='ice'){crystals(x,y,o.R*1.4,C,4,{life:.8});ringFx(x,y,o.R,C,.3)}else rocks(x,y,o.R*1.2,false);aoe(x,y,o.R,dmg,{el:sp.el,st:o.st,stT:o.stT});shake(2);impSfx(sp.el)})},
   chain(sp,p,tg,dmg){const o=sp.o,t=staffTip(p);let x=t.x,y=t.y;const hit=new Set();let e=nearestEnemy(tg.x,tg.y,50)||nearestEnemy(p.x,p.y,o.range);if(!e){boltFx(x,y,tg.x,tg.y);return}
-    let d=dmg;for(let i=0;i<=o.jumps&&e;i++){boltFx(x,y,e.x,e.y-e.r);hit.add(e);x=e.x;y=e.y-e.r;hurt(e,d,{el:'thunder',st:'stun',stT:.25,kb:30,sx:p.x,sy:p.y});d*=.88;e=nearestEnemy(x,y,95,hit)}G.flash=.06;G.flashCol='#e0f4ff'},
+    let d=dmg;for(let i=0;i<=o.jumps&&e;i++){boltFx(x,y,e.x,e.y-e.r);hit.add(e);x=e.x;y=e.y-e.r;hurt(e,d,{el:'thunder',st:'stun',stT:.12,kb:30,sx:p.x,sy:p.y});d*=.88;e=nearestEnemy(x,y,95,hit)}G.flash=.06;G.flashCol='#e0f4ff'},
   zone(sp,p,tg,dmg){const o=sp.o;const x=o.self?p.x:tg.x,y=o.self?p.y:tg.y;ZONE[o.v](sp,x,y,dmg)},
   rain(sp,p,tg,dmg){const o=sp.o,C=EL[sp.el].c;addFx({layer:'n',t:0,n:0,upd(dt){this.t+=dt;this.n-=dt;G.shake=Math.max(G.shake,1);if(this.n<=0){this.n=o.rate;const es=G.en.filter(e=>!e.dead);let tx,ty;if(es.length&&Math.random()<.75){const e=pick(es);tx=e.x+rnd(-10,10);ty=e.y+rnd(-6,6)}else{tx=G.cam.x+rnd(30,W-30);ty=G.cam.y+rnd(50,H-40)}
       if(o.v==='thunder'){strikeBolt(tx,ty,o.R,C,false);aoe(tx,ty,o.R,dmg,{el:'thunder',st:'stun',stT:.3});sfx.zap()}else fallStar(tx,ty,o.R,dmg)}return this.t<o.dur},draw(){}})},
@@ -776,7 +777,7 @@ const KIND={
         else{for(let j=-o.wd/2;j<=o.wd/2;j++){const bend=-(j*j)/(o.wd*.9),bx=cx+px*j+dx*bend*.5,by=cy+py*j+dy*bend*.5;ctx.fillStyle=Math.abs(j)<o.wd*.3?'#ffffff':C[1];ctx.fillRect(Math.round(bx),Math.round(by),1,1);ctx.fillStyle=C[2];ctx.fillRect(Math.round(bx-dx*2),Math.round(by-dy*2),1,1);if(Math.abs(j)<o.wd*.2){ctx.fillStyle=C[3];ctx.fillRect(Math.round(bx-dx*4),Math.round(by-dy*4),1,1)}}}
         light(cx,cy,o.wd*.5)}})},
   heal(sp,p){const o=sp.o,C=EL.holy.c,v=Math.round(D.maxHp*sp.m);p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.9,str:'+'+v,col:'#8ef0a0',sc:1});if(o.regen)p.regen=6;if(o.inv)p.ifr=Math.max(p.ifr,o.inv);
-    ringFx(p.x,p.y,34,C,.5,{top:1});pillarFx(p.x,p.y,9,70,C,.45);for(let i=0;i<26;i++)part(p.x+rnd(-12,12),p.y+rnd(-4,2),rnd(-8,8),rnd(-80,-30),rnd(.5,.9),pick(['#8ef0a0','#ffffff',C[2]]),1)},
+    ringFx(p.x,p.y,34,C,.5,{top:1});pillarFx(p.x,p.y,9,70,C,.45);if(o.R){const dm=D.pow*o.dm*(1+.12*((S.grim[sp.id]||1)-1))*(S.aff[0]==='holy'?1.2:1);ringFx(p.x,p.y,o.R,C,.45,{top:1});later(.1,()=>{aoe(G.p.x,G.p.y-4,o.R,dm,{el:'holy',kb:70});holyBurst(G.p.x,G.p.y,o.R*.4)})}for(let i=0;i<26;i++)part(p.x+rnd(-12,12),p.y+rnd(-4,2),rnd(-8,8),rnd(-80,-30),rnd(.5,.9),pick(['#8ef0a0','#ffffff',C[2]]),1)},
   shield(sp,p,tg,dmg){p.shield=Math.round(dmg*2);p.shMax=p.shield;p.shT=sp.o.dur;ringFx(p.x,p.y-12,24,EL.none.c,.35,{top:1});flashFx(p.x,p.y-14,10,EL.none.c[1],.25)},
   summon(sp,p,tg,dmg){const o=sp.o,C=EL.holy.c;let ang=0,cd=0;addFx({layer:'t',t:0,upd(dt){this.t+=dt;ang+=dt*2.4;cd-=dt;const P=G.p;this.x=P.x+Math.cos(ang)*16;this.y=P.y-34+Math.sin(ang)*4;
       if(cd<=0){const e=nearestEnemy(this.x,this.y,190);if(e){cd=o.rate;G.pr.push(mkBolt('holy',this.x,this.y,Math.atan2(e.y-e.r-this.y,e.x-this.x),300,dmg,{size:1}));tone('triangle',1600,2200,.05,.025)}}
@@ -875,15 +876,15 @@ function updEnemy(e,dt){
   const dx=p.x-e.x,dy=p.y-e.y,d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d,sp=e.spd*(e.slow>0?.5:1),fire=!G.dead;
   if(e.st!=='jump'&&e.st!=='dash')e.face=dx<0?-1:1;
   switch(e.type){
-    case'slime':{const ph=(e.t*1.5)%1;if(ph<.6){moveEnt(e,ux*sp*1.7*dt,uy*sp*1.7*dt,e.r-1);e.z=Math.sin(ph/.6*Math.PI)*5}else e.z=0;break}
-    case'bat':{const w=Math.sin(e.t*5)*.9;moveEnt(e,(ux-uy*w)*sp*dt,(uy+ux*w)*sp*dt,2);e.z=6+Math.sin(e.t*8)*2;break}
-    case'skel':moveEnt(e,ux*sp*dt,uy*sp*dt,e.r-1);break;
-    case'cultist':{if(e.st==='dash'){e.stT-=dt;moveEnt(e,e.dx*200*dt,e.dy*200*dt,e.r-1);if(Math.random()<.6)part(e.x,e.y-10,0,0,.25,'#ff3a3a',2);if(e.stT<=0){e.st='idle';e.cd=rnd(1.6,2.4)}}
+    case'slime':{const ph=(e.t*1.5)%1;if(ph<.6){chase(e,ux*sp*1.7*dt,uy*sp*1.7*dt,e.r-1);e.z=Math.sin(ph/.6*Math.PI)*5}else e.z=0;break}
+    case'bat':{const w=Math.sin(e.t*5)*.9;chase(e,(ux-uy*w)*sp*dt,(uy+ux*w)*sp*dt,2);e.z=6+Math.sin(e.t*8)*2;break}
+    case'skel':chase(e,ux*sp*dt,uy*sp*dt,e.r-1);break;
+    case'cultist':{if(e.st==='dash'){e.stT-=dt;chase(e,e.dx*200*dt,e.dy*200*dt,e.r-1);if(Math.random()<.6)part(e.x,e.y-10,0,0,.25,'#ff3a3a',2);if(e.stT<=0){e.st='idle';e.cd=rnd(1.6,2.4)}}
       else if(e.st==='wind'){e.stT-=dt;if(e.stT<=0){e.st='dash';e.stT=.38}}
-      else{moveEnt(e,ux*sp*dt,uy*sp*dt,e.r-1);e.cd-=dt;if(d<95&&e.cd<=0&&fire){e.st='wind';e.stT=.42;e.dx=ux;e.dy=uy;tone('square',300,600,.1,.03)}}break}
-    case'darkmage':{const m=d>120?1:d<75?-1:0,sd=Math.sin(e.t*.7)>0?1:-1;moveEnt(e,(ux*m-uy*sd*.6)*sp*dt,(uy*m+ux*sd*.6)*sp*dt,e.r-1);e.cd-=dt;
+      else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);e.cd-=dt;if(d<95&&e.cd<=0&&fire){e.st='wind';e.stT=.42;e.dx=ux;e.dy=uy;tone('square',300,600,.1,.03)}}break}
+    case'darkmage':{const m=d>120?1:d<75?-1:0,sd=Math.sin(e.t*.7)>0?1:-1;chase(e,(ux*m-uy*sd*.6)*sp*dt,(uy*m+ux*sd*.6)*sp*dt,e.r-1);e.cd-=dt;
       if(e.cd<=0&&d<200&&fire){e.cd=2.4;const a=Math.atan2(p.y-10-(e.y-14),p.x-e.x),tri=G.floor>=10&&Math.random()<.4;for(let i=tri?-1:0;i<=(tri?1:0);i++)ebullet(e.x+e.face*6,e.y-14,a+i*.25,100,e.dmg,'#ff5a3a',3);burst(e.x+e.face*6,e.y-14,6,['#ff5a3a','#ffd24a'],40,.3);tone('sawtooth',400,200,.12,.04)}break}
-    case'golem':{e.cd-=dt;if(e.atk>0){e.atk-=dt}else{moveEnt(e,ux*sp*dt,uy*sp*dt,e.r-1);if(d<40&&e.cd<=0&&fire){e.cd=2.6;e.atk=.9;telegraph(e.x,e.y-2,36,.7,e.dmg,'#ff9a3c')}}break}
+    case'golem':{e.cd-=dt;if(e.atk>0){e.atk-=dt}else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);if(d<40&&e.cd<=0&&fire){e.cd=2.6;e.atk=.9;telegraph(e.x,e.y-2,36,.7,e.dmg,'#ff9a3c')}}break}
     case'kingslime':bossSlime(e,dt,p);break;
     case'golemlord':bossGolem(e,dt,p,ux,uy,sp);break;
     case'lich':bossLich(e,dt,p,d,ux,uy,sp);break;
@@ -903,7 +904,7 @@ function bossSlime(e,dt,p){
       if(ph2)for(let i=0;i<10;i++)ebullet(e.x,e.y-6,i/10*TAU,70,e.dmg*.7,'#ffcf4a')}}
 }
 function bossGolem(e,dt,p,ux,uy,sp){
-  e.cd-=dt;if(e.atk>0){e.atk-=dt;return}moveEnt(e,ux*sp*dt,uy*sp*dt,e.r-2);
+  e.cd-=dt;if(e.atk>0){e.atk-=dt;return}chase(e,ux*sp*dt,uy*sp*dt,e.r-2);
   if(e.cd<=0&&!G.dead){const ph2=e.hp<e.max*.5;e.cd=ph2?2:2.8;e.ph++;e.atk=.8;sfx.roar();
     if(e.ph%2){const a=Math.atan2(p.y-8-(e.y-18),p.x-e.x),n=ph2?7:5;for(let i=0;i<n;i++)ebullet(e.x,e.y-18,a+(i-(n-1)/2)*.2,120,e.dmg,'#8b93a7',4)}
     else for(let i=0;i<(ph2?4:3);i++)later(i*.38,()=>{if(!e.dead)telegraph(G.p.x,G.p.y-2,38,.75,e.dmg*1.3,'#ff9a3c')})}
@@ -912,7 +913,7 @@ function bossLich(e,dt,p,d,ux,uy,sp){
   const ph2=e.hp<e.max*.5;e.z=4+Math.sin(e.t*2.5)*2;e.cd-=dt;
   if(Math.random()<.4)part(e.x+rnd(-10,10),e.y-rnd(4,30),rnd(-6,6),rnd(-20,-6),.5,pick(['#b8f27a','#5ed36b']),1);
   if(e.st==='spiral'){e.stT-=dt;e.atk-=dt;if(e.atk<=0){e.atk=ph2?.05:.07;const a=e.t*4;ebullet(e.x,e.y-24,a,85,e.dmg*.8,'#b8f27a');ebullet(e.x,e.y-24,a+Math.PI,85,e.dmg*.8,'#b8f27a')}if(e.stT<=0)e.st='idle';return}
-  const m=d>120?1:d<80?-1:0;moveEnt(e,(ux*m-uy*.7)*sp*dt,(uy*m+ux*.7)*sp*dt,e.r-2);
+  const m=d>120?1:d<80?-1:0;chase(e,(ux*m-uy*.7)*sp*dt,(uy*m+ux*.7)*sp*dt,e.r-2);
   if(e.cd<=0&&!G.dead){e.cd=ph2?1.6:2.4;e.ph=(e.ph+1)%4;const ox=e.x,oy=e.y-24;
     if(e.ph===0){const n=ph2?20:14,o=rnd(TAU);for(let i=0;i<n;i++)ebullet(ox,oy,o+i/n*TAU,80,e.dmg,'#b8f27a');burst(ox,oy,16,['#b8f27a','#ffffff'],80,.4);tone('sawtooth',400,150,.3,.07)}
     else if(e.ph===1){e.st='spiral';e.stT=1.7;e.atk=0;tone('square',300,900,.5,.04)}
@@ -922,7 +923,7 @@ function bossLich(e,dt,p,d,ux,uy,sp){
 function bossArchon(e,dt,p,d,ux,uy,sp){
   const ph2=e.hp<e.max*.5;e.z=3+Math.sin(e.t*2)*2;e.cd-=dt;
   if(Math.random()<.35)part(e.x+rnd(-12,12),e.y-rnd(0,40),rnd(-6,6),rnd(-24,-8),.6,pick(['#c94cff','#7a26c8','#ff3a3a']),1);
-  const m=d>130?1:d<90?-1:0;moveEnt(e,(ux*m+uy*.6)*sp*dt,(uy*m-ux*.6)*sp*dt,e.r-2);
+  const m=d>130?1:d<90?-1:0;chase(e,(ux*m+uy*.6)*sp*dt,(uy*m-ux*.6)*sp*dt,e.r-2);
   if(e.cd<=0&&!G.dead){e.cd=ph2?1.7:2.5;e.ph=(e.ph+1)%4;const ox=e.x,oy=e.y-30;
     if(e.ph===0){const n=ph2?18:12,o=rnd(TAU);for(let i=0;i<n;i++)ebullet(ox,oy,o+i/n*TAU,75,e.dmg,i%2?'#c94cff':'#ff3a3a',3);darkBurst(ox,oy+4,20,null,false);sfx.dark()}
     else if(e.ph===1){const a0=Math.atan2(p.y-8-oy,p.x-ox),k=ph2?5:3;for(let i=0;i<k;i++)tlLine(ox,oy,a0+(i-(k-1)/2)*.38,420,9,.85,e.dmg*1.4,'#ff3a3a');tone('square',200,800,.6,.04)}
@@ -1353,7 +1354,7 @@ buildAssets();
   setInterval(()=>{if(G.started)save()},20000);
   requestAnimationFrame(frame);
 })();
-window.__game={G,get S(){return S},set S(v){S=v},D,SP,SPL,recalc,enterFloor,enterTown,cast,openPanel,closePanel,start};
+window.__game={update,IN,G,get S(){return S},set S(v){S=v},D,SP,SPL,recalc,enterFloor,enterTown,cast,openPanel,closePanel,start};
 </script>
 </body>
 </html>
