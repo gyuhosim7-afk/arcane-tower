@@ -767,7 +767,7 @@ const SLOT_KEY='arcane-tower-slots';
 function getSlots(){try{return JSON.parse(localStorage.getItem(SLOT_KEY)||'{}')||{}}catch(e){return{}}}
 function putSlots(o){try{localStorage.setItem(SLOT_KEY,JSON.stringify(o))}catch(e){}}
 function save(){try{const j=JSON.stringify(S);localStorage.setItem(SAVE_KEY,j);if(S.pid){const sl=getSlots();sl[S.pid]=j;putSlots(sl)}}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;r.slots=r.slots.map(k=>k&&SP[k]?k:null);r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];r.slots=r.slots.map(k=>k&&SP[k]?k:null);r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
 const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
 const RM=[1,1.3,1.7,2.2,3,4.2];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
@@ -1291,7 +1291,7 @@ function hurt(e,dmg,o={}){
   if(e.dead||e.hp<=0)return 0;const d0=MON[e.type];let mul=1,weak=false;
   if(o.el){if(d0.weak&&d0.weak.includes(o.el)){mul*=1.5;weak=true}if(d0.res&&d0.res.includes(o.el))mul*=.6;}
   if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;
-  const c=!o.dot&&Math.random()*100<D.crit;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
+  const c=!o.dot&&Math.random()*100<D.crit+(jobIs('ice')&&(e.frozen>0||e.slow>0)?25:0);if(jobIs('ice')&&(e.frozen>0||e.slow>0))mul*=1.4;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
   let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
   if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*.05));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;/* 보스는 한 방에 최대 체력의 5%까지만 */
   const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));e.hp-=d;if(!o.dot)e.flash=.1;
@@ -1306,6 +1306,10 @@ function hurt(e,dmg,o={}){
     if(hasM('sporeRobe')&&Math.random()<.2){e.poi=4;e.poiD=D.pow*.5}
     if(hasM('cerbRing')&&c){e.burn=3;e.burnD=D.pow*.5}
     if(hasM('stormScepter')&&Math.random()<.2){let n=0;for(const t of G.en){if(t===e||t.dead||n>=2)continue;if(Math.hypot(t.x-e.x,t.y-e.y)<110){n++;boltFx(e.x,e.y-e.r,t.x,t.y-t.r,.25);hurt(t,D.pow*3,{el:'thunder',proc:1})}}if(n)sfx.zap()}}
+  if(!o.dot&&!o.proc&&S.job&&G.p){
+    if(jobIs('water')&&o.kb)JB.tide=Math.min(100,JB.tide+3);
+    if(jobIs('thunder')&&e.hp>0){e.mk=(e.mk||0)+1;if(e.mk>=3){e.mk=0;const t=e;later(.1,()=>{if(t.dead)return;boltFx(t.x,t.y-150,t.x,t.y-t.r,.3);hurt(t,D.pow*4,{el:'thunder',proc:1,st:'stun',stT:.3})})}}
+    if(G.p.thunT>G.time){const t2=G.en.find(x=>x!==e&&!x.dead&&Math.hypot(x.x-e.x,x.y-e.y)<110);if(t2){boltFx(e.x,e.y-e.r,t2.x,t2.y-t2.r,.2);hurt(t2,D.pow*2,{el:'thunder',proc:1})}}}
   if(!o.dot&&hasM('knightCloak')&&G.p){G.p.hp=Math.min(D.maxHp,G.p.hp+Math.min(d*.03,D.maxHp*.02))}
   if(e.hp<=0)kill(e);return d;
 }
@@ -1317,6 +1321,8 @@ function kill(e){
   if(e.boss)for(const c of G.en)if(c.clone&&!c.dead){c.dead=true;burst(c.x,c.y-c.r,16,c.cols,80,.5)}
   S.codex[e.type]=(S.codex[e.type]||0)+1;
   burst(e.x,e.y-e.r,e.boss?70:16,e.cols,e.boss?160:80,e.boss?1:.5,{drag:2});
+  if(jobIs('fire')&&e.burn>0){const x=e.x,y=e.y-e.r;later(.08,()=>{boom(x,y,34,['#ffffff','#ffd24a','#ff7a2a','#b8262a'],false);aoe(x,y,44,D.pow*4,{el:'fire',st:'burn',proc:1})})}
+  if(jobIs('dark')&&!e.boss&&!e.clone&&!e.minion&&JB.allies<5&&G.zone==='tower')summonAlly(e.x,e.y,20);
   if(hasM('pharaohRobe')&&G.p)G.p.hp=Math.min(D.maxHp,G.p.hp+D.maxHp*.03);
   if(hasM('slimeRing')&&!e.boss){const x=e.x,y=e.y-e.r;later(.08,()=>{boom(x,y,26,EL.none.c,false);aoe(x,y,30,D.pow*3,{el:'none',proc:1,kb:80})})}
   if(hasM('lichTome')&&Math.random()<.3){G.pr.push(mkBolt('dark',e.x,e.y-e.r,rnd(TAU),170,D.pow*5,{homing:1,size:2,life:3,kb:30}));burst(e.x,e.y-e.r,10,['#9ad8d0','#ffffff'],50,.4)}
@@ -1333,7 +1339,8 @@ function kill(e){
   qEvent('kill',e.type);
 }
 function hurtPlayer(d){
-  const p=G.p;if(p.ifr>0||G.dead||(DEV.on&&DEV.god))return;d=Math.max(1,Math.round(d*(1-D.def/(D.def+100))*(1-D.dr)*(p.stoneT>G.time?.6:1)));
+  const p=G.p;if(p.ifr>0||G.dead||(DEV.on&&DEV.god))return;d=Math.max(1,Math.round(d*(1-D.def/(D.def+100))*(1-D.dr)*(p.stoneT>G.time?.6:1)*(jobIs('earth')?1-.06*JB.armor:1)));
+  if(jobIs('earth')&&d<1e8){JB.armor++;if(JB.armor>=5){JB.armor=0;later(.05,()=>{const q=G.p;ringFx(q.x,q.y,90,EL.earth.c,.6,{top:1});rocks(q.x,q.y,60,true);aoe(q.x,q.y-4,90,D.pow*6,{el:'earth',st:'stun',stT:1,proc:1,kb:160});shake(8);sfx.earth()})}}
   if(hasM('gargHeart')&&p.hp-d<D.maxHp*.3&&!(p.stoneCd>G.time)){p.stoneT=G.time+6;p.stoneCd=G.time+45;G.texts.push({x:p.x,y:p.y-42,vy:-18,life:1.2,str:'석상의 심장!',col:'#c8c0b0',sc:1});burst(p.x,p.y-10,20,['#8b93a7','#d8dee9'],60,.5)}
   if(hasM('magmaCore')&&!(p.magT>G.time)){p.magT=G.time+1;aoe(p.x,p.y-6,50,D.pow*2,{el:'fire',st:'burn',proc:1});boom(p.x,p.y-6,30,['#ffffff','#ffd24a','#ff7a2a','#c0301a'],false)}
   if(p.shield>0){const a=Math.min(p.shield,Math.floor(d*.5));p.shield-=a;d=Math.max(1,d-a);flashFx(p.x,p.y-12,6,EL.none.c[1],.15);if(p.shield<=0){burst(p.x,p.y-12,20,EL.none.c,90,.4);sfx.frost()}}
@@ -1379,7 +1386,7 @@ const KIND={
         if(sp.el==='water'){const hh=o.big?24:11;for(let j=-o.wd/2;j<=o.wd/2;j+=2){const bx=cx+px*j,by=cy+py*j,h=Math.max(1,(hh+Math.sin(j*.2+this.t*14)*hh*.3)*f*(1-Math.pow(Math.abs(j)/(o.wd/2),4)*.6));ctx.fillStyle=C[3];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.round(h)+2);ctx.fillStyle=C[2];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.round(h));ctx.fillStyle=C[1];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.max(1,Math.round(h*.35)));ctx.fillStyle=C[0];ctx.fillRect(Math.round(bx),Math.round(by-h)-1,2,2)}}
         else{for(let j=-o.wd/2;j<=o.wd/2;j++){const bend=-(j*j)/(o.wd*.9),bx=cx+px*j+dx*bend*.5,by=cy+py*j+dy*bend*.5;ctx.fillStyle=Math.abs(j)<o.wd*.3?'#ffffff':C[1];ctx.fillRect(Math.round(bx),Math.round(by),1,1);ctx.fillStyle=C[2];ctx.fillRect(Math.round(bx-dx*2),Math.round(by-dy*2),1,1);if(Math.abs(j)<o.wd*.2){ctx.fillStyle=C[3];ctx.fillRect(Math.round(bx-dx*4),Math.round(by-dy*4),1,1)}}}
         light(cx,cy,o.wd*.5)}})},
-  heal(sp,p){const o=sp.o,C=EL.holy.c,fat=sp.c<8&&G.time-(p.lastHeal??-99)<10,v=Math.round(D.maxHp*sp.m*(fat?.5:1)*healMul());if(fat)G.texts.push({x:p.x,y:p.y-42,vy:-20,life:.9,str:'회복 피로',col:'#c8a0ff',sc:.8});p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.9,str:'+'+v,col:'#8ef0a0',sc:1});if(o.regen)p.regen=6;if(o.inv)p.ifr=Math.max(p.ifr,o.inv);
+  heal(sp,p){if(jobIs('holy'))holySpears(Math.max(0,p.hp+D.maxHp*sp.m-D.maxHp));const o=sp.o,C=EL.holy.c,fat=sp.c<8&&G.time-(p.lastHeal??-99)<10,v=Math.round(D.maxHp*sp.m*(fat?.5:1)*healMul());if(fat)G.texts.push({x:p.x,y:p.y-42,vy:-20,life:.9,str:'회복 피로',col:'#c8a0ff',sc:.8});p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.9,str:'+'+v,col:'#8ef0a0',sc:1});if(o.regen)p.regen=6;if(o.inv)p.ifr=Math.max(p.ifr,o.inv);
     ringFx(p.x,p.y,34,C,.5,{top:1});pillarFx(p.x,p.y,9,70,C,.45);if(o.R){const dm=D.pow*o.dm*(1+.12*((S.grim[sp.id]||1)-1))*(S.aff[0]==='holy'?1.2:1);ringFx(p.x,p.y,o.R,C,.45,{top:1});later(.1,()=>{aoe(G.p.x,G.p.y-4,o.R,dm,{el:'holy',kb:70});holyBurst(G.p.x,G.p.y,o.R*.4)})}for(let i=0;i<26;i++)part(p.x+rnd(-12,12),p.y+rnd(-4,2),rnd(-8,8),rnd(-80,-30),rnd(.5,.9),pick(['#8ef0a0','#ffffff',C[2]]),1)},
   shield(sp,p,tg,dmg){p.shield=Math.round(D.maxHp*sp.m*(1+.05*((S.grim[sp.id]||1)-1)));p.shMax=p.shield;p.shT=sp.o.dur;p.lastHeal=G.time;if(sp.o.inv)p.ifr=Math.max(p.ifr,sp.o.inv);ringFx(p.x,p.y-12,24,EL.none.c,.35,{top:1});flashFx(p.x,p.y-14,10,EL.none.c[1],.25)},
   summon(sp,p,tg,dmg){const o=sp.o,C=EL.holy.c;let ang=0,cd=0;addFx({layer:'t',t:0,upd(dt){this.t+=dt;ang+=dt*2.4;cd-=dt;const P=G.p;this.x=P.x+Math.cos(ang)*16;this.y=P.y-34+Math.sin(ang)*4;
@@ -1454,6 +1461,38 @@ function cast(id){
   KIND[sp.k](sp,p,tg,dmg);if(sp.o.inv&&sp.k!=='heal'&&sp.k!=='shield')p.ifr=Math.max(p.ifr,sp.o.inv);sfx[CAST_SFX[sp.el]]();
 }
 /* 신화 전용 스킬 [R] */
+
+/* ===== 2차 전직: 9서클 + 신화 3개를 제단에 바치면 주 속성에 맞는 직업이 된다 ===== */
+const JOBS={
+  fire:{n:'소서러',c:'#ff7a2a',sk:'인페르노',d:'화상 걸린 적이 죽으면 폭발이 연쇄로 터진다',sd:'주변의 모든 적을 불바다로 태운다 (화상)',ic:'hellfire'},
+  water:{n:'타이드 위버',c:'#2f92e8',sk:'해일',d:'적을 밀칠 때마다 조류 게이지가 찬다 (최대 100)',sd:'조류 게이지만큼 강해지는 거대한 해일',ic:'seaBlast'},
+  ice:{n:'크라이오맨서',c:'#62c6f2',sk:'얼음 감옥',d:'빙결·둔화된 적에게 피해 +40%, 치명타 확률 +25%',sd:'주변 적을 3초 동안 얼음 속에 가둔다 (보스 포함)',ic:'frozenKingdom'},
+  wind:{n:'템페스트',c:'#7ee0a6',sk:'태풍',d:'순간이동 쿨타임 -50%, 순간이동하면 바람 칼날 8개',sd:'나를 따라다니는 태풍 3개 + 8초 동안 이동 속도 +40%',ic:'tornado'},
+  earth:{n:'드루이드',c:'#d0a468',sk:'대지 분노',d:'맞을 때마다 바위 갑옷 (1중첩당 받는 피해 -6%, 최대 5), 5중첩이면 지진 반격',sd:'앞으로 땅을 길게 갈라 올리며 기절',ic:'quake'},
+  thunder:{n:'워록',c:'#fff38a',sk:'뇌신 강림',d:'같은 적을 3번 때리면 낙뢰가 떨어진다',sd:'10초 동안 쿨타임이 2배 빨리 돌고, 공격마다 연쇄 번개',ic:'fury'},
+  holy:{n:'팔라딘',c:'#ffd04a',sk:'최후의 심판',d:'넘치게 회복된 양만큼 빛의 창이 적에게 날아간다',sd:'적에게 빛기둥 7개가 차례로 내리꽂힌다',ic:'shining'},
+  dark:{n:'네크로맨서',c:'#c94cff',sk:'망자의 군세',d:'적이 죽으면 해골 하수인으로 되살린다 (최대 5마리, 20초)',sd:'해골 하수인 6마리를 바로 불러낸다 (15초)',ic:'gravWave'}};
+const JOB_CD=40,JOB_MP=90,JB={tide:0,armor:0,allies:0};
+const jobIs=k=>S.job===k;
+function summonAlly(x,y,life){if(JB.allies>=8)return;JB.allies++;const a={x,y,t:0,cd:0,face:1};burst(x,y-8,14,['#c94cff','#b8f27a','#ffffff'],60,.5);
+  addFx({layer:'t',t:0,upd(dt){a.t+=dt;a.cd-=dt;const e=nearestEnemy(a.x,a.y,260);if(e){const dx=e.x-a.x,dy=e.y-a.y,d=Math.hypot(dx,dy)||1;a.face=dx<0?-1:1;if(d>e.r+6){const v=78*dt;if(!boxSol(a.x+dx/d*v,a.y-3,5))a.x+=dx/d*v;if(!boxSol(a.x,a.y-3+dy/d*v,5))a.y+=dy/d*v}else if(a.cd<=0){a.cd=.7;hurt(e,D.pow*1.6,{el:'dark',proc:1});part(e.x,e.y-e.r,0,-20,.4,'#b8f27a',2)}}
+    else{const p=G.p,dx=p.x-24*a.face-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy);if(d>30){a.x+=dx/d*70*dt;a.y+=dy/d*70*dt}}
+    if(a.t>=life||G.zone!=='tower'){JB.allies=Math.max(0,JB.allies-1);burst(a.x,a.y-8,10,['#c94cff','#565c73'],50,.4);return false}return true},
+    draw(){pxEll(ctx,a.x,a.y+1,6,2,'rgba(0,0,0,.3)');ctx.globalAlpha=.85;drawSpr(A.skel,a.x,a.y,a.face<0,'');ctx.globalAlpha=1;pxRing(ctx,a.x,a.y,7,3,'#c94cff',16)}})}
+function holySpears(ex){if(ex<=0)return;const p=G.p,L=G.en.filter(e=>!e.dead).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y)).slice(0,3);for(const e of L){const a=Math.atan2(e.y-e.r-(p.y-14),e.x-p.x);G.pr.push(mkBolt('holy',p.x,p.y-14,a,340,ex*1.5+D.pow*2,{homing:1,size:2,pierce:0,kb:60}))}}
+function castJob(){
+  const p=G.p,k=S.job;if(!k||G.dead||ui.open||!G.started)return;if((p.cd.job||0)>0)return;if(p.db&&p.db.silence>0)return;
+  if(p.mp<JOB_MP){toast('마나가 부족합니다');sfx.err();return}p.mp-=JOB_MP;gainMast(JOB_MP);p.cd.job=JOB_CD*(1-D.cdr*.5);p.castT=.5;
+  const J=JOBS[k],tg=aimPoint();banner(J.sk,J.n);G.flash=.25;G.flashCol=J.c;shake(8);
+  if(k==='fire'){for(const e of G.en){if(e.dead||Math.hypot(e.x-p.x,e.y-p.y)>320)continue;boom(e.x,e.y-e.r,30,['#ffffff','#ffd24a','#ff7a2a','#b8262a'],true);hurt(e,D.pow*12,{el:'fire',st:'burn'})}sfx.bigboom()}
+  else if(k==='water'){KIND.wave({el:'water',o:{wd:320,dist:560,spd:300,big:1}},p,tg,D.pow*16*(1+JB.tide/50));JB.tide=0}
+  else if(k==='ice'){for(const e of G.en){if(e.dead||Math.hypot(e.x-p.x,e.y-p.y)>180)continue;if(e.boss)e.stun=Math.max(e.stun,2.5);else e.frozen=Math.max(e.frozen,3);crystals(e.x,e.y,22,EL.ice.c,6,{life:2.5});hurt(e,D.pow*8,{el:'ice'})}ringFx(p.x,p.y,180,EL.ice.c,.8,{top:1});sfx.frost()}
+  else if(k==='wind'){ZONE.torn({el:'wind',o:{R:46,dur:8,tick:.2,v:'torn',n:3}},p.x,p.y,D.pow*1.8);p.spdT=G.time+8}
+  else if(k==='earth'){KIND.spikes({el:'earth',o:{n:12,gap:22,R:24,st:'stun',stT:1.5}},p,tg,D.pow*14);sfx.earth()}
+  else if(k==='thunder'){p.thunT=G.time+10;boltFx(p.x,p.y-160,p.x,p.y-10,.5);sfx.zap()}
+  else if(k==='holy'){for(let i=0;i<7;i++)later(i*.25,()=>{const L=G.en.filter(e=>!e.dead);const e=L.length?L[(Math.random()*L.length)|0]:null;const x=e?e.x:G.p.x+rnd(-80,80),y=e?e.y:G.p.y+rnd(-50,50);KIND.strike({el:'holy',o:{R:40,delay:.3,big:1}},G.p,{x,y},D.pow*12)})}
+  else if(k==='dark'){for(let i=0;i<6;i++){const a=i/6*TAU;summonAlly(p.x+Math.cos(a)*30,p.y+Math.sin(a)*20,15)}darkBurst(p.x,p.y,40,null,false);sfx.dark()}
+}
 function castMyth(){
   const p=G.p,k=D.sk;if(!k||G.dead||ui.open||!G.started)return;const s=MYTH_SK[k];if((p.cd.myth||0)>0)return;
   if(p.mp<s.mp){toast('마나가 부족합니다');sfx.err();return}p.mp-=s.mp;gainMast(s.mp);p.cd.myth=s.cd*(1-D.cdr*.5);p.castT=.4;
@@ -1472,7 +1511,7 @@ function blink(){
   for(let i=0;i<15;i++){if(boxSol(p.x+dx*4,p.y-3+dy*4,4))break;p.x+=dx*4;p.y+=dy*4}
   for(let i=0;i<8;i++){const k=i/8;part(sx+(p.x-sx)*k,sy+(p.y-sy)*k-12,0,0,.3,C[1],2)}
   if(hasM('stormFeather')){boltFx(sx,sy-12,p.x,p.y-12,.3);for(const e of G.en)if(!e.dead&&segDist(e.x,e.y-e.r,sx,sy-10,p.x,p.y-10)<16+e.r)hurt(e,D.pow*4,{el:'thunder',st:'stun',stT:.4,proc:1});sfx.zap()}
-  burst(p.x,p.y-12,16,C,60,.4);flashFx(p.x,p.y-12,8,C[1]);p.bcd=blinkCD();p.ifr=Math.max(p.ifr,.3);if(hasM('shadowStaff'))p.shadowT=G.time+3;sfx.blink();
+  burst(p.x,p.y-12,16,C,60,.4);flashFx(p.x,p.y-12,8,C[1]);p.bcd=blinkCD();p.ifr=Math.max(p.ifr,.3);if(hasM('shadowStaff'))p.shadowT=G.time+3;if(jobIs('wind'))for(let i=0;i<8;i++)G.pr.push(mkBolt('wind',p.x,p.y-12,i/8*TAU,320,D.pow*2.5,{pierce:99,size:2,kb:120}));sfx.blink();
 }
 function usePot(k){const p=G.p;if(G.dead||p.pcd>0)return;if(k==='hp'){if(S.hpPot<1||p.hp>=D.maxHp)return sfx.err();S.hpPot--;const v=Math.round(D.maxHp*.45*healMul());p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.8,str:'+'+v,col:'#8ef0a0',sc:1});burst(p.x,p.y-10,14,['#5ed36b','#b8f27a'],50,.6)}
   else{if(S.mpPot<1||p.mp>=D.maxMp)return sfx.err();S.mpPot--;const v=Math.round(D.maxMp*.5);p.mp=Math.min(D.maxMp,p.mp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.8,str:'+'+v,col:'#8ecbff',sc:1});burst(p.x,p.y-10,14,['#6fd3ff','#3b6cf0'],50,.6)}
@@ -1715,7 +1754,7 @@ const BOSS_EXTRA={demonLord:['sweep','grid','orbit','cross','flower','pincer','m
 function bossExtra(e,dt,p){const L=BOSS_EXTRA[e.type];if(!L||e.hp>e.max*(e.type==='demonLord'?.75:bossT()>=.5?.85:.5)||G.dead)return;e.cd2=(e.cd2===undefined?1.5:e.cd2)-dt;if(e.cd2<=0){const T=bossT();e.cd2=(3.4-T*1.4)*(e.hp<e.max*.3?.7:1)*(e.type==='demonLord'?.75:1);e.ph2i=(e.ph2i||0)+1;bossPattern(e,p,L[e.ph2i%L.length],true)}}
 
 /* ============================ ZONES / WAVES ============================ */
-function clearWorld(){G.en=[];G.pr=[];G.ep=[];G.parts=[];G.texts=[];G.picks=[];G.fx=[];G.fxNew=[];G.pending=0;G.wave=null;G.dead=0;if(G.p){G.p.db={};G.p.shield=0;G.p.regen=0;G.p.revived=false;G.p.slowT=0}}
+function clearWorld(){G.en=[];G.pr=[];G.ep=[];G.parts=[];G.texts=[];G.picks=[];G.fx=[];G.fxNew=[];G.pending=0;G.wave=null;G.dead=0;JB.allies=0;JB.armor=0;if(G.p){G.p.db={};G.p.shield=0;G.p.regen=0;G.p.revived=false;G.p.slowT=0}}
 function setLabels(){const L=$('labels');L.innerHTML='';for(const it of G.map.inter){const d=document.createElement('div');d.innerHTML=`${it.label}<span class="pr">${it.pr}</span>`;L.appendChild(d);it.el=d}}
 function fadeTo(fn){const f=$('fade');f.classList.add('on');setTimeout(()=>{fn();setTimeout(()=>f.classList.remove('on'),80)},260)}
 function enterTown(){clearWorld();G.zone='town';G.floor=0;G.map=TOWN;const p=G.p;p.x=320;p.y=150;p.hp=D.maxHp;p.mp=D.maxMp;p.ifr=0;setLabels();setMusic('town');save()}
@@ -1772,12 +1811,12 @@ function tryInteract(){if(ui.open||G.dead)return;const p=G.p;let b=null,bd=1e9;f
 function updPlayer(dt){
   const p=G.p,k=IN.keys;let mx=(k.KeyD||k.ArrowRight?1:0)-(k.KeyA||k.ArrowLeft?1:0)+IN.jx,my=(k.KeyS||k.ArrowDown?1:0)-(k.KeyW||k.ArrowUp?1:0)+IN.jy;
   const l=Math.hypot(mx,my);if(l>1){mx/=l;my/=l}p.mvx=l>.1?mx:0;p.mvy=l>.1?my:0;
-  const spd=82*D.spd*(p.slowT>0?.55:1);
+  const spd=82*D.spd*(p.slowT>0?.55:1)*(p.spdT>G.time?1.4:1);
   const frz=p.db&&p.db.freeze>0;if(frz){mx=my=0;if(Math.random()<.3)part(p.x+rnd(-6,6),p.y-rnd(0,20),0,-6,.4,'#ffffff',1)}
   if(l>.1&&!frz){moveEnt(p,mx*spd*dt,my*spd*dt,4);p.walk+=dt*9;if(IN.touch){if(Math.abs(mx)>.2)p.face=mx<0?-1:1;if(l>.3&&!IN.aiming)p.aimA=Math.atan2(my,mx)}}else p.walk=0;
   if(!IN.touch&&p.castT<=0){const wx=IN.mx+G.cam.x;if(Math.abs(wx-p.x)>3)p.face=wx<p.x?-1:1}
   updDb(p,dt);p.hp=Math.min(D.maxHp,p.hp+(D.hpR+(p.regen>0?D.maxHp*.04:0))*dt*healMul());p.mp=Math.min(D.maxMp,p.mp+D.mpR*dt);
-  for(const id in p.cd)if(p.cd[id]>0)p.cd[id]-=dt;p.mcd-=dt;p.bcd-=dt;p.pcd-=dt;p.ifr-=dt;p.castT-=dt;p.regen-=dt;p.hurtT=(p.hurtT||0)-dt;if(p.slowT>0)p.slowT-=dt;
+  {const cm=p.thunT>G.time?2:1;for(const id in p.cd)if(p.cd[id]>0)p.cd[id]-=dt*cm}p.mcd-=dt;p.bcd-=dt;p.pcd-=dt;p.ifr-=dt;p.castT-=dt;p.regen-=dt;p.hurtT=(p.hurtT||0)-dt;if(p.slowT>0)p.slowT-=dt;
   if(p.shT>0){p.shT-=dt;if(p.shT<=0)p.shield=0}
   if(hasM('ifritRobe')&&G.zone==='tower'){p.aura=(p.aura||0)-dt;if(p.aura<=0){p.aura=.5;aoe(p.x,p.y-6,46,D.pow*1.2,{el:'fire',st:'burn',proc:1})}if(Math.random()<.5){const a=rnd(TAU);part(p.x+Math.cos(a)*40,p.y+Math.sin(a)*24,0,rnd(-40,-20),.4,pick(EL.fire.c),1)}}
   p.acd=(p.acd||0)-dt;
@@ -1792,6 +1831,7 @@ function updPlayer(dt){
       for(const id of S.slots){const sp=ready(id);if(!sp)continue;const def=sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv);if(!def)continue;
         const ok=sp.k==='heal'?(sp.o.inv?p.hp<D.maxHp*.4:p.hp<D.maxHp*(sp.m>=.9?.45:.7)):sp.k==='shield'?(danger&&!(p.shield>0)):(p.hp<D.maxHp*.4&&danger);
         if(ok){if(e)AUTO_T={x:e.x,y:e.y-e.r};cast(id);AUTO_T=null;if((p.cd[id]||0)>0){p.acd=.35;break}}}}
+    if(e&&p.acd<=0&&S.job&&(p.cd.job||0)<=0&&p.mp>=JOB_MP){AUTO_T={x:e.x,y:e.y-e.r};castJob();AUTO_T=null;p.acd=.35}
     if(e&&p.acd<=0){AUTO_T={x:e.x,y:e.y-e.r};
       for(const id of S.slots){const sp=ready(id);if(!sp||sp.el==='holy'||sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv))continue;cast(id);if((p.cd[id]||0)>0){p.acd=.35;break}}
       AUTO_T=null}
@@ -1902,7 +1942,7 @@ function drawStaff(x,y,f,el,cast,t){
   ctx.globalCompositeOperation='lighter';ctx.globalAlpha=cast?.5:.22+.08*Math.sin(t*6);pxDisc(ctx,tx+.5,cy,cast?7:4,C[2]);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   if(cast)sparkle(tx+.5,cy,5,C[1]);light(tx,cy,cast?40:22)}
 function drawPlayer(p){
-  if(G.dead)return;drawAura(p,false);shadow(p.x,p.y,14);
+  if(G.dead)return;if(S.job&&G.zone){const J=JOBS[S.job],t=G.time;ctx.globalAlpha=.5+.2*Math.sin(t*4);pxRing(ctx,p.x,p.y,13,5,J.c,30);ctx.globalAlpha=1;if(Math.random()<.25)part(p.x+rnd(-8,8),p.y-rnd(0,24),0,rnd(-26,-10),.6,J.c,1)}drawAura(p,false);shadow(p.x,p.y,14);
   if(IN.touch&&(!S.auto||IN.aiming)&&G.zone==='tower'){const a=p.aimA??(p.face<0?Math.PI:0),C=EL[S.aff[0]].c;for(let i=0;i<4;i++){const r=20+i*7;ctx.fillStyle=i===3?C[0]:C[2];ctx.fillRect(Math.round(p.x+Math.cos(a)*r)-1,Math.round(p.y-6+Math.sin(a)*r*.7)-1,i===3?3:2,i===3?3:2)}}
   const el=S.aff[0],blink=p.ifr>0&&((G.time*20|0)%2)&&!(p.regen>0);
   if(!blink){const fr=p.walk?((p.walk|0)%2):0,bob=p.walk?((p.walk*2|0)%2):0,set=heroSet(el,fr);
@@ -1995,12 +2035,13 @@ function drawHUD(){
   // 미니맵 + 재화
   drawMinimap();
   // 기술 바
-  const n=D.slots,extra=D.sk?4:3,tw=n*22+8+extra*22,x0=Math.round((W-tw)/2),y0=H-24;
+  const n=D.slots,extra=(D.sk?4:3)+(S.job?1:0),tw=n*22+8+extra*22,x0=Math.round((W-tw)/2),y0=H-24;
   hudOrn(x0-5,y0-4,tw+8,28);
   for(let i=0;i<n;i++){const id=S.slots[i],sp=id&&SP[id];if(sp){const k=(p.cd[id]||0)/(sp.cd*(1-D.cdr));hudSlot(x0+i*22,y0,A.sp[id],'s:'+id,k,p.mp<spellMp(sp),'1234567890-='[i],undefined,EL[sp.el].c[2])}else hudSlot(x0+i*22,y0,null,null,0,false,'1234567890-='[i])}
   const ux=x0+n*22+8;ctx.fillStyle='#6a5230';ctx.fillRect(ux-5,y0,1,20);
   hudSlot(ux,y0,A.hpPot,'p:hp',p.pcd/3,S.hpPot<1,'Q',S.hpPot,'#c04848');hudSlot(ux+22,y0,A.mpPot,'p:mp',p.pcd/3,S.mpPot<1,'E',S.mpPot,'#3a6ad0');hudSlot(ux+44,y0,A.blink,'b',p.bcd/(blinkCD()),false,'SPACE',undefined,'#7fd2ff');
   if(D.sk){const s=MYTH_SK[D.sk];hudSlot(ux+66,y0,A.m_staff,'m',(p.cd.myth||0)/(s.cd*(1-D.cdr*.5)),p.mp<s.mp,'R',undefined,'#ff4a6a')}
+  if(S.job){const J=JOBS[S.job];hudSlot(ux+(D.sk?88:66),y0,A.sp[J.ic],'j',(p.cd.job||0)/(JOB_CD*(1-D.cdr*.5)),p.mp<JOB_MP,'G',undefined,J.c)}
   const boss=G.en.find(e=>e.boss);if(boss){hudOrn(W/2-94,20,188,11);hudBar(W/2-90,23,180,5,boss.hp/boss.max,'#c04cff','#f0a8ff','#5a1a8a')}
 }
 function render(){flushK();
@@ -2070,7 +2111,7 @@ function spellRow(sp,mode){
 }
 /* 순간이동 강화: 레벨마다 쿨타임 -3.5%, Lv.10에서 -35% */
 const BLINK_MAX=10;
-const blinkCD=()=>2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)*(1-.035*(S.blinkLv||0));
+const blinkCD=()=>2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)*(1-.035*(S.blinkLv||0))*(S.job==='wind'?.5:1);
 const blinkCost=()=>{const lv=(S.blinkLv||0)+1;return{gold:Math.round(150*Math.pow(lv,1.7)),ess:4*lv}};
 function blinkRow(){const lv=S.blinkLv||0;return `<div class="li"><img src="${ICON.blink}" alt=""><div class="gr"><b>순간이동</b> <span class="gold">Lv.${lv}</span><div class="ds">이동하는 방향으로 짧게 순간이동, 0.3초 무적 · 쿨타임 ${blinkCD().toFixed(2)}초 (강화로 -${Math.round(lv*3.5)}%, 최대 -35%)${lv<BLINK_MAX?`<br>강화 → Lv.${lv+1}: ${costHTML(blinkCost())}`:''}</div></div><div class="bt">${lv<BLINK_MAX?btn('강화','blinkUp',can(blinkCost())):'<span class="gold">최대</span>'}</div></div>`}
 function grimList(mode){
@@ -2093,7 +2134,8 @@ const PANELS={
     h+=`<div class="hd">신화 장비 봉헌 <span>${offer.length}/3</span></div>`;
     h+=`<div class="inv" style="grid-template-columns:repeat(3,2.6em);width:max-content;margin:.4em 0">${[0,1,2].map(i=>{const it=offer[i];return it?`<div class="cell sel" style="border-color:#ff4a6a"><img src="${itemIcon(it)}" alt=""><u>${i+1}</u></div>`:`<div class="cell" style="opacity:.55"><span class="dim">${i+1}</span></div>`}).join('')}</div>`;
     if(offer.length){h+=`<div class="li"><div class="gr"><b>제단에 놓인 장비</b><div class="ds">${offer.map((it,i)=>`${i+1}. ${MYTH[it.my].n}${MYTH[it.my].boss==='demonLord'?' · <span class="gold">100층 보스</span>':''}`).join('<br>')}</div></div><div class="bt">${offer.map((it,i)=>btn('회수 '+(i+1),'altarTake:'+i,true)).join('')}</div></div>`}
-    if(S.adv2Entered){h+=`<p class="gold">2차 전직 경로에 이미 진입했습니다. 전직 선택과 직업 효과는 추후 추가될 예정입니다.</p><div class="bt">${btn('2차 전직 안내','adv2Open',true,'go')}</div>`;return h}
+    if(S.adv2Entered){const K=JOBS[S.job||S.aff[0]];h+=`<p class="gold">2차 전직 완료: <b style="color:${K.c}">${K.n}</b></p><div class="bt">${btn('직업 정보','adv2Open',true,'go')}</div>`;return h}
+    {const J=JOBS[S.aff[0]];h+=`<div class="li"><div class="gr"><b>전직하면: <span style="color:${J.c}">${J.n}</span></b> <span class="dim">(주 속성 ${EL[S.aff[0]].n})</span><div class="ds">패시브: ${J.d}<br>전용기 [G] ${J.sk}: ${J.sd}</div></div></div><p>${S.circle>=9?'✅':'❌'} 9서클 달성 (지금 ${S.circle}서클)</p>`}
     const available=S.inv.filter(it=>it&&it.my&&MYTH[it.my]);
     if(offer.length<3){h+=`<div class="hd">가방의 신화 장비 <span>${available.length}개</span></div>`;
       h+=available.length?available.map(it=>`<div class="li"><img src="${itemIcon(it)}" alt=""><div class="gr"><b style="color:#ff4a6a">${MYTH[it.my].n}</b><div class="ds">${SLOTN[it.slot]} · ${mythFloor(it.my)}층 보스${MYTH[it.my].boss==='demonLord'?' · <span class="gold">필수 조건 충족</span>':''}</div></div><div class="bt">${btn('제단에 넣기','altarPut:'+it.id,true,'go')}</div></div>`).join(''):'<p class="dim">가방에 봉헌할 신화 장비가 없습니다. 장착 중인 장비는 먼저 가방으로 옮겨 주세요.</p>';
@@ -2102,13 +2144,13 @@ const PANELS={
     if(!S.adv2Entered&&offer.length===3&&has100)h+=`<div class="li"><div class="gr"><b class="gold">제단이 응답합니다</b><div class="ds">신화 장비 3개를 바치고 2차 전직 경로에 진입합니다. 바친 장비는 소모됩니다.</div></div><div class="bt">${btn('바치고 2차 전직으로','advance2',true,'go')}</div></div>`;
     else if(offer.length<3)h+=`<p class="dim">신화 장비 ${3-offer.length}개가 더 필요합니다. 100층 보스 장비를 포함해야 합니다.</p>`;
     return h}},
-  adv2:{t:'2차 전직 경로',r(){return `<div class="say"><img src="${ICON.el_none}" alt=""><p>제단이 열리며 2차 전직의 길에 들어섰습니다.</p></div><div class="hd">다음 단계</div><p>2차 전직 직업과 능력은 아직 정해지지 않았습니다. 현재는 경로 진입만 기록되며, 직업 선택이나 전투 능력 변화는 적용되지 않습니다.</p><div class="bt">${btn('제단으로 돌아가기','altarBack',true,'go')}</div>`}},
+  adv2:{t:'2차 전직',r(){const K=JOBS[S.job||S.aff[0]];return `<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>제단이 응답했습니다. 그대는 이제 <b style="color:${K.c}">${K.n}</b>입니다.</p></div><div class="li"><div class="gr"><b>패시브</b><div class="ds">${K.d}</div></div></div><div class="li"><div class="gr"><b>전용기 [G] ${K.sk}</b><div class="ds">${K.sd} · 마나 ${JOB_MP} · 쿨 ${JOB_CD}초</div></div></div><div class="bt">${btn('제단으로 돌아가기','altarBack',true,'go')}</div>`}},
   dev:{t:'개발자 모드',r(){
     const b=(l,a,c)=>btn(l,a,true,c);
     let h=`<p class="dim">이 캐릭터에서만 켜져 있어요. 다른 캐릭터에는 적용되지 않아요.</p>`;
     h+=`<div class="hd">현재 캐릭터 테스트 도구</div><div class="li"><div class="gr"><b>전부 해금</b><div class="ds">현재 선택한 캐릭터에 적용되며, 별도 계정을 만들지는 않습니다. 200레벨 · 9서클 · 8속성 전부 · 모든 마법 Lv10 · 마법 칸 8개 · 순간이동 최대 · 100층까지 기록 · 신화 20개 · 재화 넉넉히</div></div><div class="bt">${b('전부 해금','dv:all','go')}</div></div>`;
     h+=`<div class="hd">재화</div><div class="li"><div class="gr">골드·광석·정수·코어·방지권·물약</div><div class="bt">${b('+100만 골드','dv:gold')}${b('재료 +1만','dv:mats')}${b('방지권 +50','dv:prot')}${b('물약 +50','dv:pots')}</div></div>`;
-    h+=`<div class="hd">성장</div><div class="li"><div class="gr">Lv.${S.lvl} · ${S.circle}서클 · 포인트 ${S.pts}</div><div class="bt">${b('레벨 +10','dv:lvl')}${b('서클 +1','dv:circle')}${b('포인트 +50','dv:pts')}${b('모든 마법 Lv10','dv:spells')}${b('순간이동 최대','dv:blink')}</div></div>`;
+    h+=`<div class="hd">성장</div><div class="li"><div class="gr">Lv.${S.lvl} · ${S.circle}서클 · 포인트 ${S.pts}</div><div class="bt">${b('레벨 +10','dv:lvl')}${b('서클 +1','dv:circle')}${b('포인트 +50','dv:pts')}${b('모든 마법 Lv10','dv:spells')}${b('순간이동 최대','dv:blink')}${b('2차 전직','dv:job')}${b('전직 취소','dv:unjob')}</div></div>`;
     h+=`<div class="hd">장비</div><div class="li"><div class="gr">현재 최고 층 기준으로 만들어요</div><div class="bt">${b('전설 +15 세트','dv:legset')}${b('가방 비우기','dv:clear')}</div></div>`;
     h+=`<div class="li"><div class="gr">신화 받기</div><div class="bt" style="flex-wrap:wrap">${Object.keys(MYTH).map(k=>b(MYTH[k].n,'dv:myth:'+k)).join('')}</div></div>`;
     h+=`<div class="hd">전투</div><div class="li"><div class="gr">무적 ${DEV.god?'<b class="gold">켜짐</b>':'꺼짐'} · 한 방 ${DEV.ohk?'<b class="gold">켜짐</b>':'꺼짐'}</div><div class="bt">${b('무적','dv:god',DEV.god?'go':'')}${b('한 방','dv:ohk',DEV.ohk?'go':'')}${b('체력·마나 회복','dv:heal')}</div></div>`;
@@ -2164,7 +2206,7 @@ const PANELS={
     let h=`<div class="tabs">${btn('능력치','tab:stat',true,ui.tab==='stat'?'on':'')}${btn('가방','tab:inv',true,ui.tab==='inv'?'on':'')}${btn('마법','tab:grim',true,ui.tab==='grim'?'on':'')}</div>`;
     if(ui.tab==='stat'){
       const row=(k,n,d,v)=>`<div class="li"><div class="gr"><b>${n}</b> <span class="gold">${v}</span><div class="ds">${d}</div></div><div class="bt">${btn('+1','stat:'+k,S.pts>0)}</div></div>`;
-      h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT','마법 피해 +4%, 마나 +5',S.st.int)+row('vit','체력 VIT','생명력 +12, 재생 증가',S.st.vit)+row('crit','치명 CRIT','치명타율 +1.5%, 치명 피해 증가',S.st.crit)+row('wis','정신 WIS','쿨타임 -1%, 마나 재생 증가',S.st.wis);
+      h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}${S.job?` · 2차 직업 <b style="color:${JOBS[S.job].c}">${JOBS[S.job].n}</b>`:''}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT','마법 피해 +4%, 마나 +5',S.st.int)+row('vit','체력 VIT','생명력 +12, 재생 증가',S.st.vit)+row('crit','치명 CRIT','치명타율 +1.5%, 치명 피해 증가',S.st.crit)+row('wis','정신 WIS','쿨타임 -1%, 마나 재생 증가',S.st.wis);
       h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 쿨타임 감소 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
       h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')} ${btn('저장 코드 복사','exportCode',true,'go')} ${btn('코드 입력','devCode')}${DEV.on?' '+btn('개발자 모드','devOpen',true,'go'):''}</div></div>`;
       h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'이 캐릭터 삭제','reset')}</div>`}
@@ -2204,13 +2246,14 @@ const ACT={
   devOpen(){if(DEV.on)openPanel('dev')},
   altarPut(id){if(S.adv2Entered||(S.adv2Offer||[]).length>=3)return sfx.err();const i=S.inv.findIndex(it=>it.id===+id&&it.my&&MYTH[it.my]);if(i<0)return sfx.err();S.adv2Offer.push(S.inv.splice(i,1)[0]);sfx.item()},
   altarTake(i){i=+i;const offers=S.adv2Offer||[];if(i<0||i>=offers.length||S.inv.length>=BAG())return sfx.err();S.inv.push(offers.splice(i,1)[0]);sfx.ui()},
-  advance2(){const offers=S.adv2Offer||[];if(S.adv2Entered||offers.length!==3||!offers.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord')){toast('신화 장비 3개와 100층 보스 장비 1개가 필요합니다');return sfx.err()}S.adv2Offer=[];S.adv2Entered=true;sfx.circle();save();openPanel('adv2')},
+  advance2(){const offers=S.adv2Offer||[];if(S.circle<9){toast('9서클을 달성해야 전직할 수 있습니다');return sfx.err()}if(S.adv2Entered||offers.length!==3||!offers.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord')){toast('신화 장비 3개와 100층 보스 장비 1개가 필요합니다');return sfx.err()}S.adv2Offer=[];S.adv2Entered=true;S.job=S.aff[0];recalc();sfx.circle();save();
+    {const J=JOBS[S.job],p=G.p;banner(`${J.n} 전직!`,`전용기 [G] ${J.sk}`);G.flash=.6;G.flashCol=J.c;shake(14);for(let i=0;i<4;i++)later(i*.2,()=>ringFx(p.x,p.y,40+i*40,['#ffffff',J.c,J.c,'#000'],.8,{top:1}))}openPanel('adv2')},
   adv2Open(){openPanel('adv2')},
   altarBack(){openPanel('altar')},
   dv(a){if(!DEV.on)return;const [k,x]=a.split(':');const f=Math.max(1,S.maxFloor);
     if(k==='gold')S.gold+=1e6;else if(k==='mats'){S.ore+=1e4;S.ess+=1e4;S.core=(S.core||0)+100}else if(k==='prot')S.prot=(S.prot||0)+50;else if(k==='pots'){S.hpPot+=50;S.mpPot+=50}
     else if(k==='lvl'){const t=Math.min(MAX_LVL,S.lvl+10);while(S.lvl<t){S.lvl++;S.pts+=3}S.xp=0}else if(k==='circle'){if(S.circle<9){S.circle++;S.mast=0}}else if(k==='pts')S.pts+=50
-    else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}
+    else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}else if(k==='job'){S.job=S.aff[0];S.adv2Entered=true;toast(JOBS[S.job].n+' 전직')}else if(k==='unjob'){S.job=null;S.adv2Entered=false}
     else if(k==='all'){while(S.lvl<MAX_LVL){S.lvl++;S.pts+=3}S.xp=0;S.circle=9;S.mast=0;S.aff=ELS.slice();S.affPend=0;for(const sp of SPL)S.grim[sp.id]=10;S.blinkLv=BLINK_MAX;S.maxFloor=100;S.gold+=1e7;S.ore+=1e5;S.ess+=1e5;S.core=(S.core||0)+999;S.prot=(S.prot||0)+99;S.hpPot+=99;S.mpPot+=99;
       const have=new Set(S.inv.concat(Object.values(S.eq)).filter(i=>i&&i.my).map(i=>i.my));for(const m of Object.keys(MYTH))if(!have.has(m)&&S.inv.length<BAG())S.inv.push(mkMyth(m,100));toast('전부 해금했어요')}else if(k==='blink')S.blinkLv=BLINK_MAX
     else if(k==='legset'){for(const sl of['staff','robe','ring']){const it=mkItem(f,4,sl);it.r=4;it.up=15;S.inv.push(it)}}else if(k==='clear'){S.inv=[]}
@@ -2280,13 +2323,13 @@ function forgeAnim(it,before,ok,drop,broke,saved){
 }
 
 /* ============================ INPUT ============================ */
-function hudHit(gx,gy){for(const r of HUDR){if(r.act&&gx>=r.x&&gx<r.x+r.w&&gy>=r.y&&gy<r.y+r.h){const a=r.act;if(a.startsWith('s:'))cast(a.slice(2));else if(a==='p:hp')usePot('hp');else if(a==='p:mp')usePot('mp');else if(a==='b')blink();else if(a==='m')castMyth();return true}}return false}
+function hudHit(gx,gy){for(const r of HUDR){if(r.act&&gx>=r.x&&gx<r.x+r.w&&gy>=r.y&&gy<r.y+r.h){const a=r.act;if(a.startsWith('s:'))cast(a.slice(2));else if(a==='p:hp')usePot('hp');else if(a==='p:mp')usePot('mp');else if(a==='b')blink();else if(a==='m')castMyth();else if(a==='j')castJob();return true}}return false}
 function bindInput(){
   addEventListener('keydown',e=>{
     if(!G.started)return;if(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat&&!/^Digit/.test(e.code))return;IN.keys[e.code]=true;
     if(ui.open){if(e.code==='Escape'||e.code==='Tab'||e.code==='KeyF')closePanel();return}
     const m=/^Digit([1-8])$/.exec(e.code),xi={Digit9:8,Digit0:9,Minus:10,Equal:11}[e.code];if(m){const i=+m[1]-1,id=S.slots[i];if(id&&i<D.slots)cast(id)}else if(xi!==undefined&&xi<D.slots){const id=S.slots[xi];if(id)cast(id)}
-    else if(e.code==='KeyF')tryInteract();else if(e.code==='KeyR')castMyth();else if(e.code==='Space')blink();else if(e.code==='KeyQ')usePot('hp');else if(e.code==='KeyE')usePot('mp');
+    else if(e.code==='KeyF')tryInteract();else if(e.code==='KeyR')castMyth();else if(e.code==='KeyG')castJob();else if(e.code==='Space')blink();else if(e.code==='KeyQ')usePot('hp');else if(e.code==='KeyE')usePot('mp');
     else if(e.code==='Tab'||e.code==='KeyI'||e.code==='KeyC'){ui.tab='stat';openPanel('char')}else if(e.code==='KeyK'){ui.tab='grim';openPanel('char')}else if(e.code==='KeyL')toggleScan();else if(e.code==='KeyM')toggleMute();else if(e.code==='KeyT')toggleAuto();else if(e.code==='F11'){e.preventDefault();toggleFull()}
   });
   addEventListener('keyup',e=>{IN.keys[e.code]=false});
