@@ -122,7 +122,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
       <h1>아케인 타워</h1>
       <p class="sub">아홉 개의 서클, 백 층의 심연의 탑</p>
       <div class="menu win"><button id="bCont" hidden>이어하기</button><button id="bNew">새로 시작</button></div>
-      <div class="keys">WASD 이동 · 마우스 조준, 클릭 매직 애로우 · 1~8 마법 · 9(또는 Space) 순간이동<br>F 대화·포탈·상자 · R 신화 스킬 · 0/− 물약(Q/E도 됨) · Tab 메뉴 · L CRT · M 소리</div>
+      <div class="keys">WASD 이동 · 마우스 조준, 클릭 매직 애로우 · 1~8 마법 · Space 순간이동(이동 방향)<br>F 대화·포탈·상자 · R 신화 스킬 · Q/E 물약 · Tab 메뉴 · L CRT · M 소리</div>
     </div>
     <div id="pick" class="win" hidden>
       <h2>속성을 고르세요</h2>
@@ -263,7 +263,7 @@ function sparkle(x,y,s,col,core){
   const d=Math.max(1,s>>2);ctx.fillRect(x-d,y-d,1,1);ctx.fillRect(x+d,y-d,1,1);ctx.fillRect(x-d,y+d,1,1);ctx.fillRect(x+d,y+d,1,1);
   const h=s>>1;ctx.fillStyle=core||'#fff';ctx.fillRect(x-h,y,h*2+1,1);ctx.fillRect(x,y-h,1,h*2+1);if(s>2)ctx.fillRect(x-1,y-1,3,3);
 }
-const FONT={'0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001','5':'111100111001111','6':'111100111101111','7':'111001001010010','8':'111101111101111','9':'111101111001111','+':'000010111010000','-':'000000111000000','!':'010010010000010','/':'001001010100100','L':'100100100100111','V':'101101101101010','%':'101001010100101','x':'000101010101000',' ':'000000000000000'};
+const FONT={'A':'010101111101101','C':'011100100100011','E':'111100111100111','F':'111100110100100','P':'110101110100100','Q':'010101101110011','R':'110101110101101','S':'011100010001110','M':'101111111101101','T':'111010010010010','0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001','5':'111100111001111','6':'111100111101111','7':'111001001010010','8':'111101111101111','9':'111101111001111','+':'000010111010000','-':'000000111000000','!':'010010010000010','/':'001001010100100','L':'100100100100111','V':'101101101101010','%':'101001010100101','x':'000101010101000',' ':'000000000000000'};
 const glyphs={};
 function glyph(ch,col,sc){
   const k=ch+col+sc;let c=glyphs[k];if(c)return c;c=mkC(5*sc,7*sc);const g=g2(c),b=FONT[ch]||FONT['-'];
@@ -1252,7 +1252,7 @@ function castMyth(){
 }
 function shoot(){const p=G.p,tg=aimPoint(),t=staffTip(p),a=Math.atan2(tg.y-t.y,tg.x-t.x);if(Math.abs(tg.x-p.x)>2)p.face=tg.x<p.x?-1:1;G.pr.push(mkBolt('none',t.x,t.y,a,300,spellDmg(SP.arrow),{kb:40}));p.mcd=.3*(1-D.cdr*.5);sfx.shoot();gainMast(.4)}
 function blink(){
-  const p=G.p;if(p.bcd>0||G.dead||ui.open)return;let dx=p.mvx,dy=p.mvy;if(!dx&&!dy){const tg=aimPoint();dx=tg.x-p.x;dy=tg.y-p.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d}
+  const p=G.p;if(p.bcd>0||G.dead||ui.open)return;let dx=p.mvx,dy=p.mvy;if(!dx&&!dy){dx=p.face<0?-1:1;dy=0}
   const C=EL[S.aff[0]].c;burst(p.x,p.y-12,16,C,60,.4);const sx=p.x,sy=p.y;
   for(let i=0;i<15;i++){if(boxSol(p.x+dx*4,p.y-3+dy*4,4))break;p.x+=dx*4;p.y+=dy*4}
   for(let i=0;i<8;i++){const k=i/8;part(sx+(p.x-sx)*k,sy+(p.y-sy)*k-12,0,0,.3,C[1],2)}
@@ -1763,7 +1763,7 @@ function drawHUD(){
   hudOrn(x0-5,y0-4,tw+8,28);
   for(let i=0;i<n;i++){const id=S.slots[i],sp=id&&SP[id];if(sp){const k=(p.cd[id]||0)/(sp.cd*(1-D.cdr));hudSlot(x0+i*22,y0,A.sp[id],'s:'+id,k,p.mp<spellMp(sp),String(i+1),undefined,EL[sp.el].c[2])}else hudSlot(x0+i*22,y0,null,null,0,false,String(i+1))}
   const ux=x0+n*22+8;ctx.fillStyle='#6a5230';ctx.fillRect(ux-5,y0,1,20);
-  hudSlot(ux+22,y0,A.hpPot,'p:hp',p.pcd/3,S.hpPot<1,'0',S.hpPot,'#c04848');hudSlot(ux+44,y0,A.mpPot,'p:mp',p.pcd/3,S.mpPot<1,'-',S.mpPot,'#3a6ad0');hudSlot(ux,y0,A.blink,'b',p.bcd/(2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)),false,'9',undefined,'#7fd2ff');
+  hudSlot(ux,y0,A.hpPot,'p:hp',p.pcd/3,S.hpPot<1,'Q',S.hpPot,'#c04848');hudSlot(ux+22,y0,A.mpPot,'p:mp',p.pcd/3,S.mpPot<1,'E',S.mpPot,'#3a6ad0');hudSlot(ux+44,y0,A.blink,'b',p.bcd/(2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)),false,'SPC',undefined,'#7fd2ff');
   if(D.sk){const s=MYTH_SK[D.sk];hudSlot(ux+66,y0,A.m_staff,'m',(p.cd.myth||0)/(s.cd*(1-D.cdr*.5)),p.mp<s.mp,'R',undefined,'#ff4a6a')}
   const boss=G.en.find(e=>e.boss);if(boss){hudOrn(W/2-94,20,188,11);hudBar(W/2-90,23,180,5,boss.hp/boss.max,'#c04cff','#f0a8ff','#5a1a8a')}
 }
@@ -1990,7 +1990,7 @@ function bindInput(){
   addEventListener('keydown',e=>{
     if(!G.started)return;if(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat&&!/^Digit/.test(e.code))return;IN.keys[e.code]=true;
     if(ui.open){if(e.code==='Escape'||e.code==='Tab'||e.code==='KeyF')closePanel();return}
-    const m=/^Digit([1-8])$/.exec(e.code);if(m){const i=+m[1]-1,id=S.slots[i];if(id&&i<D.slots)cast(id)}else if(e.code==='Digit9'||e.code==='Numpad9')blink();else if(e.code==='Digit0'||e.code==='Numpad0')usePot('hp');else if(e.code==='Minus'||e.code==='NumpadSubtract')usePot('mp');
+    const m=/^Digit([1-8])$/.exec(e.code);if(m){const i=+m[1]-1,id=S.slots[i];if(id&&i<D.slots)cast(id)}
     else if(e.code==='KeyF')tryInteract();else if(e.code==='KeyR')castMyth();else if(e.code==='Space')blink();else if(e.code==='KeyQ')usePot('hp');else if(e.code==='KeyE')usePot('mp');
     else if(e.code==='Tab'||e.code==='KeyI'||e.code==='KeyC'){ui.tab='stat';openPanel('char')}else if(e.code==='KeyK'){ui.tab='grim';openPanel('char')}else if(e.code==='KeyL')toggleScan();else if(e.code==='KeyM')toggleMute();else if(e.code==='KeyT')toggleAuto();
   });
