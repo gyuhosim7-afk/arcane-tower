@@ -844,7 +844,7 @@ function mkMyth(key,il){il=Math.max(1,il||1);const m=MYTH[key],mul=1.15+.45*(myt
 const mythFloor=k=>{const b=MYTH[k].boss,i=MIDS.indexOf(b);return i>=0?i*10+5:BOSSES.indexOf(b)*10+10};
 /* 어려운 보스의 신화일수록 강하다: 5층 ×7.0 → 100층 ×8.9 */
 const mythMain=it=>7+1.9*(mythFloor(it.my)-5)/95;
-function itemStats(it){const m=it.my?mainStats(it.slot,it.il,4):mainStats(it.slot,it.il,it.r),o={};if(it.my)for(const k in m)if(k!=='crit')m[k]*=mythMain(it)/RM[4];else m[k]=2+5*1.5;for(const k in m)o[k]=m[k]*(1+.08*it.up);for(const k in it.a)o[k]=(o[k]||0)+it.a[k];for(const k in o)o[k]=Math.round(o[k]*10)/10;return o}
+function itemStats(it){if(it.my)it.up=0;const m=it.my?mainStats(it.slot,it.il,4):mainStats(it.slot,it.il,it.r),o={};if(it.my)for(const k in m)if(k!=='crit')m[k]*=mythMain(it)/RM[4];else m[k]=2+5*1.5;for(const k in m)o[k]=m[k]*(1+.08*it.up);for(const k in it.a)o[k]=(o[k]||0)+it.a[k];for(const k in o)o[k]=Math.round(o[k]*10)/10;return o}
 const itemName=it=>(it.my?MYTH[it.my].n:PRE[it.r]+' '+GEAR_N[it.slot][it.v||0])+(it.up?' +'+it.up:'');
 const sellPrice=it=>Math.round((6+it.il*3)*(it.r+1)*(it.r+1)*(1+it.up*.2));
 const D={my:new Set()};
@@ -2078,8 +2078,8 @@ const PANELS={
     let h=`<div class="say"><img src="${ICON.thorgan}" alt=""><p>"쇠는 거짓말을 안 해. 두드릴수록 단단해지지만, 욕심내면 금이 가지."</p></div><div class="li"><img src="${ICON.ore}" alt=""><div class="gr"><b>장비 제작</b> <span class="dim">아이템 레벨 ${il} · 고급 이상</span><div class="ds">${costHTML(cc)}</div></div><div class="bt">${btn('로브','forge:robe',can(cc))}${btn('지팡이','forge:staff',can(cc))}${btn('반지','forge:ring',can(cc))}</div></div>`;
     const pc=protCost();h+=`<div class="li"><img src="${ICON.prot}" alt=""><div class="gr"><b>파괴 방지권</b> <span class="gold">보유 ${S.prot}</span><div class="ds">+10부터 강화에 실패하면 장비가 부서질 수 있습니다. 방지권을 켜 두면 부서질 때 대신 방지권이 깨지고 장비는 한 단계만 내려갑니다. 황금 상자에서 확정, 강철 상자에서 12%로 나옵니다. · 구매 ${costHTML(pc)}</div></div><div class="bt">${btn(ui.useProt?'사용 중':'사용 안 함','prot',true,ui.useProt?'go':'')}${btn('구매','buyProt',can(pc))}</div></div>`;
     h+=`<div class="hd">강화 <span>최대 +${MAX_UP} · +6부터 실패하면 -1단계 · +10부터 파괴 위험</span></div>`;
-    const list=[...['staff','robe','ring'].map(k=>S.eq[k]).filter(Boolean),...S.inv.filter(i=>i.r>=2).sort((a,b)=>b.r-a.r||b.up-a.up)];
-    if(!list.length)h+='<p>강화할 장비가 없습니다. 장착한 장비와 희귀 이상 장비가 여기 나옵니다.</p>';
+    const list=[...['staff','robe','ring'].map(k=>S.eq[k]).filter(i=>i&&!i.my),...S.inv.filter(i=>i.r>=2&&!i.my).sort((a,b)=>b.r-a.r||b.up-a.up)];
+    if(!list.length)h+='<p>강화할 장비가 없습니다. 장착한 장비와 희귀 이상 장비가 여기 나옵니다. (신화는 강화할 수 없어요)</p>';
     for(const it of list){const eq=S.eq[it.slot]===it,max=it.up>=MAX_UP,rc=reinfCost(it),rt=Math.round(enhRate(it.up)*100);
       h+=`<div class="li"><img src="${itemIcon(it)}" alt=""><div class="gr"><b style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</b>${eq?' <span class="tag">장착 중</span>':''}<div class="ds">${statLine(it)}</div>`+
         (max?'<div class="ds gold">최대 강화</div>':`<div class="ds">+${it.up+1} 성공 <b class="${rt>=70?'ok':rt>=35?'gold':'no'}">${rt}%</b>${destroyRate(it.up)?` · 실패 시 <span class="no">파괴 ${Math.round(destroyRate(it.up)*100)}%</span>, 아니면 -1단계`:enhDrop(it.up)?' · 실패 시 <span class="no">-1단계</span>':' · 실패해도 단계 유지'} · ${costHTML(rc)}</div>`)+
@@ -2126,7 +2126,7 @@ const ACT={
   stat(k){if(S.pts>0){S.pts--;S.st[k]++;recalc();sfx.ui()}},
   circle(){const c=S.circle;if(c>=9||S.affPend)return sfx.err();if(S.lvl<CIRC_LVL[c+1]||S.mast<CIRC_MAST[c+1]){toast('레벨이나 수련치가 모자랍니다');return sfx.err()}S.circle++;S.mast=0;if(S.circle===4||S.circle===7)S.affPend=(S.affPend||0)+1;recalc();G.p.mp=D.maxMp;sfx.circle();
     banner(`${S.circle}서클 · ${CT[S.circle]}`,PASS[S.circle]?`${PASS[S.circle][0]}: ${PASS[S.circle][1]}`:'새로운 마나의 고리가 심장에 새겨졌습니다');levelFx();G.flash=.3;G.flashCol=AURA[S.circle];if(S.affPend)toast('새 속성을 깨울 수 있습니다. 엘드린에게서 고르세요')},
-  reinf(id){const it=Object.values(S.eq).find(i=>i&&i.id===+id)||S.inv.find(i=>i.id===+id);if(!it||it.up>=MAX_UP||FORGE.on)return;if(!pay(reinfCost(it)))return;
+  reinf(id){const it=Object.values(S.eq).find(i=>i&&i.id===+id)||S.inv.find(i=>i.id===+id);if(!it||it.my||it.up>=MAX_UP||FORGE.on)return;if(!pay(reinfCost(it)))return;
     const before=it.up,ok=Math.random()<enhRate(it.up);let drop=!ok&&enhDrop(it.up),broke=!ok&&Math.random()<destroyRate(it.up),saved=false;
     if(broke&&ui.useProt&&S.prot>0){S.prot--;broke=false;saved=true}
     if(ok)it.up++;else if(broke){if(S.eq[it.slot]===it)S.eq[it.slot]=null;S.inv=S.inv.filter(x=>x!==it)}else if(drop)it.up--;
