@@ -441,7 +441,8 @@ const SPELL_DATA=[
   ['ctrlWeather','컨트롤 웨더','thunder',9,'rain',211,38,2.46,{dur:6,rate:0.06,R:40,v:'thunder'},'날씨를 지배해 낙뢰를 퍼붓는다.'],
   ['purify','퓨리피케이션','holy',5,'nova',56,9,8.13,{R:96,st:'stun',stT:0.6,healP:0.15},'정화의 빛으로 적을 태우고 몸을 회복한다.'],
   ['cureDisease','큐어 디지즈','holy',7,'strike',86,12,15.94,{R:70,delay:0.4,st:'weak',big:1},'신성한 빛기둥. 언데드를 녹인다.'],
-  ['resurrection','그레이트 리절렉션','holy',9,'heal',222,120,1,{R:200,dm:53},'생명력을 모두 회복하고 거대한 빛의 폭발을 일으킨다.'],
+  ['resurrection','그레이트 리절렉션','holy',9,'heal',222,120,1,{R:200,dm:53,inv:2},'생명력을 모두 회복하고 2초간 무적, 거대한 빛의 폭발을 일으킨다.'],
+  ['absBarrier','앱솔루트 배리어','none',8,'shield',90,90,0.35,{dur:6,inv:1.5},'1.5초간 무적, 이후 6초간 받는 피해의 절반을 대신 받는다. (최대 생명력 35%까지)'],
   ['manaDrain','마나 드레인','dark',5,'bolt',34,4,10.28,{spd:240,homing:1,mdrain:1,size:2,st:'weak'},'적의 마나를 빼앗아 내 마나로 채운다.'],
   ['cloudKill','클라우드 킬','dark',7,'zone',110,18,0.97,{R:96,dur:6,tick:0.5,v:'poison'},'죽음의 구름이 넓게 퍼진다.'],
   ['chaosBlade','카오스 블레이드','dark',9,'wave',204,36,47.54,{wd:260,dist:500,spd:320,big:1,st:'weak'},'혼돈의 검이 공간째 벤다.'],
@@ -475,6 +476,7 @@ const IC={
 };
 const ICONS={
   arrow:(g,C)=>IC.arrow(g,3,15,13,5,C[2],C[0],C[1]),
+  absBarrier:(g,C)=>{pxPoly(g,[[3.5,3],[14.5,3],[14.5,9],[9,15.5],[3.5,9]],'#ffd24a');pxPoly(g,[[5.5,5],[12.5,5],[12.5,9],[9,13],[5.5,9]],'#fff6c8');pxRing(g,9,8.5,3,3,'#ffd24a',16)},
   shield:(g,C)=>{pxPoly(g,[[3.5,3],[14.5,3],[14.5,9],[9,15.5],[3.5,9]],C[2]);pxPoly(g,[[5.5,5],[12.5,5],[12.5,9],[9,13],[5.5,9]],C[3]);IC.star(g,9,8.5,3,4,C[0],.35)},
   meteorS:(g,C)=>{const F=EL.fire.c;for(let i=0;i<4;i++)pxLine(g,2+i,16-i*0,9+i,9-i,F[3-((i)%2)]);pxLine(g,2,13,8,8,F[2]);IC.rock(g,12,6,4,EL.earth.c);pxRing(g,12,6,5.5,5.5,F[1],24)},
   punish:(g,C)=>{const L=['fire','water','ice','wind','earth','thunder'];for(let i=0;i<6;i++){const a0=i/6*TAU-Math.PI/2,a1=a0+TAU/6;pxPoly(g,[[9,9],[9+Math.cos(a0)*7.5,9+Math.sin(a0)*7.5],[9+Math.cos((a0+a1)/2)*7.5,9+Math.sin((a0+a1)/2)*7.5],[9+Math.cos(a1)*7.5,9+Math.sin(a1)*7.5]],EL[L[i]].c[2])}pxDisc(g,9,9,2.5,'#fff');pxRing(g,9,9,7.5,7.5,'#fff',40)},
@@ -1161,9 +1163,9 @@ const KIND={
         if(sp.el==='water'){const hh=o.big?24:11;for(let j=-o.wd/2;j<=o.wd/2;j+=2){const bx=cx+px*j,by=cy+py*j,h=Math.max(1,(hh+Math.sin(j*.2+this.t*14)*hh*.3)*f*(1-Math.pow(Math.abs(j)/(o.wd/2),4)*.6));ctx.fillStyle=C[3];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.round(h)+2);ctx.fillStyle=C[2];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.round(h));ctx.fillStyle=C[1];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.max(1,Math.round(h*.35)));ctx.fillStyle=C[0];ctx.fillRect(Math.round(bx),Math.round(by-h)-1,2,2)}}
         else{for(let j=-o.wd/2;j<=o.wd/2;j++){const bend=-(j*j)/(o.wd*.9),bx=cx+px*j+dx*bend*.5,by=cy+py*j+dy*bend*.5;ctx.fillStyle=Math.abs(j)<o.wd*.3?'#ffffff':C[1];ctx.fillRect(Math.round(bx),Math.round(by),1,1);ctx.fillStyle=C[2];ctx.fillRect(Math.round(bx-dx*2),Math.round(by-dy*2),1,1);if(Math.abs(j)<o.wd*.2){ctx.fillStyle=C[3];ctx.fillRect(Math.round(bx-dx*4),Math.round(by-dy*4),1,1)}}}
         light(cx,cy,o.wd*.5)}})},
-  heal(sp,p){const o=sp.o,C=EL.holy.c,fat=G.time-(p.lastHeal??-99)<10,v=Math.round(D.maxHp*sp.m*(fat?.5:1));p.lastHeal=G.time;if(fat)G.texts.push({x:p.x,y:p.y-42,vy:-20,life:.9,str:'회복 피로',col:'#c8a0ff',sc:.8});p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.9,str:'+'+v,col:'#8ef0a0',sc:1});if(o.regen)p.regen=6;
+  heal(sp,p){const o=sp.o,C=EL.holy.c,fat=sp.c<9&&G.time-(p.lastHeal??-99)<10,v=Math.round(D.maxHp*sp.m*(fat?.5:1));p.lastHeal=G.time;if(fat)G.texts.push({x:p.x,y:p.y-42,vy:-20,life:.9,str:'회복 피로',col:'#c8a0ff',sc:.8});p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.9,str:'+'+v,col:'#8ef0a0',sc:1});if(o.regen)p.regen=6;if(o.inv)p.ifr=Math.max(p.ifr,o.inv);
     ringFx(p.x,p.y,34,C,.5,{top:1});pillarFx(p.x,p.y,9,70,C,.45);if(o.R){const dm=D.pow*o.dm*(1+.12*((S.grim[sp.id]||1)-1))*(S.aff[0]==='holy'?1.2:1);ringFx(p.x,p.y,o.R,C,.45,{top:1});later(.1,()=>{aoe(G.p.x,G.p.y-4,o.R,dm,{el:'holy',kb:70});holyBurst(G.p.x,G.p.y,o.R*.4)})}for(let i=0;i<26;i++)part(p.x+rnd(-12,12),p.y+rnd(-4,2),rnd(-8,8),rnd(-80,-30),rnd(.5,.9),pick(['#8ef0a0','#ffffff',C[2]]),1)},
-  shield(sp,p,tg,dmg){p.shield=Math.round(D.maxHp*sp.m*(1+.05*((S.grim[sp.id]||1)-1)));p.shMax=p.shield;p.shT=sp.o.dur;p.lastHeal=G.time;ringFx(p.x,p.y-12,24,EL.none.c,.35,{top:1});flashFx(p.x,p.y-14,10,EL.none.c[1],.25)},
+  shield(sp,p,tg,dmg){p.shield=Math.round(D.maxHp*sp.m*(1+.05*((S.grim[sp.id]||1)-1)));p.shMax=p.shield;p.shT=sp.o.dur;p.lastHeal=G.time;if(sp.o.inv)p.ifr=Math.max(p.ifr,sp.o.inv);ringFx(p.x,p.y-12,24,EL.none.c,.35,{top:1});flashFx(p.x,p.y-14,10,EL.none.c[1],.25)},
   summon(sp,p,tg,dmg){const o=sp.o,C=EL.holy.c;let ang=0,cd=0;addFx({layer:'t',t:0,upd(dt){this.t+=dt;ang+=dt*2.4;cd-=dt;const P=G.p;this.x=P.x+Math.cos(ang)*16;this.y=P.y-34+Math.sin(ang)*4;
       if(cd<=0){const e=nearestEnemy(this.x,this.y,190);if(e){cd=o.rate;G.pr.push(mkBolt('holy',this.x,this.y,Math.atan2(e.y-e.r-this.y,e.x-this.x),300,dmg,{size:1}));tone('triangle',1600,2200,.05,.025)}}
       if(Math.random()<.3)part(this.x,this.y,rnd(-10,10),rnd(-10,10),.4,pick(C),1);return this.t<o.dur},
