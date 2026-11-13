@@ -441,6 +441,14 @@ const SPELL_DATA=[
   ['ctrlWeather','컨트롤 웨더','thunder',9,'rain',211,38,2.46,{dur:6,rate:0.06,R:40,v:'thunder'},'날씨를 지배해 낙뢰를 퍼붓는다.'],
   ['purify','퓨리피케이션','holy',5,'nova',56,9,8.13,{R:96,st:'stun',stT:0.6,healP:0.15},'정화의 빛으로 적을 태우고 몸을 회복한다.'],
   ['cureDisease','큐어 디지즈','holy',7,'strike',86,12,15.94,{R:70,delay:0.4,st:'weak',big:1},'신성한 빛기둥. 언데드를 녹인다.'],
+  ['holyArrow','홀리 애로우','holy',2,'bolt',9,1.2,1.85,{spd:360,pierce:1,size:2},'신성한 빛의 화살이 적을 꿰뚫는다.'],
+  ['holyBolt','홀리 볼트','holy',3,'orb',19,2.6,2.4,{spd:220,R:34,st:'stun',stT:0.3},'빛의 신성력을 뭉쳐 쏘아 터뜨린다.'],
+  ['holyMissile','홀리 미사일','holy',4,'bolt',25,3,1.65,{spd:220,n:5,spread:0.5,homing:1},'주변에 빛의 미사일 다섯 발을 만들어 쫓아가게 한다.'],
+  ['holyWave','홀리 웨이브','holy',5,'wave',48,7,9.6,{wd:90,dist:250,spd:210,st:'weak'},'앞에 신성한 빛의 파도를 일으켜 쓸어버린다.'],
+  ['holyBlade','홀리 블레이드','holy',6,'bolt',50,6,4.0,{spd:330,n:3,spread:0.18,pierce:99,size:3},'신성력이 깃든 빛의 칼날 세 줄기가 모든 적을 벤다.'],
+  ['holyTornado','홀리 토네이도','holy',7,'zone',110,18,1.21,{R:50,dur:5,tick:0.2,v:'torn',n:2},'빛의 회오리 두 개가 적을 끌어모아 태운다.'],
+  ['holyShout','홀리 샤우트','holy',8,'nova',145,24,7.22,{R:200,pulses:3,st:'stun',stT:0.5},'신성한 외침이 세 번 넓게 퍼진다.'],
+  ['godHand','갓 핸드','holy',9,'strike',204,36,41.0,{R:100,delay:0.7,st:'stun',stT:1.8,kb:180,big:1},'신의 손이 강림해 적을 내리누른다.'],
   ['resurrection','그레이트 리절렉션','holy',9,'heal',222,60,1,{R:200,dm:53,inv:3},'생명력을 모두 회복하고 3초간 무적, 거대한 빛의 폭발을 일으킨다.'],
   ['absBarrier','앱솔루트 배리어','none',8,'shield',90,90,0.35,{dur:6,inv:1.5},'1.5초간 무적, 이후 6초간 받는 피해의 절반을 대신 받는다. (최대 생명력 35%까지)'],
   ['manaDrain','마나 드레인','dark',5,'bolt',34,4,10.28,{spd:240,homing:1,mdrain:1,size:2,st:'weak'},'적의 마나를 빼앗아 내 마나로 채운다.'],
@@ -477,6 +485,14 @@ const IC={
 const ICONS={
   arrow:(g,C)=>IC.arrow(g,3,15,13,5,C[2],C[0],C[1]),
   absBarrier:(g,C)=>{pxPoly(g,[[3.5,3],[14.5,3],[14.5,9],[9,15.5],[3.5,9]],'#ffd24a');pxPoly(g,[[5.5,5],[12.5,5],[12.5,9],[9,13],[5.5,9]],'#fff6c8');pxRing(g,9,8.5,3,3,'#ffd24a',16)},
+  holyArrow:(g,C)=>{IC.arrow(g,3,15,14,4,C[1],'#ffffff');IC.star(g,14,4,3,4,C[2],.3)},
+  holyBolt:(g,C)=>{IC.orb(g,9,9,5.5,C);IC.cross(g,9,9,2,'#ffffff',C[1])},
+  holyMissile:(g,C)=>{for(const[x,y]of[[4,13],[9,9],[14,5]]){pxLine(g,x-3,y+3,x,y,C[3]);IC.star(g,x,y,2.6,4,C[1],.35)}},
+  holyWave:(g,C)=>{pxPoly(g,[[2,16],[2,9],[5,5],[10,3],[14,5],[15,8],[12,7],[10,9],[11,12],[16,16]],C[2]);pxPoly(g,[[3,16],[3,10],[6,6],[10,4],[13,6],[11,7],[9,10],[10,13],[14,16]],C[1]);IC.cross(g,12,12,2,'#ffffff',C[0])},
+  holyBlade:(g,C)=>{pxPoly(g,[[9,1],[11,4],[11,12],[7,12],[7,4]],C[1]);g.fillStyle='#ffffff';g.fillRect(9,3,1,9);g.fillStyle=C[3];g.fillRect(4,12,10,2);g.fillStyle='#8a6a30';g.fillRect(8,14,2,3)},
+  holyTornado:(g,C)=>{IC.funnel(g,9,16,13,C[2],C[0]);IC.star(g,9,4,2.5,4,'#ffffff',.3)},
+  holyShout:(g,C)=>{for(let k=0;k<3;k++)pxRing(g,9,9,2.5+k*2.5,(2.5+k*2.5)*.8,C[k],30);IC.star(g,9,9,2.2,4,'#ffffff',.35)},
+  godHand:(g,C)=>{pxPoly(g,[[4,2],[14,2],[15,9],[12,13],[6,13],[3,9]],C[1]);g.fillStyle=C[3];for(const x of[5,8,11])g.fillRect(x,2,1,6);g.fillStyle='#ffffff';g.fillRect(6,9,6,1);g.fillStyle=C[2];g.fillRect(1,15,16,2)},
   shield:(g,C)=>{pxPoly(g,[[3.5,3],[14.5,3],[14.5,9],[9,15.5],[3.5,9]],C[2]);pxPoly(g,[[5.5,5],[12.5,5],[12.5,9],[9,13],[5.5,9]],C[3]);IC.star(g,9,8.5,3,4,C[0],.35)},
   meteorS:(g,C)=>{const F=EL.fire.c;for(let i=0;i<4;i++)pxLine(g,2+i,16-i*0,9+i,9-i,F[3-((i)%2)]);pxLine(g,2,13,8,8,F[2]);IC.rock(g,12,6,4,EL.earth.c);pxRing(g,12,6,5.5,5.5,F[1],24)},
   punish:(g,C)=>{const L=['fire','water','ice','wind','earth','thunder'];for(let i=0;i<6;i++){const a0=i/6*TAU-Math.PI/2,a1=a0+TAU/6;pxPoly(g,[[9,9],[9+Math.cos(a0)*7.5,9+Math.sin(a0)*7.5],[9+Math.cos((a0+a1)/2)*7.5,9+Math.sin((a0+a1)/2)*7.5],[9+Math.cos(a1)*7.5,9+Math.sin(a1)*7.5]],EL[L[i]].c[2])}pxDisc(g,9,9,2.5,'#fff');pxRing(g,9,9,7.5,7.5,'#fff',40)},
@@ -1193,11 +1209,11 @@ const ZONE={
       if(this.sp<=0){this.sp=.16;const a=rnd(TAU),r=Math.sqrt(Math.random())*o.R;crystals(x+Math.cos(a)*r,y+Math.sin(a)*r*.62,12,C,3,{life:.5})}
       return this.t<o.dur},
     draw(){const f=Math.max(0,Math.min(1,this.t/.3,(o.dur-this.t)/.5));ctx.globalAlpha=.16*f;pxEll(ctx,x,y,o.R,o.R*.62,C[2]);ctx.globalAlpha=.3*f;pxEll(ctx,x,y,o.R*.5,o.R*.31,C[1]);ctx.globalAlpha=1;pxRing(ctx,x,y,o.R,o.R*.62,C[1]);light(x,y,o.R*f)}})},
-  torn(sp,x,y,dmg){const o=sp.o,C=EL.wind.c;for(let i=0;i<o.n;i++){const T={x:x+(o.n>1?Math.cos(i/o.n*TAU)*44:0),y:y+(o.n>1?Math.sin(i/o.n*TAU)*26:0)};
+  torn(sp,x,y,dmg){const o=sp.o,C=EL[sp.el]&&sp.el!=='none'?EL[sp.el].c:EL.wind.c,ZE=sp.el==='none'?'wind':sp.el;for(let i=0;i<o.n;i++){const T={x:x+(o.n>1?Math.cos(i/o.n*TAU)*44:0),y:y+(o.n>1?Math.sin(i/o.n*TAU)*26:0)};
     addFx({layer:'t',t:0,tk:0,upd(dt){this.t+=dt;this.tk-=dt;const e=nearestEnemy(T.x,T.y,260);if(e){const dx=e.x-T.x,dy=e.y-T.y,d=Math.hypot(dx,dy)||1;if(d>4){T.x+=dx/d*75*dt;T.y+=dy/d*75*dt}}
       for(const en of G.en){if(en.dead||en.boss)continue;const dx=T.x-en.x,dy=T.y-en.y,d=Math.hypot(dx,dy);if(d<o.R&&d>2)moveEnt(en,dx/d*110*dt,dy/d*110*dt,en.r-2)}
-      if(this.tk<=0){this.tk=o.tick;aoe(T.x,T.y-8,o.R*.75,dmg,{el:'wind'})}
-      if(Math.random()<.6)part(T.x+rnd(-12,12),T.y,rnd(-30,30),rnd(-60,-20),.5,pick(['#d8ffe6','#7ee0a6','#8e6236']),1,{add:false});return this.t<o.dur},
+      if(this.tk<=0){this.tk=o.tick;aoe(T.x,T.y-8,o.R*.75,dmg,{el:ZE})}
+      if(Math.random()<.6)part(T.x+rnd(-12,12),T.y,rnd(-30,30),rnd(-60,-20),.5,pick(ZE==='wind'?['#d8ffe6','#7ee0a6','#8e6236']:[C[0],C[1],C[2]]),1,{add:false});return this.t<o.dur},
       draw(){const f=Math.max(0,Math.min(1,this.t/.25,(o.dur-this.t)/.4));ctx.globalAlpha=.25;pxEll(ctx,T.x,T.y,14*f,5*f,'#000');ctx.globalAlpha=1;
         for(let j=0;j<14;j++){const yy=T.y-j*4,rx=(4+j*1.9)*f,sw=Math.sin(this.t*7+j*.5)*3*f,col=j%3===0?'#ffffff':j%3===1?C[1]:C[2];pxRing(ctx,T.x+sw,yy,rx,rx*.3,col,Math.max(10,rx*4|0))}
         for(let j=0;j<12;j++){const a=this.t*9+j*.63,h=(j*5+this.t*40)%54,rx=(4+h*.38)*f;ctx.fillStyle=j%2?'#8e6236':'#ffffff';ctx.fillRect(Math.round(T.x+Math.cos(a)*rx),Math.round(T.y-h+Math.sin(a)*rx*.3),2,2)}light(T.x,T.y-26,40)}})}},
