@@ -805,8 +805,8 @@ const enhDrop=up=>up>=6;
 const destroyRate=up=>up>=10?Math.min(.6,.3+(up-10)*.06):0;
 const protCost=()=>({gold:3000+S.maxFloor*200,ess:30});
 const reinfCost=it=>({gold:Math.round(30*Math.pow(it.up+1,1.7)*(1+it.r*.6)*(1+it.il/20)),ore:2+it.up*2});
-/* ---- 신화: 보스마다 하나, 보스 보물상자에서 1% ---- */
-const MYTH_RATE=.01;
+/* ---- 신화: 보스마다 하나, 보스 보물상자에서 0.5% ---- */
+const MYTH_RATE=.005;
 
 const MYTH={
   slimeRing:{boss:'kingslime',slot:'ring',n:'젤리왕의 왕관 반지',fx:'처치한 적이 터지며 주변에 마력 x3 폭발',a:{crit:8,hp:120,int:6}},
@@ -2121,11 +2121,11 @@ const PANELS={
     S.quests.forEach((q,i)=>{h+=`<div class="li"><img src="${ICON.scroll}" alt=""><div class="gr"><b>${questText(q)}</b> <span class="${q.done?'gold':'dim'}">${q.cur}/${q.n}</span><div class="ds">보상 ${ic('gold')}${q.gold} ${ic('ess')}${q.ess}${q.ore?' '+ic('ore')+q.ore:''} ${ic('xp')}${q.xp}</div></div><div class="bt">${btn('보상 받기','claim:'+i,q.done,'go')}</div></div>`});
     return h}},
   tower:{t:'심연의 탑',r(){
-    let h=`<p>100층까지 있습니다. 층마다 몰려오는 적을 모두 쓰러뜨리면 다음 층 포탈이 열립니다. 5층마다 보스가 나오고(10층마다 대보스), 높이 올라갈수록 보스 패턴이 거세집니다. 보스는 아래층부터 올라가야만 만날 수 있습니다. 쓰러지면 골드의 10%를 잃습니다.</p><div>최고 기록 <b class="gold">${S.maxFloor}층</b> / 100층</div>`;
+    let h=`<p>100층까지 있습니다. 층마다 몰려오는 적을 모두 쓰러뜨리면 다음 층 포탈이 열립니다. 5층마다 보스가 나오고(10층마다 대보스), 높이 올라갈수록 보스 패턴이 거세집니다. 체크포인트에서 다음 중간 보스 방으로 바로 갈 수 있습니다. 쓰러지면 골드의 10%를 잃습니다.</p><div>최고 기록 <b class="gold">${S.maxFloor}층</b> / 100층</div>`;
     if(DEV.on){h+=`<div class="hd">개발자 · 아무 층</div><div class="li"><div class="gr" style="display:flex;flex-wrap:wrap;gap:.2em">${Array.from({length:20},(_,i)=>(i+1)*5).map(n=>btn(n+'층','enter:'+n,true,n%10===0?'go':'')).join('')}</div><div class="bt">${btn('직접 입력','dv:warp')}</div></div>`}
     {const nf=Math.min(100,S.maxFloor+1);if(nf>1)h+=`<div class="hd">이어서 도전</div><div class="li"><div class="gr"><b>${nf}층</b> 마지막으로 깬 층의 다음 층 <span class="dim">· ${themeOf(nf).n}${nf%5===0?' · 보스':''}</span></div><div class="bt">${btn('도전','enter:'+nf,true,'go')}</div></div>`}
     h+=`<div class="hd">출발 층</div><div class="li"><div class="gr"><b>1층</b> <span class="dim">· ${THEMES[0].n}</span></div><div class="bt">${btn('입장','enter:1',true,'go')}</div></div>`;
-    for(let k=Math.min(90,Math.floor(S.maxFloor/10)*10);k>=10;k-=10)h+=`<div class="li"><div class="gr"><b>${k+1}층</b> 저장된 체크포인트 <span class="dim">· ${themeOf(k+1).n}</span></div><div class="bt">${btn('입장','enter:'+(k+1),true,'go')}</div></div>`;
+    for(let k=Math.min(90,Math.floor(S.maxFloor/10)*10);k>=10;k-=10){const bossFloor=k+5;h+=`<div class="li"><div class="gr"><b>${k+1}층</b> 저장된 체크포인트 <span class="dim">· ${themeOf(k+1).n}</span><div class="ds">다음 중간보스 ${bossFloor}층</div></div><div class="bt">${btn('체크포인트 입장','enter:'+(k+1),true)}${btn('보스방 직행','enter:'+bossFloor,true,'go')}</div></div>`}
     return h}},
   char:{t:'메뉴',r(){
     let h=`<div class="tabs">${btn('능력치','tab:stat',true,ui.tab==='stat'?'on':'')}${btn('가방','tab:inv',true,ui.tab==='inv'?'on':'')}${btn('마법','tab:grim',true,ui.tab==='grim'?'on':'')}</div>`;
@@ -2197,7 +2197,7 @@ const ACT={
   sellR(r){S.sellR=+r},
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
   claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(q.xp)},
-  enter(f){f=+f;if(!(DEV.on&&f>=1&&f<=100)&&!(f===1||f===Math.min(100,S.maxFloor+1)||(f%10===1&&f<=91&&f-1<=S.maxFloor)))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
+  enter(f){f=+f;const midBossShortcut=f>=15&&f<=95&&f%10===5&&f-5<=S.maxFloor;if(!(DEV.on&&f>=1&&f<=100)&&!(f===1||f===Math.min(100,S.maxFloor+1)||(f%10===1&&f<=91&&f-1<=S.maxFloor)||midBossShortcut))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
   reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY);const sl=getSlots();delete sl[S.pid];putSlots(sl)}catch(e){}location.reload()}else{ui.resetArm=true}}
 };
 function openPanel(n){ui.open=n;ui.sel=null;ui.resetArm=false;IN.down=false;$('panel').hidden=false;refreshPanel()}
