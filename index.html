@@ -863,7 +863,18 @@ function recalc(){
   D.dr=(hasM('spiderRobe')?.15:0)+(hasM('gargHeart')?.1:0)+(hasM('magmaCore')?.1:0);D.spd=(hasM('stormFeather')?1.3:1)*(hasM('ratRing')?1.15:1);
   if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
 }
-const DEV={on:(()=>{try{return localStorage.getItem('at-dev')==='1'}catch(e){return false}})(),god:false,ohk:false};
+const DEV={on:false,god:false,ohk:false};
+const DEV_KEY_PREFIX='arcane-tower-dev-';
+function currentDevKey(){return S.pid?DEV_KEY_PREFIX+S.pid:null}
+function loadDevForCurrentCharacter(){
+  DEV.on=false;DEV.god=false;DEV.ohk=false;
+  try{const key=currentDevKey();DEV.on=!!key&&localStorage.getItem(key)==='1';localStorage.removeItem('at-dev')}catch(e){DEV.on=false}
+}
+function setDevForCurrentCharacter(enabled){
+  const key=currentDevKey();if(!key){DEV.on=false;return}
+  try{if(enabled)localStorage.setItem(key,'1');else localStorage.removeItem(key)}catch(e){}
+  DEV.on=!!enabled;
+}
 const BAG=()=>DEV.on?64:32;
 const canUse=sp=>sp.el==='none'||S.circle>=9||S.aff.includes(sp.el)||DEV.on;
 const spellMp=sp=>Math.round(sp.mp*(S.circle>=4&&sp.c<S.circle?.85:1));
@@ -2056,13 +2067,13 @@ function grimList(mode){
   const hidden=SPL.filter(sp=>!els.includes(sp.el)).length;if(hidden)h+=`<p>다른 속성 마법 ${hidden}개는 그 속성을 깨우면 보입니다.</p>`;
   return h;
 }
-/* 개발자 모드: [코드 입력]에 개발자 코드를 넣으면 이 기기에서만 켜진다 */
+/* 개발자 모드는 캐릭터 ID별로 저장한다. */
 const devHash=t=>{let x=0;for(const ch of t)x=(x*131+ch.charCodeAt(0))>>>0;return x};
 const PANELS={
   dev:{t:'개발자 모드',r(){
     const b=(l,a,c)=>btn(l,a,true,c);
-    let h=`<p class="dim">이 기기에서만 켜져 있어요. 친구들 게임에는 영향이 없어요.</p>`;
-    h+=`<div class="hd">테스트 계정</div><div class="li"><div class="gr"><b>전부 해금</b><div class="ds">99레벨 · 9서클 · 8속성 전부 · 모든 마법 Lv10 · 마법 칸 8개 · 순간이동 최대 · 100층까지 기록 · 신화 20개 · 재화 넉넉히</div></div><div class="bt">${b('전부 해금','dv:all','go')}</div></div>`;
+    let h=`<p class="dim">이 캐릭터에서만 켜져 있어요. 다른 캐릭터에는 적용되지 않아요.</p>`;
+    h+=`<div class="hd">현재 캐릭터 테스트 도구</div><div class="li"><div class="gr"><b>전부 해금</b><div class="ds">현재 선택한 캐릭터에 적용되며, 별도 계정을 만들지는 않습니다. 99레벨 · 9서클 · 8속성 전부 · 모든 마법 Lv10 · 마법 칸 8개 · 순간이동 최대 · 100층까지 기록 · 신화 20개 · 재화 넉넉히</div></div><div class="bt">${b('전부 해금','dv:all','go')}</div></div>`;
     h+=`<div class="hd">재화</div><div class="li"><div class="gr">골드·광석·정수·코어·방지권·물약</div><div class="bt">${b('+100만 골드','dv:gold')}${b('재료 +1만','dv:mats')}${b('방지권 +50','dv:prot')}${b('물약 +50','dv:pots')}</div></div>`;
     h+=`<div class="hd">성장</div><div class="li"><div class="gr">Lv.${S.lvl} · ${S.circle}서클 · 포인트 ${S.pts}</div><div class="bt">${b('레벨 +10','dv:lvl')}${b('서클 +1','dv:circle')}${b('포인트 +50','dv:pts')}${b('모든 마법 Lv10','dv:spells')}${b('순간이동 최대','dv:blink')}</div></div>`;
     h+=`<div class="hd">장비</div><div class="li"><div class="gr">현재 최고 층 기준으로 만들어요</div><div class="bt">${b('전설 +15 세트','dv:legset')}${b('가방 비우기','dv:clear')}</div></div>`;
@@ -2156,7 +2167,7 @@ const ACT={
   aff(el){if(!S.affPend||S.aff.includes(el))return;S.aff.push(el);S.affPend--;sfx.circle();toast(`${EL[el].n} 속성이 깨어났습니다`);const s0=START[el];if(!S.grim[s0]){S.grim[s0]=1;toast(`마법서 ${SP[s0].n}을(를) 받았습니다`)}},
   craft(id){const sp=SP[id];if(!canUse(sp))return sfx.err();if(S.circle<sp.c){toast(`${sp.c}서클이 필요합니다`);return sfx.err()}if(!pay(craftCost(sp)))return;S.grim[id]=1;sfx.buy();toast(`마법서 제작: ${sp.n}`);const i=S.slots.slice(0,D.slots).indexOf(null);if(i>=0)S.slots[i]=id},
   exportCode(){closePanel();codeBox('export')},
-  devCode(){const c=(prompt('코드를 입력하세요')||'').trim();if(!c)return;if(devHash(c)===2771164979){DEV.on=true;try{localStorage.setItem('at-dev','1')}catch(e){}toast('개발자 모드가 켜졌어요');openPanel('dev')}else toast('올바르지 않은 코드예요')},
+  devCode(){const c=(prompt('코드를 입력하세요')||'').trim();if(!c)return;if(devHash(c)===2771164979){setDevForCurrentCharacter(true);recalc();save();toast('이 캐릭터의 개발자 모드가 켜졌어요');openPanel('dev')}else toast('올바른 코드가 아니에요')},
   devOpen(){if(DEV.on)openPanel('dev')},
   dv(a){if(!DEV.on)return;const [k,x]=a.split(':');const f=Math.max(1,S.maxFloor);
     if(k==='gold')S.gold+=1e6;else if(k==='mats'){S.ore+=1e4;S.ess+=1e4;S.core=(S.core||0)+100}else if(k==='prot')S.prot=(S.prot||0)+50;else if(k==='pots'){S.hpPot+=50;S.mpPot+=50}
@@ -2169,7 +2180,7 @@ const ACT={
     else if(k==='god')DEV.god=!DEV.god;else if(k==='ohk')DEV.ohk=!DEV.ohk;else if(k==='heal'&&G.p){G.p.hp=D.maxHp;G.p.mp=D.maxMp}
     else if(k==='warp'){const n=+prompt('몇 층으로 갈까요? (1~100)');if(n>=1&&n<=100){closePanel();fadeTo(()=>enterFloor(Math.round(n)))}return}
     else if(k==='max'){const n=+prompt('최고 기록을 몇 층으로 할까요? (0~100)',S.maxFloor);if(n>=0&&n<=100)S.maxFloor=Math.round(n)}
-    else if(k==='off'){DEV.on=false;DEV.god=false;DEV.ohk=false;try{localStorage.removeItem('at-dev')}catch(e){}closePanel();toast('개발자 모드를 껐어요');return}
+    else if(k==='off'){setDevForCurrentCharacter(false);DEV.god=false;DEV.ohk=false;recalc();save();closePanel();toast('이 캐릭터의 개발자 모드를 껐어요');return}
     recalc();save()},
   nick(){const n=cleanNick(prompt('새 닉네임 (최대 10글자)',S.nick||''));if(n){S.nick=n;toast(`닉네임: ${n}`)}},
   blinkUp(){if((S.blinkLv||0)>=BLINK_MAX)return;if(!pay(blinkCost()))return;S.blinkLv=(S.blinkLv||0)+1;sfx.buy();toast(`순간이동 Lv.${S.blinkLv} · 쿨타임 -${Math.round(S.blinkLv*3.5)}%`)},
@@ -2306,7 +2317,7 @@ const mkPid=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0
 const cleanNick=n=>String(n||'').replace(/[<>&"'`]/g,'').trim().slice(0,10);
 function ensureId(){if(!S.pid)S.pid=mkPid();if(!S.nick)S.nick='마법사'+(1000+(Math.random()*9000|0))}
 function start(el){
-  if(el){S=newSave(el);const n=cleanNick($('nickIn').value);if(n)S.nick=n}ensureId();initAudio();if(AU.master)AU.master.gain.value=S.mute?0:.8;
+  if(el){S=newSave(el);const n=cleanNick($('nickIn').value);if(n)S.nick=n}ensureId();loadDevForCurrentCharacter();initAudio();if(AU.master)AU.master.gain.value=S.mute?0:.8;
   G.p={x:320,y:150,hp:1,mp:1,face:1,walk:0,ifr:0,cd:{},mcd:0,bcd:0,pcd:0,castT:0,mvx:0,mvy:0,shield:0,shMax:1,shT:0,regen:0};recalc();G.p.hp=D.maxHp;G.p.mp=D.maxMp;
   while(S.quests.length<3)S.quests.push(mkQuest());
   $('scan').classList.toggle('off',!S.scan);$('bScan').classList.toggle('muted',!S.scan);$('bSnd').classList.toggle('muted',S.mute);syncAuto();
@@ -2319,7 +2330,11 @@ function showPick(){
 }
 buildAssets();
 (function boot(){
-  const sv=loadSave();if(sv){S=sv;ensureId();save();$('bCont').hidden=false;$('bCont').textContent=`이어하기 · ${S.nick} Lv.${S.lvl}`}
+  const sv=loadSave();
+  if(sv){
+    S=sv;ensureId();loadDevForCurrentCharacter();save();
+    $('bCont').hidden=false;$('bCont').textContent=`이어하기 · ${S.nick} Lv.${S.lvl}`
+  }
   if(Object.keys(getSlots()).length>=2)$('bChars').hidden=false;
   resize();addEventListener('resize',resize);autoUpdate();
   TOWN=buildTown();G.map=TOWN;G.p={x:320,y:200,face:1};G.zone='town';bindInput();
