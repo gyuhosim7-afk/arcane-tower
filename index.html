@@ -41,7 +41,7 @@ button.muted{opacity:.5}
 #panel{position:absolute;inset:0;background:rgba(2,3,10,.55);display:flex;align-items:center;justify-content:center;pointer-events:auto}
 #panelBox{width:84%;max-height:88%;display:flex;flex-direction:column}
 #panelHead{display:flex;justify-content:space-between;align-items:center;padding:.4em .9em;border-bottom:.12em solid rgba(223,228,255,.35)}
-#panelTitle{font-size:1.35em;color:var(--gold)}
+#panelTitle{font-size:1.35em;color:var(--gold)}#panelWallet{margin-left:auto;margin-right:.6em;display:flex;gap:.7em;font-size:.85em;align-items:center}#panelWallet span{display:flex;align-items:center;gap:.2em;color:#ffe27a}#panelWallet img{width:1.3em;height:1.3em;image-rendering:pixelated}
 #panelBody{padding:.6em 1em .8em;overflow-y:auto;font-size:1em}
 #panelBody p{margin:.15em 0 .5em;color:var(--dim)}
 .say{display:flex;gap:.8em;align-items:flex-start;margin-bottom:.4em}
@@ -115,7 +115,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
       <div id="banner"></div>
       <div id="touch"><div id="joy"><i id="joyK"></i></div><button id="tF">F</button><button id="tB">순간<br>이동</button></div><div id="joy2"><i id="joy2K"></i></div>
     </div>
-    <div id="panel" hidden><div id="panelBox" class="win"><div id="panelHead"><span id="panelTitle"></span><button id="panelX">닫기</button></div><div id="panelBody"></div></div></div>
+    <div id="panel" hidden><div id="panelBox" class="win"><div id="panelHead"><span id="panelTitle"></span><span id="panelWallet"></span><button id="panelX">닫기</button></div><div id="panelBody"></div></div></div>
     <div id="forge" hidden><canvas id="forgeCv" width="160" height="96"></canvas><div id="forgeMsg"></div></div>
     <div id="fade"></div>
     <div id="title">
@@ -2059,7 +2059,7 @@ const ACT={
   reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}else{ui.resetArm=true}}
 };
 function openPanel(n){ui.open=n;ui.sel=null;ui.resetArm=false;IN.down=false;$('panel').hidden=false;refreshPanel()}
-function refreshPanel(){if(!ui.open)return;const P=PANELS[ui.open],b=$('panelBody'),st=b.scrollTop;$('panelTitle').textContent=P.t;b.innerHTML=P.r();b.scrollTop=st}
+function refreshPanel(){if(!ui.open)return;const P=PANELS[ui.open],b=$('panelBody'),st=b.scrollTop;$('panelTitle').textContent=P.t;$('panelWallet').innerHTML=ui.open==='char'&&ui.tab==='inv'?'':[['gold',Math.floor(S.gold)],['ore',S.ore],['ess',S.ess],['core',S.core||0],['prot',S.prot||0]].map(([k,v])=>`<span title="${({gold:'골드',ore:'광석',ess:'정수',core:'마력 코어',prot:'파괴 방지권'})[k]}"><img src="${ICON[k]}" alt="">${v}</span>`).join('');b.innerHTML=P.r();b.scrollTop=st}
 function closePanel(){ui.open=null;$('panel').hidden=true}
 
 /* ---- 대장간 연출: 망치가 세 번 내려치고(깡! 깡! 깡!) 결과가 나온다 ---- */
