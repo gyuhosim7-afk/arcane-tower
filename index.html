@@ -59,7 +59,7 @@ button.muted{opacity:.5}
 img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right:.15em}
 .tabs{display:flex;gap:.35em;margin-bottom:.5em;flex-wrap:wrap}.tabs button.on{background:#3a2a9a;border-color:#fff}
 .gold{color:var(--gold)}.no{color:var(--no)}.dim{color:var(--dim)}.ok{color:var(--ok)}
-.inv{display:grid;grid-template-columns:repeat(8,1fr);gap:.3em}
+.inv{display:grid;grid-template-columns:repeat(8,1fr);gap:.3em}.sec{font-size:.85em;color:#c8b48a;margin:.2em 0 .3em;border-bottom:1px solid #4a3a28}.wallet{display:flex;flex-wrap:wrap;gap:.3em .8em;margin-bottom:.6em;padding:.3em .5em;background:rgba(0,0,0,.25);border:1px solid #4a3a28;border-radius:4px}.wallet .sec{width:100%;margin:0}.wl{display:flex;align-items:center;gap:.3em}.wl img{width:1.4em;height:1.4em;image-rendering:pixelated}.wl span{color:#a8a4b8;font-size:.85em}.wl b{color:#ffe27a}
 .cell{aspect-ratio:1;background:var(--ink);border:.12em solid #39407a;border-radius:.15em;position:relative;cursor:pointer}
 .cell img{width:100%;height:100%;image-rendering:pixelated;display:block}
 .cell u{position:absolute;right:.1em;bottom:0;font-size:.75em;text-decoration:none}
@@ -110,10 +110,10 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
     <div id="hud" hidden>
       <div id="zone"></div>
       <div id="bossName" hidden></div>
-      <div id="menuBtns"><button id="bBag">메뉴</button><button id="bScan">CRT</button><button id="bSnd">소리</button><button id="bAuto">수동</button></div>
+      <div id="menuBtns"><button id="bInv">가방</button><button id="bBag">메뉴</button><button id="bScan">CRT</button><button id="bSnd">소리</button><button id="bAuto">수동</button></div>
       <div id="toasts"></div>
       <div id="banner"></div>
-      <div id="touch"><div id="joy"><i id="joyK"></i></div><button id="tF">F</button><button id="tB">블링크</button></div><div id="joy2"><i id="joy2K"></i></div>
+      <div id="touch"><div id="joy"><i id="joyK"></i></div><button id="tF">F</button><button id="tB">순간<br>이동</button></div><div id="joy2"><i id="joy2K"></i></div>
     </div>
     <div id="panel" hidden><div id="panelBox" class="win"><div id="panelHead"><span id="panelTitle"></span><button id="panelX">닫기</button></div><div id="panelBody"></div></div></div>
     <div id="forge" hidden><canvas id="forgeCv" width="160" height="96"></canvas><div id="forgeMsg"></div></div>
@@ -1758,8 +1758,6 @@ function drawHUD(){
   if(S.pts>0&&(G.time*3|0)%2){ctx.fillStyle='#ffe27a';ctx.fillRect(138,39,3,3)}
   // 미니맵 + 재화
   drawMinimap();
-  const rx=W-6;ctx.drawImage(A.gold,rx-46,62);drawText(String(Math.floor(S.gold)),rx,62,'#ffe27a',1,'r');
-  let x=rx;for(const k of['ore','ess']){const s=String(S[k]);x-=s.length*4+2;drawText(s,x+s.length*4,72,'#ffffff',1,'r');x-=A[k].width+1;ctx.drawImage(A[k],x,72+((9-A[k].height)>>1));x-=4}
   // 기술 바
   const n=D.slots,extra=D.sk?4:3,tw=n*22+8+extra*22,x0=Math.round((W-tw)/2),y0=H-24;
   hudOrn(x0-5,y0-4,tw+8,28);
@@ -1893,16 +1891,18 @@ const PANELS={
       for(const k of beaten){const b=bossOf(k),mk=Object.keys(MYTH).find(x=>MYTH[x].boss===b);h+=`<div class="li"><img src="${ICON['mon_'+b]||ICON.chest}" alt=""><div class="gr"><b>${k}층 · ${MON[b].n}</b>${mk?`<div class="ds">신화: <span style="color:${RAR[5].c}">${MYTH[mk].n}</span> — ${MYTH[mk].fx}</div>`:'<div class="ds">중간 보스 · 강철 상자 2개</div>'}</div><div class="bt">${btn('도전','enter:'+k,true,'go')}</div></div>`}}
     return h}},
   char:{t:'메뉴',r(){
-    let h=`<div class="tabs">${btn('능력치','tab:stat',true,ui.tab==='stat'?'on':'')}${btn('장비·가방','tab:inv',true,ui.tab==='inv'?'on':'')}${btn('마법','tab:grim',true,ui.tab==='grim'?'on':'')}</div>`;
+    let h=`<div class="tabs">${btn('능력치','tab:stat',true,ui.tab==='stat'?'on':'')}${btn('가방','tab:inv',true,ui.tab==='inv'?'on':'')}${btn('마법','tab:grim',true,ui.tab==='grim'?'on':'')}</div>`;
     if(ui.tab==='stat'){
       const row=(k,n,d,v)=>`<div class="li"><div class="gr"><b>${n}</b> <span class="gold">${v}</span><div class="ds">${d}</div></div><div class="bt">${btn('+1','stat:'+k,S.pts>0)}</div></div>`;
       h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT','마법 피해 +4%, 마나 +5',S.st.int)+row('vit','체력 VIT','생명력 +12, 재생 증가',S.st.vit)+row('crit','치명 CRIT','치명타율 +1.5%, 치명 피해 증가',S.st.crit)+row('wis','정신 WIS','쿨타임 -1%, 마나 재생 증가',S.st.wis);
       h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 쿨타임 감소 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
       h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'처음부터 다시 (저장 삭제)','reset')}</div>`}
     else if(ui.tab==='inv'){
-      h+='<div class="two"><div><div class="eqs">';
+      const cur=[['gold','골드',Math.floor(S.gold)],['ore','광석',S.ore],['ess','정수',S.ess],['core','마력 코어',S.core||0],['prot','파괴 방지권',S.prot||0],['hpPot','체력 물약',S.hpPot],['mpPot','마나 물약',S.mpPot]];
+      h+='<div class="wallet"><div class="sec">재화</div>'+cur.map(([k,n,v])=>`<div class="wl"><img src="${ICON[k]||ICON.hpPot}" alt=""><span>${n}</span><b>${v}</b></div>`).join('')+'</div>';
+      h+='<div class="two"><div><div class="sec">장착 장비</div><div class="eqs">';
       for(const k of['staff','robe','ring']){const it=S.eq[k];h+=it?`<div class="cell ${ui.sel===it.id?'sel':''}" style="border-color:${RAR[it.r].c}" data-a="sel:${it.id}"><img src="${itemIcon(it)}" alt="">${it.up?`<u>+${it.up}</u>`:''}</div>`:`<div class="cell" style="opacity:.35"><img src="${ICON[k]}" alt=""></div>`}
-      h+=`</div><div class="inv">`;
+      h+=`</div><div class="sec">가방 ${S.inv.length}/32</div><div class="inv">`;
       for(const it of S.inv)h+=`<div class="cell ${ui.sel===it.id?'sel':''}" style="border-color:${RAR[it.r].c}" data-a="sel:${it.id}"><img src="${itemIcon(it)}" alt="">${it.up?`<u>+${it.up}</u>`:''}</div>`;
       for(let i=S.inv.length;i<32;i++)h+='<div class="cell" style="cursor:default"></div>';
       h+=`</div><div style="margin-top:.4em">${btn('일반·고급 모두 판매','sellJunk',S.inv.some(i=>i.r<2))}</div></div><div>`;
@@ -2009,10 +2009,10 @@ function bindInput(){
   cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===IN.aid){let dx=t.clientX-ao.x,dy=t.clientY-ao.y;const d=Math.hypot(dx,dy),mx=40;if(d>mx){dx=dx/d*mx;dy=dy/d*mx}$('joy2K').style.transform=`translate(${dx}px,${dy}px)`;if(d>8){G.p.aimA=Math.atan2(dy,dx);IN.aiming=true;IN.tfire=d>14}}else if(t.identifier===IN.jid){let dx=t.clientX-jo.x,dy=t.clientY-jo.y;const d=Math.hypot(dx,dy),mx=40;if(d>mx){dx=dx/d*mx;dy=dy/d*mx}IN.jx=dx/mx;IN.jy=dy/mx;jk.style.transform=`translate(${dx}px,${dy}px)`}},{passive:false});
   const tend=e=>{for(const t of e.changedTouches)if(t.identifier===IN.aid){IN.aid=null;IN.aiming=false;IN.tfire=false;$('joy2').style.display='none'}else if(t.identifier===IN.jid){IN.jid=null;IN.jx=IN.jy=0;joy.style.display='none'}};
   cv.addEventListener('touchend',tend);cv.addEventListener('touchcancel',tend);
-  $('tF').onclick=tryInteract;$('tB').onclick=blink;
+  for(const[id,fn]of[['tF',tryInteract],['tB',blink]]){const el=$(id);el.onclick=fn;el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn()},{passive:false})}
   $('panelBody').addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const i=t.dataset.a.indexOf(':'),a=i<0?t.dataset.a:t.dataset.a.slice(0,i),arg=i<0?undefined:t.dataset.a.slice(i+1);if(ACT[a]){ACT[a](arg);refreshPanel();save()}});
   $('panelX').onclick=closePanel;$('panel').addEventListener('mousedown',e=>{if(e.target===$('panel'))closePanel()});
-  $('bBag').onclick=()=>{ui.tab='stat';openPanel('char')};$('bScan').onclick=toggleScan;$('bSnd').onclick=toggleMute;$('bAuto').onclick=toggleAuto;
+  $('bBag').onclick=()=>{ui.tab='stat';openPanel('char')};$('bInv').onclick=()=>{ui.tab='inv';openPanel('char')};$('bScan').onclick=toggleScan;$('bSnd').onclick=toggleMute;$('bAuto').onclick=toggleAuto;
 }
 function toggleAuto(){S.auto=!S.auto;syncAuto();toast(S.auto?'자동 전투: 가까운 적에게 기술을 알아서 씁니다':'수동 전투: 직접 조준해서 씁니다');save()}
 function syncAuto(){const b=$('bAuto');b.textContent=S.auto?'자동':'수동';b.classList.toggle('on',!!S.auto)}
