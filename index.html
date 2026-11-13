@@ -78,8 +78,8 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
 #title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6em;pointer-events:auto;background:radial-gradient(ellipse at 50% 42%,rgba(4,5,12,.15),rgba(4,5,12,.88) 72%)}
 #title h1{font-size:4.6em;margin:0;color:#fff;letter-spacing:.04em;text-shadow:.05em .05em 0 #4a2fa0,.1em .1em 0 #04050c}
 #title .sub{font-size:1.15em;margin:0;color:var(--gold)}
-#title .menu{display:flex;flex-direction:column;gap:.1em;padding:.5em 1.6em .5em 1em;margin-top:.4em}
-#title .menu button{font-size:1.3em;background:none;border:0;text-align:left;padding:.1em .3em}
+#title .menu{display:flex;flex-direction:column;gap:1.4em;padding:.5em 1.6em .5em 1em;margin-top:.4em}
+#title .menu button{font-size:1.3em;background:none;border:0;text-align:left;padding:.25em .3em}#title .menu #bCont{font-size:1.5em;color:var(--gold)}#title .menu #bNew{font-size:1em;opacity:.8;border-top:1px solid rgba(223,228,255,.25);padding-top:.6em}#title .menu #bNew.warn{color:#ff6b6b;opacity:1}
 #title .menu button::before{content:'▶ ';visibility:hidden;color:var(--gold)}
 #title .menu button:hover::before,#title .menu button:focus-visible::before{visibility:visible}
 #title .keys{font-size:.8em;color:var(--dim);text-align:center;line-height:1.5;margin-top:.4em}
@@ -2245,7 +2245,7 @@ buildAssets();
   const sv=loadSave();if(sv){S=sv;$('bCont').hidden=false}
   resize();addEventListener('resize',resize);autoUpdate();
   TOWN=buildTown();G.map=TOWN;G.p={x:320,y:200,face:1};G.zone='town';bindInput();
-  $('bNew').onclick=showPick;$('bCont').onclick=()=>start();
+  let newArm=0;$('bNew').onclick=()=>{const b=$('bNew');if(!loadSave()||newArm){showPick();return}newArm=1;b.classList.add('warn');b.textContent='정말 새로 시작? 저장이 지워져요 (한 번 더 누르기)';setTimeout(()=>{newArm=0;b.classList.remove('warn');b.textContent='새로 시작'},3500)};$('bCont').onclick=()=>start();
   $('pickGrid').addEventListener('click',e=>{const b=e.target.closest('.pk');if(b)start(b.dataset.el)});
   setInterval(()=>{if(G.started)save()},20000);
   requestAnimationFrame(frame);
