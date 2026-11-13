@@ -1072,7 +1072,7 @@ function tlLine(x,y,a,len,w,delay,dmg,col){const ex=x+Math.cos(a)*len,ey=y+Math.
 /* ============================ COMBAT ============================ */
 function nearestEnemy(x,y,maxD=1e9,skip){let b=null,bd=maxD;for(const e of G.en){if(e.dead||(skip&&skip.has(e)))continue;const d=Math.hypot(e.x-x,e.y-e.r-y);if(d<bd){bd=d;b=e}}return b}
 let AUTO_T=null;
-function aimPoint(){const p=G.p;if(AUTO_T)return AUTO_T;if(IN.touch){const a=p.aimA??(p.face<0?Math.PI:0);return{x:p.x+Math.cos(a)*90,y:p.y-8+Math.sin(a)*90}}return{x:IN.mx+G.cam.x,y:IN.my+G.cam.y}}
+function aimPoint(){const p=G.p;if(AUTO_T)return AUTO_T;if(S.auto&&G.zone==='tower'){const e=nearestEnemy(p.x,p.y,300);if(e)return{x:e.x,y:e.y-e.r}}if(IN.touch){const a=p.aimA??(p.face<0?Math.PI:0);return{x:p.x+Math.cos(a)*90,y:p.y-8+Math.sin(a)*90}}return{x:IN.mx+G.cam.x,y:IN.my+G.cam.y}}
 function status(e,st,t,dmg){
   if(st==='burn'){e.burn=Math.max(e.burn,3);e.burnD=Math.max(e.burnD||0,dmg*.18)}
   else if(st==='poison'){e.poi=Math.max(e.poi,4.5);e.poiD=Math.max(e.poiD||0,dmg*.5)}
