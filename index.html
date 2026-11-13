@@ -866,31 +866,31 @@ const craftCost=sp=>({gold:Math.round(50*Math.pow(sp.c,2.4)),ess:Math.round(2*Ma
 const enhCost=sp=>{const lv=S.grim[sp.id]||1;return{gold:Math.round(40*Math.pow(lv,1.6)*(1+sp.c*.5)),ess:2*lv+sp.c*2}};
 /* ---- 몬스터. ai: hop fly chase dash shoot slam bomb turret blink brute ---- */
 const MON={
-  slime:{n:'슬라임',hp:22,dmg:6,spd:34,xp:5,r:6,ai:'hop',weak:['fire','thunder'],res:['holy']},
-  pslime:{n:'독 슬라임',hp:30,dmg:8,spd:38,xp:7,r:6,ai:'hop',spr:'pslime',weak:['fire','ice'],res:['dark']},
-  bat:{n:'동굴 박쥐',hp:14,dmg:5,spd:60,xp:5,r:5,ai:'fly',weak:['wind','dark'],res:['ice']},
-  rat:{n:'시궁쥐',hp:16,dmg:5,spd:70,xp:4,r:5,ai:'chase',weak:['fire','wind'],res:['earth']},
-  skel:{n:'해골 병사',hp:40,dmg:9,spd:42,xp:9,r:6,ore:.3,ai:'chase',weak:['holy','earth'],res:['fire']},
-  spider:{n:'독거미',hp:30,dmg:7,spd:48,xp:8,r:6,ai:'shoot',shot:{col:'#eaeaf0',spd:110,n:1,cd:2.6,range:150,slow:1},weak:['fire','wind'],res:['dark']},
+  slime:{n:'슬라임',hp:28,dmg:6,spd:34,xp:5,r:6,ai:'hop',weak:['fire','thunder'],res:['holy']},
+  pslime:{n:'독 슬라임',hp:36,dmg:8,spd:38,xp:7,r:6,ai:'hop',spr:'pslime',weak:['fire','ice'],res:['dark']},
+  bat:{n:'동굴 박쥐',hp:20,dmg:5,spd:60,xp:5,r:5,ai:'fly',weak:['wind','dark'],res:['ice']},
+  rat:{n:'시궁쥐',hp:22,dmg:5,spd:70,xp:4,r:5,ai:'chase',weak:['fire','wind'],res:['earth']},
+  skel:{n:'해골 병사',hp:48,dmg:9,spd:42,xp:9,r:6,ore:.3,ai:'chase',weak:['holy','earth'],res:['fire']},
+  spider:{n:'독거미',hp:38,dmg:7,spd:48,xp:8,r:6,ai:'shoot',shot:{col:'#eaeaf0',spd:110,n:1,cd:2.6,range:150,slow:1},weak:['fire','wind'],res:['dark']},
   mushroom:{n:'포자 버섯',hp:60,dmg:6,spd:0,xp:9,r:6,ai:'turret',weak:['ice','wind'],res:['water']},
-  golem:{n:'골렘',hp:150,dmg:18,spd:22,xp:30,r:9,ore:.9,ai:'slam',slamR:36,weak:['water','ice'],res:['earth']},
+  golem:{n:'골렘',hp:100,dmg:18,spd:30,xp:30,r:9,ore:.9,ai:'slam',slamR:36,weak:['water','ice'],res:['earth']},
   gargoyle:{n:'가고일',hp:90,dmg:14,spd:40,xp:18,r:7,ore:.5,ai:'dash',dash:240,weak:['fire','thunder'],res:['wind']},
-  frostwolf:{n:'서리 늑대',hp:44,dmg:11,spd:72,xp:11,r:6,ai:'dash',dash:230,spr:'frostwolf',weak:['fire','earth'],res:['ice']},
-  iwisp:{n:'얼음 위습',hp:34,dmg:9,spd:36,xp:12,r:6,ai:'shoot',spr:'iwisp',shot:{col:'#bfe9ff',spd:130,n:3,spread:.2,cd:2.4,range:180,slow:1},weak:['fire','thunder'],res:['ice']},
-  troll:{n:'서리 트롤',hp:220,dmg:22,spd:28,xp:40,r:10,ai:'slam',slamR:42,weak:['fire','holy'],res:['water']},
+  frostwolf:{n:'서리 늑대',hp:54,dmg:11,spd:72,xp:11,r:6,ai:'dash',dash:230,spr:'frostwolf',weak:['fire','earth'],res:['ice']},
+  iwisp:{n:'얼음 위습',hp:42,dmg:9,spd:36,xp:12,r:6,ai:'shoot',spr:'iwisp',shot:{col:'#bfe9ff',spd:130,n:3,spread:.2,cd:2.4,range:180,slow:1},weak:['fire','thunder'],res:['ice']},
+  troll:{n:'서리 트롤',hp:150,dmg:22,spd:38,xp:40,r:10,ai:'slam',slamR:42,weak:['fire','holy'],res:['water']},
   mummy:{n:'미라',hp:120,dmg:14,spd:30,xp:20,r:7,ai:'chase',weak:['fire','earth'],res:['water']},
-  scarab:{n:'스카라베',hp:18,dmg:6,spd:84,xp:5,r:4,ai:'chase',weak:['ice','wind'],res:['earth']},
-  wraith:{n:'원령',hp:60,dmg:14,spd:40,xp:18,r:6,ai:'blink',spr:'wraith',weak:['holy','thunder'],res:['dark']},
-  imp:{n:'임프',hp:40,dmg:10,spd:58,xp:13,r:5,ai:'shoot',shot:{col:'#ff7a2a',spd:140,n:1,cd:1.8,range:170},weak:['dark','ice'],res:['fire']},
+  scarab:{n:'스카라베',hp:26,dmg:6,spd:84,xp:5,r:4,ai:'chase',weak:['ice','wind'],res:['earth']},
+  wraith:{n:'원령',hp:70,dmg:14,spd:40,xp:18,r:6,ai:'blink',spr:'wraith',weak:['holy','thunder'],res:['dark']},
+  imp:{n:'임프',hp:50,dmg:10,spd:58,xp:13,r:5,ai:'shoot',shot:{col:'#ff7a2a',spd:140,n:1,cd:1.8,range:170},weak:['dark','ice'],res:['fire']},
   hound:{n:'지옥견',hp:70,dmg:15,spd:80,xp:16,r:6,ai:'dash',dash:260,spr:'hound',weak:['water','dark'],res:['fire']},
-  fwisp:{n:'불꽃 정령',hp:36,dmg:26,spd:70,xp:14,r:6,ai:'bomb',spr:'fwisp',weak:['water','wind'],res:['fire']},
+  fwisp:{n:'불꽃 정령',hp:42,dmg:26,spd:70,xp:14,r:6,ai:'bomb',spr:'fwisp',weak:['water','wind'],res:['fire']},
   lizard:{n:'화염 도롱뇽',hp:80,dmg:13,spd:46,xp:16,r:7,ai:'brute',shot:{col:'#ff9a3c',spd:120,n:3,spread:.25,cd:3,range:140},weak:['ice','water'],res:['fire']},
-  harpy:{n:'하피',hp:52,dmg:12,spd:66,xp:15,r:6,ai:'dash',dash:280,fly:1,weak:['thunder','earth'],res:['wind']},
-  swisp:{n:'폭풍 정령',hp:46,dmg:12,spd:40,xp:16,r:6,ai:'shoot',spr:'swisp',shot:{col:'#fff38a',spd:260,n:1,cd:2,range:200},weak:['earth','dark'],res:['thunder']},
-  cultist:{n:'암흑 교단원',hp:46,dmg:10,spd:46,xp:12,r:6,ai:'dash',dash:200,weak:['holy','ice'],res:['dark']},
-  darkmage:{n:'흑마법사',hp:34,dmg:10,spd:34,xp:14,r:6,ai:'shoot',shot:{col:'#ff5a3a',spd:100,n:1,cd:2.4,range:200},weak:['water','dark'],res:['thunder']},
-  knight:{n:'데스나이트',hp:260,dmg:24,spd:34,xp:45,r:8,ai:'slam',slamR:34,ore:.6,weak:['thunder','earth'],res:['ice']},
-  mgolem:{n:'마그마 골렘',hp:280,dmg:24,spd:24,xp:48,r:10,ai:'slam',slamR:44,spr:'mgolem',ore:1,weak:['water','ice'],res:['fire']},
+  harpy:{n:'하피',hp:62,dmg:12,spd:66,xp:15,r:6,ai:'dash',dash:280,fly:1,weak:['thunder','earth'],res:['wind']},
+  swisp:{n:'폭풍 정령',hp:54,dmg:12,spd:40,xp:16,r:6,ai:'shoot',spr:'swisp',shot:{col:'#fff38a',spd:260,n:1,cd:2,range:200},weak:['earth','dark'],res:['thunder']},
+  cultist:{n:'암흑 교단원',hp:56,dmg:10,spd:46,xp:12,r:6,ai:'dash',dash:200,weak:['holy','ice'],res:['dark']},
+  darkmage:{n:'흑마법사',hp:44,dmg:10,spd:34,xp:14,r:6,ai:'shoot',shot:{col:'#ff5a3a',spd:100,n:1,cd:2.4,range:200},weak:['water','dark'],res:['thunder']},
+  knight:{n:'데스나이트',hp:185,dmg:24,spd:46,xp:45,r:8,ai:'slam',slamR:34,ore:.6,weak:['thunder','earth'],res:['ice']},
+  mgolem:{n:'마그마 골렘',hp:190,dmg:24,spd:32,xp:48,r:10,ai:'slam',slamR:44,spr:'mgolem',ore:1,weak:['water','ice'],res:['fire']},
   demon:{n:'하급 마족',hp:180,dmg:20,spd:44,xp:40,r:8,ai:'brute',shot:{col:'#ff3a3a',spd:120,n:5,spread:.22,cd:3.2,range:160},weak:['holy','wind'],res:['fire']},
   kingslime:{n:'킹 슬라임',hp:560,dmg:14,spd:0,xp:160,r:17,boss:1,sc:3,weak:['fire','thunder'],res:['water']},
   arachne:{n:'거미 여왕 아라크네',hp:700,dmg:15,spd:40,xp:240,r:14,boss:1,sc:2.4,spr:'arachne',pat:['fan','web','summon','charge','mines'],sum:'spider',bc:'#c06cff',weak:['fire','wind'],res:['ice']},
@@ -1494,7 +1494,8 @@ function updEnemy(e,dt){
       else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);e.cd-=dt;if(d<110&&e.cd<=0&&fire){e.st='wind';e.stT=.42;e.dx=ux;e.dy=uy;tone('square',300,600,.1,.03)}}break}
     case'shoot':case'brute':{const keep=d0.ai==='brute';const m=keep?1:(d>130?1:d<80?-1:0),sd=Math.sin(e.t*.7)>0?1:-1;chase(e,(ux*m-uy*sd*(keep?0:.6))*sp*dt,(uy*m+ux*sd*(keep?0:.6))*sp*dt,e.r-1);e.cd-=dt;
       if(e.cd<=0&&d<d0.shot.range&&fire){e.cd=d0.shot.cd*rnd(.85,1.15)*(1-Math.min(.35,G.floor*.0045));enemyShoot(e,p,d0.shot,e.elite)}break}
-    case'slam':{e.cd-=dt;if(e.atk>0){e.atk-=dt}else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);if(d<d0.slamR+6&&e.cd<=0&&fire){e.cd=2.6;e.atk=.9;telegraph(e.x,e.y-2,d0.slamR*(e.elite?1.3:1),.7,e.dmg,e.cols[1]||'#ff9a3c')}}break}
+    case'slam':{e.cd-=dt;e.cd2=(e.cd2===undefined?rnd(1,2.5):e.cd2)-dt;if(e.atk>0){e.atk-=dt}else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);if(d<d0.slamR+6&&e.cd<=0&&fire){e.cd=2.2;e.atk=.8;telegraph(e.x,e.y-2,d0.slamR*(e.elite?1.3:1),.65,e.dmg,e.cols[1]||'#ff9a3c')}
+      else if(d>=d0.slamR+6&&d<220&&e.cd2<=0&&fire){e.cd2=rnd(2.6,3.4)*(1-Math.min(.3,G.floor*.004));e.atk=.6;const tx=p.x,ty=p.y;shake(2);burst(e.x,e.y-4,10,['#8b93a7','#d8dee9'],60,.4,{add:false});telegraph(tx,ty,22*(e.elite?1.3:1),.85,e.dmg*.8,e.cols[1]||'#ff9a3c');for(let i=0;i<6;i++)later(i*.1,()=>part(e.x+(tx-e.x)*i/6,e.y-10+(ty-e.y)*i/6-Math.sin(i/6*Math.PI)*30,0,0,.3,'#8b93a7',3,{add:false}))}}break}
     case'bomb':{if(e.st==='fuse'){e.stT-=dt;if(e.stT<=0){const R=40*(e.elite?1.4:1);if(Math.hypot(p.x-e.x,p.y-e.y)<R+4)hurtPlayer(e.dmg);boom(e.x,e.y-4,R*.8,['#ffffff','#ffe27a','#ff9a3c','#c0392b'],false);sfx.boom();shake(4);e.noDrop=1;e.hp=0;kill(e)}}
       else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);if(d<26){e.st='fuse';e.stT=.65;tone('square',600,1400,.6,.04);const x=e.x,y=e.y;addFx({layer:'g',t:0,upd(dt2){this.t+=dt2;return this.t<.65&&!e.dead},draw(){pxRing(ctx,e.x,e.y,40,25,'#ff5a1a');ctx.globalAlpha=.2;pxEll(ctx,e.x,e.y,40*this.t/.65,25*this.t/.65,'#ff9a3c');ctx.globalAlpha=1}})}}break}
     case'turret':{e.cd-=dt;if(e.cd<=0&&d<170&&fire){e.cd=3.4;e.atk=.4;const tx=clamp(p.x+rnd(-14,14),30,G.map.pw-30),ty=clamp(p.y+rnd(-8,8),56,G.map.ph-30);for(let i=0;i<10;i++)part(e.x,e.y-14,(tx-e.x)*rnd(.8,1.2),(ty-e.y)*rnd(.8,1.2)-20,.9,pick(['#7ae05a','#8a3ac8']),2,{pf:1,drag:1});later(.5,()=>ezone(tx,ty,30*(e.elite?1.4:1),3,e.dmg*.6,'#3a8a2a','#7ae05a'));tone('sine',200,120,.3,.06)}if(e.atk>0)e.atk-=dt;break}
