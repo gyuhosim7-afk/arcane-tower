@@ -805,7 +805,7 @@ const enhDrop=up=>up>=6;
 const destroyRate=up=>up>=10?Math.min(.6,.3+(up-10)*.06):0;
 const protCost=()=>({gold:3000+S.maxFloor*200,ess:30});
 const reinfCost=it=>({gold:Math.round(30*Math.pow(it.up+1,1.7)*(1+it.r*.6)*(1+it.il/20)),ore:2+it.up*2});
-/* ---- 신화: 보스마다 하나, 황금 상자에서 0.5% ---- */
+/* ---- 신화: 보스마다 하나, 보스 보물상자에서 1% ---- */
 const MYTH_RATE=.01;
 
 const MYTH={
@@ -1740,7 +1740,7 @@ function updWave(dt){
     if(f<100)m.inter.push({x:m.pw/2,y:66,r:24,label:`${f+1}층으로`,pr:'[F] 올라가기',portal:['#6fd3ff','#3b6cf0','#ffffff'],act:()=>{sfx.portal();fadeTo(()=>enterFloor(f+1))}});
     m.inter.push({x:m.pw/2,y:m.ph-44,r:24,label:'마을 귀환',pr:'[F] 돌아가기',portal:['#5ed36b','#b8f27a','#ffffff'],act:()=>{sfx.portal();fadeTo(enterTown)}});
     const cx=m.pw/2+70,cy=m.ph/2+10;
-    if(f%10===0)spawnChest('gold',m.pw/2,m.ph/2);else if(f%10===5){spawnChest('iron',m.pw/2-30,m.ph/2);spawnChest('iron',m.pw/2+30,m.ph/2)}else if(w.hadElite)spawnChest('iron',cx,cy);else{const r=Math.random();if(r<.06)spawnChest('iron',cx,cy);else if(r<.36)spawnChest('wood',cx,cy)}
+    if(f%10===0||f%10===5)spawnChest('gold',m.pw/2,m.ph/2);else if(w.hadElite)spawnChest('iron',cx,cy);else{const r=Math.random();if(r<.06)spawnChest('iron',cx,cy);else if(r<.36)spawnChest('wood',cx,cy)}
     banner(f===100?'심연의 탑 정복!':`${f}층 클리어`,f===100?'마왕 바알을 쓰러뜨렸습니다':`보너스 골드 +${bonus}`);
     setLabels();for(const k of G.picks)k.vac=true;if(w.boss)setMusic('battle');save();
   }
