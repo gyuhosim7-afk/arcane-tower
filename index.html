@@ -1426,7 +1426,7 @@ function blink(){
   for(let i=0;i<15;i++){if(boxSol(p.x+dx*4,p.y-3+dy*4,4))break;p.x+=dx*4;p.y+=dy*4}
   for(let i=0;i<8;i++){const k=i/8;part(sx+(p.x-sx)*k,sy+(p.y-sy)*k-12,0,0,.3,C[1],2)}
   if(hasM('stormFeather')){boltFx(sx,sy-12,p.x,p.y-12,.3);for(const e of G.en)if(!e.dead&&segDist(e.x,e.y-e.r,sx,sy-10,p.x,p.y-10)<16+e.r)hurt(e,D.pow*4,{el:'thunder',st:'stun',stT:.4,proc:1});sfx.zap()}
-  burst(p.x,p.y-12,16,C,60,.4);flashFx(p.x,p.y-12,8,C[1]);p.bcd=2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1);p.ifr=Math.max(p.ifr,.3);if(hasM('shadowStaff'))p.shadowT=G.time+3;sfx.blink();
+  burst(p.x,p.y-12,16,C,60,.4);flashFx(p.x,p.y-12,8,C[1]);p.bcd=blinkCD();p.ifr=Math.max(p.ifr,.3);if(hasM('shadowStaff'))p.shadowT=G.time+3;sfx.blink();
 }
 function usePot(k){const p=G.p;if(G.dead||p.pcd>0)return;if(k==='hp'){if(S.hpPot<1||p.hp>=D.maxHp)return sfx.err();S.hpPot--;const v=Math.round(D.maxHp*.45*healMul());p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.8,str:'+'+v,col:'#8ef0a0',sc:1});burst(p.x,p.y-10,14,['#5ed36b','#b8f27a'],50,.6)}
   else{if(S.mpPot<1||p.mp>=D.maxMp)return sfx.err();S.mpPot--;const v=Math.round(D.maxMp*.5);p.mp=Math.min(D.maxMp,p.mp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.8,str:'+'+v,col:'#8ecbff',sc:1});burst(p.x,p.y-10,14,['#6fd3ff','#3b6cf0'],50,.6)}
@@ -1947,7 +1947,7 @@ function drawHUD(){
   hudOrn(x0-5,y0-4,tw+8,28);
   for(let i=0;i<n;i++){const id=S.slots[i],sp=id&&SP[id];if(sp){const k=(p.cd[id]||0)/(sp.cd*(1-D.cdr));hudSlot(x0+i*22,y0,A.sp[id],'s:'+id,k,p.mp<spellMp(sp),String(i+1),undefined,EL[sp.el].c[2])}else hudSlot(x0+i*22,y0,null,null,0,false,String(i+1))}
   const ux=x0+n*22+8;ctx.fillStyle='#6a5230';ctx.fillRect(ux-5,y0,1,20);
-  hudSlot(ux,y0,A.hpPot,'p:hp',p.pcd/3,S.hpPot<1,'Q',S.hpPot,'#c04848');hudSlot(ux+22,y0,A.mpPot,'p:mp',p.pcd/3,S.mpPot<1,'E',S.mpPot,'#3a6ad0');hudSlot(ux+44,y0,A.blink,'b',p.bcd/(2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)),false,'SPACE',undefined,'#7fd2ff');
+  hudSlot(ux,y0,A.hpPot,'p:hp',p.pcd/3,S.hpPot<1,'Q',S.hpPot,'#c04848');hudSlot(ux+22,y0,A.mpPot,'p:mp',p.pcd/3,S.mpPot<1,'E',S.mpPot,'#3a6ad0');hudSlot(ux+44,y0,A.blink,'b',p.bcd/(blinkCD()),false,'SPACE',undefined,'#7fd2ff');
   if(D.sk){const s=MYTH_SK[D.sk];hudSlot(ux+66,y0,A.m_staff,'m',(p.cd.myth||0)/(s.cd*(1-D.cdr*.5)),p.mp<s.mp,'R',undefined,'#ff4a6a')}
   const boss=G.en.find(e=>e.boss);if(boss){hudOrn(W/2-94,20,188,11);hudBar(W/2-90,23,180,5,boss.hp/boss.max,'#c04cff','#f0a8ff','#5a1a8a')}
 }
@@ -2015,11 +2015,16 @@ function spellRow(sp,mode){
   let cost='';if(mode==='shop'&&!lv&&circleOk)cost=`<br>제작: ${costHTML(craftCost(sp))}`;else if(lv&&lv<10)cost=`<br>강화 → Lv.${lv+1}: ${costHTML(enhCost(sp))}`;
   return`<div class="li ${!circleOk&&!lv?'lock':''}"><img src="${ICON['sp_'+sp.id]}" alt=""><div class="gr"><b>${sp.n}</b> ${elTag(sp.el)} ${lv?`<span class="gold">Lv.${lv}</span>`:circleOk?'':`<span class="no">${sp.c}서클 필요</span>`}<div class="ds">${sp.d} · ${KIND_N[sp.k]} · 마나 ${spellMp(sp)} · 쿨 ${sp.cd}초${cost}</div></div><div class="bt">${b}</div></div>`;
 }
+/* 순간이동 강화: 레벨마다 쿨타임 -3.5%, Lv.10에서 -35% */
+const BLINK_MAX=10;
+const blinkCD=()=>2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)*(1-.035*(S.blinkLv||0));
+const blinkCost=()=>{const lv=(S.blinkLv||0)+1;return{gold:Math.round(150*Math.pow(lv,1.7)),ess:4*lv}};
+function blinkRow(){const lv=S.blinkLv||0;return `<div class="li"><img src="${ICON.blink}" alt=""><div class="gr"><b>순간이동</b> <span class="gold">Lv.${lv}</span><div class="ds">이동하는 방향으로 짧게 순간이동, 0.3초 무적 · 쿨타임 ${blinkCD().toFixed(2)}초 (강화로 -${Math.round(lv*3.5)}%, 최대 -35%)${lv<BLINK_MAX?`<br>강화 → Lv.${lv+1}: ${costHTML(blinkCost())}`:''}</div></div><div class="bt">${lv<BLINK_MAX?btn('강화','blinkUp',can(blinkCost())):'<span class="gold">최대</span>'}</div></div>`}
 function grimList(mode){
   const els=S.circle>=9?['none'].concat(ELS):['none'].concat(S.aff);
   let h=`<div class="slots">`;for(let i=0;i<D.slots;i++){const id=S.slots[i];h+=`<div>${id?`<img src="${ICON['sp_'+id]}" alt="">`:''}<b>${i+1}</b></div>`}h+=`</div>`;
   h+=`<div class="tabs">${btn('전체','gf:all',true,ui.gf==='all'?'on':'')}${els.map(e=>btn(`${ic('el_'+e)}${EL[e].n}`,'gf:'+e,true,ui.gf===e?'on':'')).join('')}</div>`;
-  let any=false;
+  h+=blinkRow();let any=false;
   for(let c=1;c<=9;c++){const list=SPL.filter(sp=>sp.c===c&&els.includes(sp.el)&&(ui.gf==='all'||sp.el===ui.gf)&&(mode==='shop'||S.grim[sp.id]));if(!list.length)continue;any=true;
     h+=`<div class="hd">${c}서클 · ${CT[c]}<span>${S.circle>=c?'':'잠김'}</span></div>`+list.map(sp=>spellRow(sp,mode)).join('')}
   if(!any)h+='<p>아직 배운 마법이 없습니다. 연금술사 루나에게서 마법서를 만드세요.</p>';
@@ -2109,6 +2114,7 @@ const ACT={
   buyProt(){if(!pay(protCost()))return;S.prot++;sfx.buy();toast('파괴 방지권을 샀습니다')},
   aff(el){if(!S.affPend||S.aff.includes(el))return;S.aff.push(el);S.affPend--;sfx.circle();toast(`${EL[el].n} 속성이 깨어났습니다`);const s0=START[el];if(!S.grim[s0]){S.grim[s0]=1;toast(`마법서 ${SP[s0].n}을(를) 받았습니다`)}},
   craft(id){const sp=SP[id];if(!canUse(sp))return sfx.err();if(S.circle<sp.c){toast(`${sp.c}서클이 필요합니다`);return sfx.err()}if(!pay(craftCost(sp)))return;S.grim[id]=1;sfx.buy();toast(`마법서 제작: ${sp.n}`);const i=S.slots.slice(0,D.slots).indexOf(null);if(i>=0)S.slots[i]=id},
+  blinkUp(){if((S.blinkLv||0)>=BLINK_MAX)return;if(!pay(blinkCost()))return;S.blinkLv=(S.blinkLv||0)+1;sfx.buy();toast(`순간이동 Lv.${S.blinkLv} · 쿨타임 -${Math.round(S.blinkLv*3.5)}%`)},
   enh(id){const sp=SP[id];if((S.grim[id]||0)>=10)return;if(!pay(enhCost(sp)))return;S.grim[id]++;sfx.buy();toast(`${sp.n} Lv.${S.grim[id]}`)},
   slot(id){const i=S.slots.indexOf(id);if(i>=0&&i<D.slots)S.slots[i]=null;else{if(i>=0)S.slots[i]=null;const j=S.slots.slice(0,D.slots).indexOf(null);if(j<0){toast('빈 슬롯이 없습니다. 다른 마법을 먼저 해제하세요');return sfx.err()}S.slots[j]=id}sfx.ui()},
   ltab(t){ui.lunaTab=t;sfx.ui()},tab(t){ui.tab=t;sfx.ui()},gf(t){ui.gf=t;sfx.ui()},
