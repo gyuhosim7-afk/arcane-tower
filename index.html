@@ -371,7 +371,7 @@ const START={fire:'fire',water:'aqua',ice:'ice',wind:'wind',earth:'rock',thunder
 // [id, 이름, 속성, 서클, 종류, 마나, 쿨, 배율, 옵션, 설명]
 const SPELL_DATA=[
   ['arrow','매직 애로우','none',1,'bolt',0,.3,1.0,{spd:300,kb:40},'마나 덩어리를 쏘는 기본 공격. 좌클릭으로 쓴다.'],
-  ['shield','쉴드','none',2,'shield',18,14,2.5,{dur:8},'마나의 막이 피해를 흡수한다.'],
+  ['shield','쉴드','none',2,'shield',18,20,0.22,{dur:5},'마나의 막이 5초간 받는 피해의 절반을 대신 받는다. (최대 생명력 22%까지)'],
   ['meteorS','메테오 스트라이크','none',9,'meteor',150,45,75.8,{R:100},'우주에서 거대한 운석을 떨어뜨린다.'],
   ['punish','엘리멘탈 퍼니쉬먼트','none',9,'ult',200,60,70.05,{},'여섯 원소가 모든 적을 심판한다.'],
   ['fire','파이어','fire',1,'cone',8,1.6,0.89,{range:56,arc:.5,st:'burn'},'손끝에서 불꽃을 뿜어 화상을 입힌다.'],
@@ -412,7 +412,7 @@ const SPELL_DATA=[
   ['heal','힐','holy',2,'heal',14,8,0.25,{},'생명력을 25% 회복한다.'],
   ['flash','플래시 붐','holy',3,'nova',31,6,6.7,{R:74,st:'stun',stT:1.3},'섬광으로 눈을 멀게 한다. 언데드에 큰 피해.'],
   ['critHeal','크리티컬 힐','holy',4,'heal',28,14,0.5,{regen:1,R:60,dm:18},'생명력 50% 회복, 잠시 재생. 주변 적을 빛으로 태운다.'],
-  ['greatHeal','그레이트 힐','holy',6,'heal',50,22,1.0,{inv:1.2,R:80,dm:34},'생명력을 모두 회복, 잠시 무적. 주변 적을 빛으로 태운다.'],
+  ['greatHeal','그레이트 힐','holy',6,'heal',50,22,0.6,{R:80,dm:34},'생명력 60% 회복. 주변 적을 빛으로 태운다.'],
   ['shining','샤이닝 샤워','holy',8,'rain',153,26,3.23,{dur:5,rate:.1,R:26,v:'holy'},'빛의 결정이 유성우처럼 내린다.'],
   ['heavy','헤비','dark',1,'strike',9,2,1.45,{R:30,delay:.1,st:'slow',stT:3,st2:'weak'},'대상을 무겁게 짓눌러 느리게 한다.'],
   ['wounds','라이트 운즈','dark',2,'bolt',9,1.2,2.53,{spd:240,st:'weak'},'저주로 상처를 입히고 약하게 만든다.'],
@@ -441,7 +441,7 @@ const SPELL_DATA=[
   ['ctrlWeather','컨트롤 웨더','thunder',9,'rain',211,38,2.46,{dur:6,rate:0.06,R:40,v:'thunder'},'날씨를 지배해 낙뢰를 퍼붓는다.'],
   ['purify','퓨리피케이션','holy',5,'nova',56,9,8.13,{R:96,st:'stun',stT:0.6,healP:0.15},'정화의 빛으로 적을 태우고 몸을 회복한다.'],
   ['cureDisease','큐어 디지즈','holy',7,'strike',86,12,15.94,{R:70,delay:0.4,st:'weak',big:1},'신성한 빛기둥. 언데드를 녹인다.'],
-  ['resurrection','그레이트 리절렉션','holy',9,'heal',222,60,1,{R:200,dm:53,inv:3},'모두 회복, 3초 무적, 거대한 빛의 폭발.'],
+  ['resurrection','그레이트 리절렉션','holy',9,'heal',222,60,1,{R:200,dm:53},'생명력을 모두 회복하고 거대한 빛의 폭발을 일으킨다.'],
   ['manaDrain','마나 드레인','dark',5,'bolt',34,4,10.28,{spd:240,homing:1,mdrain:1,size:2,st:'weak'},'적의 마나를 빼앗아 내 마나로 채운다.'],
   ['cloudKill','클라우드 킬','dark',7,'zone',110,18,0.97,{R:96,dur:6,tick:0.5,v:'poison'},'죽음의 구름이 넓게 퍼진다.'],
   ['chaosBlade','카오스 블레이드','dark',9,'wave',204,36,47.54,{wd:260,dist:500,spd:320,big:1,st:'weak'},'혼돈의 검이 공간째 벤다.'],
@@ -1118,7 +1118,7 @@ function kill(e){
 }
 function hurtPlayer(d){
   const p=G.p;if(p.ifr>0||G.dead)return;d=Math.max(1,Math.round(d*(1-D.def/(D.def+100))*(1-D.dr)));
-  if(p.shield>0){const a=Math.min(p.shield,d);p.shield-=a;d-=a;flashFx(p.x,p.y-12,6,EL.none.c[1],.15);if(p.shield<=0){burst(p.x,p.y-12,20,EL.none.c,90,.4);sfx.frost()}if(d<=0){p.ifr=.25;return}}
+  if(p.shield>0){const a=Math.min(p.shield,Math.floor(d*.5));p.shield-=a;d=Math.max(1,d-a);flashFx(p.x,p.y-12,6,EL.none.c[1],.15);if(p.shield<=0){burst(p.x,p.y-12,20,EL.none.c,90,.4);sfx.frost()}}
   p.hp-=d;p.ifr=.7;p.hurtT=.25;shake(5);G.flash=.18;G.flashCol='#e5484d';sfx.hurt();
   G.texts.push({x:p.x,y:p.y-30,vy:-24,life:.8,str:'-'+d,col:'#ff6b6b',sc:1});burst(p.x,p.y-8,10,['#e5484d','#ff9a3c'],70,.4,{add:false});
   if(p.hp<=0&&hasM('dragonScale')&&!p.revived){p.revived=true;p.hp=D.maxHp*.4;p.ifr=2;banner('심연룡의 가호','죽음을 버텨 냈습니다');boom(p.x,p.y-8,70,['#ffffff','#ffd24a','#c94cff','#3a1258'],true);aoe(p.x,p.y-8,90,D.pow*12,{el:'fire',st:'burn',proc:1,kb:200});shake(12);sfx.bigboom();return}
@@ -1161,9 +1161,9 @@ const KIND={
         if(sp.el==='water'){const hh=o.big?24:11;for(let j=-o.wd/2;j<=o.wd/2;j+=2){const bx=cx+px*j,by=cy+py*j,h=Math.max(1,(hh+Math.sin(j*.2+this.t*14)*hh*.3)*f*(1-Math.pow(Math.abs(j)/(o.wd/2),4)*.6));ctx.fillStyle=C[3];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.round(h)+2);ctx.fillStyle=C[2];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.round(h));ctx.fillStyle=C[1];ctx.fillRect(Math.round(bx),Math.round(by-h),2,Math.max(1,Math.round(h*.35)));ctx.fillStyle=C[0];ctx.fillRect(Math.round(bx),Math.round(by-h)-1,2,2)}}
         else{for(let j=-o.wd/2;j<=o.wd/2;j++){const bend=-(j*j)/(o.wd*.9),bx=cx+px*j+dx*bend*.5,by=cy+py*j+dy*bend*.5;ctx.fillStyle=Math.abs(j)<o.wd*.3?'#ffffff':C[1];ctx.fillRect(Math.round(bx),Math.round(by),1,1);ctx.fillStyle=C[2];ctx.fillRect(Math.round(bx-dx*2),Math.round(by-dy*2),1,1);if(Math.abs(j)<o.wd*.2){ctx.fillStyle=C[3];ctx.fillRect(Math.round(bx-dx*4),Math.round(by-dy*4),1,1)}}}
         light(cx,cy,o.wd*.5)}})},
-  heal(sp,p){const o=sp.o,C=EL.holy.c,v=Math.round(D.maxHp*sp.m);p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.9,str:'+'+v,col:'#8ef0a0',sc:1});if(o.regen)p.regen=6;if(o.inv)p.ifr=Math.max(p.ifr,o.inv);
+  heal(sp,p){const o=sp.o,C=EL.holy.c,fat=G.time-(p.lastHeal??-99)<10,v=Math.round(D.maxHp*sp.m*(fat?.5:1));p.lastHeal=G.time;if(fat)G.texts.push({x:p.x,y:p.y-42,vy:-20,life:.9,str:'회복 피로',col:'#c8a0ff',sc:.8});p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.9,str:'+'+v,col:'#8ef0a0',sc:1});if(o.regen)p.regen=6;
     ringFx(p.x,p.y,34,C,.5,{top:1});pillarFx(p.x,p.y,9,70,C,.45);if(o.R){const dm=D.pow*o.dm*(1+.12*((S.grim[sp.id]||1)-1))*(S.aff[0]==='holy'?1.2:1);ringFx(p.x,p.y,o.R,C,.45,{top:1});later(.1,()=>{aoe(G.p.x,G.p.y-4,o.R,dm,{el:'holy',kb:70});holyBurst(G.p.x,G.p.y,o.R*.4)})}for(let i=0;i<26;i++)part(p.x+rnd(-12,12),p.y+rnd(-4,2),rnd(-8,8),rnd(-80,-30),rnd(.5,.9),pick(['#8ef0a0','#ffffff',C[2]]),1)},
-  shield(sp,p,tg,dmg){p.shield=Math.round(dmg*2);p.shMax=p.shield;p.shT=sp.o.dur;ringFx(p.x,p.y-12,24,EL.none.c,.35,{top:1});flashFx(p.x,p.y-14,10,EL.none.c[1],.25)},
+  shield(sp,p,tg,dmg){p.shield=Math.round(D.maxHp*sp.m*(1+.05*((S.grim[sp.id]||1)-1)));p.shMax=p.shield;p.shT=sp.o.dur;ringFx(p.x,p.y-12,24,EL.none.c,.35,{top:1});flashFx(p.x,p.y-14,10,EL.none.c[1],.25)},
   summon(sp,p,tg,dmg){const o=sp.o,C=EL.holy.c;let ang=0,cd=0;addFx({layer:'t',t:0,upd(dt){this.t+=dt;ang+=dt*2.4;cd-=dt;const P=G.p;this.x=P.x+Math.cos(ang)*16;this.y=P.y-34+Math.sin(ang)*4;
       if(cd<=0){const e=nearestEnemy(this.x,this.y,190);if(e){cd=o.rate;G.pr.push(mkBolt('holy',this.x,this.y,Math.atan2(e.y-e.r-this.y,e.x-this.x),300,dmg,{size:1}));tone('triangle',1600,2200,.05,.025)}}
       if(Math.random()<.3)part(this.x,this.y,rnd(-10,10),rnd(-10,10),.4,pick(C),1);return this.t<o.dur},
