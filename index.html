@@ -1567,7 +1567,7 @@ function updPlayer(dt){
   p.acd=(p.acd||0)-dt;
   if(S.auto&&G.zone==='tower'&&!G.dead&&!ui.open){const e=nearestEnemy(p.x,p.y,230);if(e){AUTO_T={x:e.x,y:e.y-e.r};
     if(p.acd<=0){for(const id of S.slots){const sp=id&&SP[id];if(!sp||!canUse(sp)||(p.cd[id]||0)>0||p.mp<spellMp(sp))continue;if(sp.k==='heal'&&p.hp>D.maxHp*.5)continue;if(sp.k==='shield'&&(p.hp>D.maxHp*.8||p.shield>0))continue;cast(id);if((p.cd[id]||0)>0){p.acd=.35;break}}}
-    if(p.mcd<=0)shoot();AUTO_T=null}else if(p.hp<D.maxHp*.5&&p.acd<=0){for(const id of S.slots){const sp=id&&SP[id];if(sp&&sp.k==='heal'&&canUse(sp)&&(p.cd[id]||0)<=0&&p.mp>=spellMp(sp)){cast(id);p.acd=.35;break}}}}
+    AUTO_T=null}else if(p.hp<D.maxHp*.5&&p.acd<=0){for(const id of S.slots){const sp=id&&SP[id];if(sp&&sp.k==='heal'&&canUse(sp)&&(p.cd[id]||0)<=0&&p.mp>=spellMp(sp)){cast(id);p.acd=.35;break}}}}
   if((IN.down||IN.tfire)&&p.mcd<=0)shoot();
 }
 function updParts(dt){let n=0;const ps=G.parts;for(let i=0;i<ps.length;i++){const q=ps[i];q.life-=dt;if(q.life<=0)continue;if(q.drag){const f=Math.max(0,1-q.drag*dt);q.vx*=f;q.vy*=f}q.vy+=q.g*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;ps[n++]=q}ps.length=n}
