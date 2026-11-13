@@ -1462,7 +1462,7 @@ function cast(id){
 }
 /* 신화 전용 스킬 [R] */
 
-/* ===== 2차 전직: 9서클 + 신화 3개를 제단에 바치면 주 속성에 맞는 직업이 된다 ===== */
+/* ===== 2차 전직: 9서클·Lv.120·신화 장비 3개(100층 보스 장비 포함) 달성 시 주 속성 직업으로 전직 ===== */
 const JOBS={
   fire:{n:'소서러',c:'#ff7a2a',sk:'인페르노',d:'화상 걸린 적이 죽으면 폭발이 연쇄로 터진다',sd:'주변의 모든 적을 불바다로 태운다 (화상)',ic:'hellfire'},
   water:{n:'타이드 위버',c:'#2f92e8',sk:'해일',d:'적을 밀칠 때마다 조류 게이지가 찬다 (최대 100)',sd:'조류 게이지만큼 강해지는 거대한 해일',ic:'seaBlast'},
@@ -2131,19 +2131,19 @@ function grimList(mode){
 const devHash=t=>{let x=0;for(const ch of t)x=(x*131+ch.charCodeAt(0))>>>0;return x};
 const PANELS={
   altar:{t:'마을 중앙 제단',r(){
-    const offer=S.adv2Offer||[],has100=offer.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord');
+    const offer=S.adv2Offer||[],has100=offer.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord'),ready=S.circle>=9&&S.lvl>=120;
     let h=`<div class="say"><img src="${ICON.el_none}" alt=""><p>2차 전직의 길을 여는 고대 제단입니다. 신화 장비 3개를 바치세요. <b class="gold">그중 하나는 100층 보스의 신화 장비</b>여야 합니다. 바친 장비는 돌려받을 수 없습니다.</p></div>`;
     h+=`<div class="hd">신화 장비 봉헌 <span>${offer.length}/3</span></div>`;
     h+=`<div class="inv" style="grid-template-columns:repeat(3,2.6em);width:max-content;margin:.4em 0">${[0,1,2].map(i=>{const it=offer[i];return it?`<div class="cell sel" style="border-color:#ff4a6a"><img src="${itemIcon(it)}" alt=""><u>${i+1}</u></div>`:`<div class="cell" style="opacity:.55"><span class="dim">${i+1}</span></div>`}).join('')}</div>`;
     if(offer.length){h+=`<div class="li"><div class="gr"><b>제단에 놓인 장비</b><div class="ds">${offer.map((it,i)=>`${i+1}. ${MYTH[it.my].n}${MYTH[it.my].boss==='demonLord'?' · <span class="gold">100층 보스</span>':''}`).join('<br>')}</div></div><div class="bt">${offer.map((it,i)=>btn('회수 '+(i+1),'altarTake:'+i,true)).join('')}</div></div>`}
     if(S.adv2Entered){const K=JOBS[S.job||S.aff[0]];h+=`<p class="gold">2차 전직 완료: <b style="color:${K.c}">${K.n}</b></p><div class="bt">${btn('직업 정보','adv2Open',true,'go')}</div>`;return h}
-    {const J=JOBS[S.aff[0]];h+=`<div class="li"><div class="gr"><b>전직하면: <span style="color:${J.c}">${J.n}</span></b> <span class="dim">(주 속성 ${EL[S.aff[0]].n})</span><div class="ds">패시브: ${J.d}<br>전용기 [G] ${J.sk}: ${J.sd}</div></div></div><p>${S.circle>=9?'✅':'❌'} 9서클 달성 (지금 ${S.circle}서클)</p>`}
+    {const J=JOBS[S.aff[0]];h+=`<div class="li"><div class="gr"><b>전직하면: <span style="color:${J.c}">${J.n}</span></b> <span class="dim">(주 속성 ${EL[S.aff[0]].n})</span><div class="ds">패시브: ${J.d}<br>전용기 [G] ${J.sk}: ${J.sd}</div></div></div><p>${S.circle>=9?'✅':'❌'} 9서클 (현재 ${S.circle}서클) · ${S.lvl>=120?'✅':'❌'} Lv.120 (현재 Lv.${S.lvl})</p>`}
     const available=S.inv.filter(it=>it&&it.my&&MYTH[it.my]);
     if(offer.length<3){h+=`<div class="hd">가방의 신화 장비 <span>${available.length}개</span></div>`;
       h+=available.length?available.map(it=>`<div class="li"><img src="${itemIcon(it)}" alt=""><div class="gr"><b style="color:#ff4a6a">${MYTH[it.my].n}</b><div class="ds">${SLOTN[it.slot]} · ${mythFloor(it.my)}층 보스${MYTH[it.my].boss==='demonLord'?' · <span class="gold">필수 조건 충족</span>':''}</div></div><div class="bt">${btn('제단에 넣기','altarPut:'+it.id,true,'go')}</div></div>`).join(''):'<p class="dim">가방에 봉헌할 신화 장비가 없습니다. 장착 중인 장비는 먼저 가방으로 옮겨 주세요.</p>';
     }
     if(!has100&&offer.length===3)h+=`<p class="no">제단을 열려면 100층 보스 마왕 바알의 신화 장비 1개가 필요합니다.</p>`;
-    if(!S.adv2Entered&&offer.length===3&&has100)h+=`<div class="li"><div class="gr"><b class="gold">제단이 응답합니다</b><div class="ds">신화 장비 3개를 바치고 2차 전직 경로에 진입합니다. 바친 장비는 소모됩니다.</div></div><div class="bt">${btn('바치고 2차 전직으로','advance2',true,'go')}</div></div>`;
+    if(!S.adv2Entered&&ready&&offer.length===3&&has100)h+=`<div class="li"><div class="gr"><b class="gold">제단이 응답합니다</b><div class="ds">9서클·Lv.120과 신화 장비 3개(100층 보스 장비 포함)를 충족했습니다. 바친 장비는 소모됩니다.</div></div><div class="bt">${btn('바치고 2차 전직으로','advance2',true,'go')}</div></div>`;
     else if(offer.length<3)h+=`<p class="dim">신화 장비 ${3-offer.length}개가 더 필요합니다. 100층 보스 장비를 포함해야 합니다.</p>`;
     return h}},
   adv2:{t:'2차 전직',r(){const K=JOBS[S.job||S.aff[0]];return `<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>제단이 응답했습니다. 그대는 이제 <b style="color:${K.c}">${K.n}</b>입니다.</p></div><div class="li"><div class="gr"><b>패시브</b><div class="ds">${K.d}</div></div></div><div class="li"><div class="gr"><b>전용기 [G] ${K.sk}</b><div class="ds">${K.sd} · 마나 ${JOB_MP} · 쿨 ${JOB_CD}초</div></div></div><div class="bt">${btn('제단으로 돌아가기','altarBack',true,'go')}</div>`}},
@@ -2248,7 +2248,7 @@ const ACT={
   devOpen(){if(DEV.on)openPanel('dev')},
   altarPut(id){if(S.adv2Entered||(S.adv2Offer||[]).length>=3)return sfx.err();const i=S.inv.findIndex(it=>it.id===+id&&it.my&&MYTH[it.my]);if(i<0)return sfx.err();S.adv2Offer.push(S.inv.splice(i,1)[0]);sfx.item()},
   altarTake(i){i=+i;const offers=S.adv2Offer||[];if(i<0||i>=offers.length||S.inv.length>=BAG())return sfx.err();S.inv.push(offers.splice(i,1)[0]);sfx.ui()},
-  advance2(){const offers=S.adv2Offer||[];if(S.circle<9){toast('9서클을 달성해야 전직할 수 있습니다');return sfx.err()}if(S.adv2Entered||offers.length!==3||!offers.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord')){toast('신화 장비 3개와 100층 보스 장비 1개가 필요합니다');return sfx.err()}S.adv2Offer=[];S.adv2Entered=true;S.job=S.aff[0];recalc();S.slots=S.slots.map(id=>{const sp=id&&SP[id];return sp&&(sp.el==='none'||sp.el===S.job)?id:null});const jobSpell=SPL.find(sp=>sp.el===S.job&&S.grim[sp.id]);if(jobSpell&&!S.slots.slice(0,D.slots).includes(jobSpell.id)){const free=S.slots.slice(0,D.slots).indexOf(null);if(free>=0)S.slots[free]=jobSpell.id}sfx.circle();save();
+  advance2(){const offers=S.adv2Offer||[];if(S.circle<9){toast('9서클을 달성해야 전직할 수 있습니다');return sfx.err()}if(S.lvl<120){toast('Lv.120을 달성해야 전직할 수 있습니다');return sfx.err()}if(S.adv2Entered||offers.length!==3||!offers.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord')){toast('신화 장비 3개와 100층 보스 장비 1개가 필요합니다');return sfx.err()}S.adv2Offer=[];S.adv2Entered=true;S.job=S.aff[0];recalc();S.slots=S.slots.map(id=>{const sp=id&&SP[id];return sp&&(sp.el==='none'||sp.el===S.job)?id:null});const jobSpell=SPL.find(sp=>sp.el===S.job&&S.grim[sp.id]);if(jobSpell&&!S.slots.slice(0,D.slots).includes(jobSpell.id)){const free=S.slots.slice(0,D.slots).indexOf(null);if(free>=0)S.slots[free]=jobSpell.id}sfx.circle();save();
     {const J=JOBS[S.job],p=G.p;banner(`${J.n} 전직!`,`전용기 [G] ${J.sk}`);G.flash=.6;G.flashCol=J.c;shake(14);for(let i=0;i<4;i++)later(i*.2,()=>ringFx(p.x,p.y,40+i*40,['#ffffff',J.c,J.c,'#000'],.8,{top:1}))}openPanel('adv2')},
   adv2Open(){openPanel('adv2')},
   altarBack(){openPanel('altar')},
