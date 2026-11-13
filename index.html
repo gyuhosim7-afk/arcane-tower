@@ -1672,9 +1672,16 @@ function updPlayer(dt){
   if(p.shT>0){p.shT-=dt;if(p.shT<=0)p.shield=0}
   if(hasM('ifritRobe')&&G.zone==='tower'){p.aura=(p.aura||0)-dt;if(p.aura<=0){p.aura=.5;aoe(p.x,p.y-6,46,D.pow*1.2,{el:'fire',st:'burn',proc:1})}if(Math.random()<.5){const a=rnd(TAU);part(p.x+Math.cos(a)*40,p.y+Math.sin(a)*24,0,rnd(-40,-20),.4,pick(EL.fire.c),1)}}
   p.acd=(p.acd||0)-dt;
-  if(S.auto&&G.zone==='tower'&&!G.dead&&!ui.open){const e=nearestEnemy(p.x,p.y,230);if(e){AUTO_T={x:e.x,y:e.y-e.r};
-    if(p.acd<=0){for(const id of S.slots){const sp=id&&SP[id];if(!sp||!canUse(sp)||(p.cd[id]||0)>0||p.mp<spellMp(sp))continue;if(sp.k==='heal'&&p.hp>D.maxHp*.5)continue;if(sp.k==='shield'&&(p.hp>D.maxHp*.8||p.shield>0))continue;cast(id);if((p.cd[id]||0)>0){p.acd=.35;break}}}
-    AUTO_T=null}else if(p.hp<D.maxHp*.5&&p.acd<=0){for(const id of S.slots){const sp=id&&SP[id];if(sp&&sp.k==='heal'&&canUse(sp)&&(p.cd[id]||0)<=0&&p.mp>=spellMp(sp)){cast(id);p.acd=.35;break}}}}
+  if(S.auto&&G.zone==='tower'&&!G.dead&&!ui.open){const e=nearestEnemy(p.x,p.y,230),danger=!!e||G.ep.some(b=>Math.hypot(b.x-p.x,b.y-p.y)<110)||(p.db&&Object.values(p.db).some(v=>v>0));
+    const ready=id=>{const sp=id&&SP[id];return sp&&canUse(sp)&&(p.cd[id]||0)<=0&&p.mp>=spellMp(sp)?sp:null};
+    if(p.acd<=0){
+      // 방어 마법 먼저: 회복(체력 70% 아래, 위험하면 50% 아래 대기 없이), 보호막(위험할 때 막이 없으면), 무적기(체력 40% 아래)
+      for(const id of S.slots){const sp=ready(id);if(!sp)continue;const def=sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv);if(!def)continue;
+        const ok=sp.k==='heal'?(sp.o.inv?p.hp<D.maxHp*.4:p.hp<D.maxHp*(sp.m>=.9?.45:.7)):sp.k==='shield'?(danger&&!(p.shield>0)):(p.hp<D.maxHp*.4&&danger);
+        if(ok){if(e)AUTO_T={x:e.x,y:e.y-e.r};cast(id);AUTO_T=null;if((p.cd[id]||0)>0){p.acd=.35;break}}}}
+    if(e&&p.acd<=0){AUTO_T={x:e.x,y:e.y-e.r};
+      for(const id of S.slots){const sp=ready(id);if(!sp||sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv))continue;cast(id);if((p.cd[id]||0)>0){p.acd=.35;break}}
+      AUTO_T=null}}
   if((IN.down||IN.tfire)&&p.mcd<=0)shoot();
 }
 function updParts(dt){let n=0;const ps=G.parts;for(let i=0;i<ps.length;i++){const q=ps[i];q.life-=dt;if(q.life<=0)continue;if(q.drag){const f=Math.max(0,1-q.drag*dt);q.vx*=f;q.vy*=f}q.vy+=q.g*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;ps[n++]=q}ps.length=n}
