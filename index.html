@@ -1948,9 +1948,9 @@ function spellRow(sp,mode){
   const lv=S.grim[sp.id]||0,ok=canUse(sp),circleOk=S.circle>=sp.c,slotI=S.slots.indexOf(sp.id),eq=slotI>=0&&slotI<D.slots;
   let b='';
   if(sp.id==='arrow'){b+=lv<10?btn('강화','enh:arrow',can(enhCost(sp))):'<span class="gold">최대</span>'}
-  else if(lv){b+=btn(eq?`해제 (${slotI+1})`:'장착','slot:'+sp.id,true,eq?'':'go');if(mode==='shop')b+=lv<10?btn('강화','enh:'+sp.id,can(enhCost(sp))):'<span class="gold">최대</span>'}
+  else if(lv){b+=btn(eq?`해제 (${slotI+1})`:'장착','slot:'+sp.id,true,eq?'':'go');b+=lv<10?btn('강화','enh:'+sp.id,can(enhCost(sp))):'<span class="gold">최대</span>'}
   else if(mode==='shop')b+=btn('제작','craft:'+sp.id,ok&&circleOk&&can(craftCost(sp)),'go');
-  let cost='';if(mode==='shop'){if(!lv&&circleOk)cost=`<br>제작: ${costHTML(craftCost(sp))}`;else if(lv&&lv<10)cost=`<br>강화 → Lv.${lv+1}: ${costHTML(enhCost(sp))}`}
+  let cost='';if(mode==='shop'&&!lv&&circleOk)cost=`<br>제작: ${costHTML(craftCost(sp))}`;else if(lv&&lv<10)cost=`<br>강화 → Lv.${lv+1}: ${costHTML(enhCost(sp))}`;
   return`<div class="li ${!circleOk&&!lv?'lock':''}"><img src="${ICON['sp_'+sp.id]}" alt=""><div class="gr"><b>${sp.n}</b> ${elTag(sp.el)} ${lv?`<span class="gold">Lv.${lv}</span>`:circleOk?'':`<span class="no">${sp.c}서클 필요</span>`}<div class="ds">${sp.d} · ${KIND_N[sp.k]} · 마나 ${spellMp(sp)} · 쿨 ${sp.cd}초${cost}</div></div><div class="bt">${b}</div></div>`;
 }
 function grimList(mode){
