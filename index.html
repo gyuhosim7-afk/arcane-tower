@@ -807,7 +807,7 @@ const destroyRate=up=>up>=10?Math.min(.6,.3+(up-10)*.06):0;
 const protCost=()=>({gold:3000+S.maxFloor*200,ess:30});
 const reinfCost=it=>({gold:Math.round(30*Math.pow(it.up+1,1.7)*(1+it.r*.6)*(1+it.il/20)),ore:2+it.up*2});
 /* ---- 신화: 보스마다 하나, 보스 보물상자에서 0.5% ---- */
-const MYTH_RATE=.005;
+const MYTH_RATE=.005,MYTH_FINAL_RATE=.01;
 
 const MYTH={
   slimeRing:{boss:'kingslime',slot:'ring',n:'젤리왕의 왕관 반지',fx:'처치한 적이 터지며 주변에 마력 x3 폭발',a:{crit:8,hp:120,int:6}},
@@ -1739,7 +1739,7 @@ function openChest(c){
   const items=({wood:1+(Math.random()<.5?1:0),iron:2+(Math.random()<.8?2:0),gold:4})[c.chest],minR=({wood:0,iron:1,gold:2})[c.chest];
   for(let i=0;i<items;i++)drop('item',x,y,0,mkItem(f,minR));
   if(f%5===0&&f%10!==0&&c.chest==='iron'){const key=Object.keys(MYTH).find(k=>MYTH[k].boss===bossOf(f));if(key&&Math.random()<MYTH_RATE)later(.6,()=>{drop('item',x,y,0,mkMyth(key,f));G.flash=.5;G.flashCol='#ff4a6a';shake(12);banner('신화 등장!',MYTH[key].n);sfx.circle()})}
-  if(c.chest==='gold'){const owns100=[...(S.inv||[]),...(S.adv2Offer||[]),...Object.values(S.eq||{})].some(it=>it&&it.my==='demonEye');const guaranteed100=f===100&&!owns100;const key=guaranteed100?'demonEye':Object.keys(MYTH).find(k=>MYTH[k].boss===bossOf(f));if(key&&(guaranteed100||Math.random()<MYTH_RATE)){later(.6,()=>{const it=mkMyth(key,f);drop('item',x,y,0,it);G.flash=.5;G.flashCol='#ff4a6a';shake(14);banner('신화 등장!',MYTH[key].n);sfx.circle();for(let i=0;i<4;i++)later(i*.15,()=>ringFx(x,y,60+i*30,['#ffffff','#ff7ad9','#ff4a6a','#9a1a3a'],.7,{top:1}))})}}
+  if(c.chest==='gold'){const key=Object.keys(MYTH).find(k=>MYTH[k].boss===bossOf(f)),rate=f===100?MYTH_FINAL_RATE:MYTH_RATE;if(key&&Math.random()<rate){later(.6,()=>{const it=mkMyth(key,f);drop('item',x,y,0,it);G.flash=.5;G.flashCol='#ff4a6a';shake(14);banner('신화 등장!',MYTH[key].n);sfx.circle();for(let i=0;i<4;i++)later(i*.15,()=>ringFx(x,y,60+i*30,['#ffffff','#ff7ad9','#ff4a6a','#9a1a3a'],.7,{top:1}))})}}
 }
 function updWave(dt){
   const w=G.wave;if(!w||w.cleared||G.dead)return;w.t-=dt;
