@@ -270,7 +270,7 @@ function sparkle(x,y,s,col,core){
   const d=Math.max(1,s>>2);ctx.fillRect(x-d,y-d,1,1);ctx.fillRect(x+d,y-d,1,1);ctx.fillRect(x-d,y+d,1,1);ctx.fillRect(x+d,y+d,1,1);
   const h=s>>1;ctx.fillStyle=core||'#fff';ctx.fillRect(x-h,y,h*2+1,1);ctx.fillRect(x,y-h,1,h*2+1);if(s>2)ctx.fillRect(x-1,y-1,3,3);
 }
-const FONT={'A':'010101111101101','C':'011100100100011','E':'111100111100111','F':'111100110100100','P':'110101110100100','Q':'010101101110011','R':'110101110101101','S':'011100010001110','M':'101111111101101','T':'111010010010010','0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001','5':'111100111001111','6':'111100111101111','7':'111001001010010','8':'111101111101111','9':'111101111001111','+':'000010111010000','-':'000000111000000','!':'010010010000010','/':'001001010100100','L':'100100100100111','V':'101101101101010','%':'101001010100101','x':'000101010101000',' ':'000000000000000'};
+const FONT={'=':'000111000111000','A':'010101111101101','C':'011100100100011','E':'111100111100111','F':'111100110100100','P':'110101110100100','Q':'010101101110011','R':'110101110101101','S':'011100010001110','M':'101111111101101','T':'111010010010010','0':'111101101101111','1':'010110010010111','2':'111001111100111','3':'111001111001111','4':'101101111001001','5':'111100111001111','6':'111100111101111','7':'111001001010010','8':'111101111101111','9':'111101111001111','+':'000010111010000','-':'000000111000000','!':'010010010000010','/':'001001010100100','L':'100100100100111','V':'101101101101010','%':'101001010100101','x':'000101010101000',' ':'000000000000000'};
 const glyphs={};
 function glyph(ch,col,sc){
   const k=ch+col+sc;let c=glyphs[k];if(c)return c;c=mkC(5*sc,7*sc);const g=g2(c),b=FONT[ch]||FONT['-'];
@@ -859,11 +859,12 @@ function recalc(){
   const st=S.st,I=st.int+g.int,V=st.vit+g.vit,Wi=st.wis+g.wis,c=S.circle;
   D.maxHp=Math.round((100+V*12+S.lvl*8+g.hp)*(c>=7?1.3:1)*(hasM('dragonScale')?1.5:1));D.maxMp=Math.round(60+I*5+c*25+g.mp);
   D.pow=(10+S.lvl*1.5+g.pow)*(1+I*.04)*(1+(c-1)*.12);D.crit=Math.min(75,5+st.crit*1.5+g.crit);D.critM=1.6+st.crit*.02+(hasM('demonEye')?1:0)+(hasM('cerbRing')?.5:0);
-  D.cdr=Math.min(hasM('demonEye')?.7:.6,Wi*.01+g.cdr/100+(c>=9?.15:0)+(hasM('demonEye')?.25:0));D.mpR=(2+Wi*.35+c*.7)*(c>=8?2:1);D.hpR=.3+V*.08;D.def=g.def;D.slots=SLOTC[c];
+  D.cdr=Math.min(hasM('demonEye')?.7:.6,Wi*.01+g.cdr/100+(c>=9?.15:0)+(hasM('demonEye')?.25:0));D.mpR=(2+Wi*.35+c*.7)*(c>=8?2:1);D.hpR=.3+V*.08;D.def=g.def;D.slots=DEV.on?12:SLOTC[c];while(S.slots.length<D.slots)S.slots.push(null);
   D.dr=(hasM('spiderRobe')?.15:0)+(hasM('gargHeart')?.1:0)+(hasM('magmaCore')?.1:0);D.spd=(hasM('stormFeather')?1.3:1)*(hasM('ratRing')?1.15:1);
   if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
 }
 const DEV={on:(()=>{try{return localStorage.getItem('at-dev')==='1'}catch(e){return false}})(),god:false,ohk:false};
+const BAG=()=>DEV.on?64:32;
 const canUse=sp=>sp.el==='none'||S.circle>=9||S.aff.includes(sp.el)||DEV.on;
 const spellMp=sp=>Math.round(sp.mp*(S.circle>=4&&sp.c<S.circle?.85:1));
 const spellDmg=sp=>D.pow*sp.m*(1+.12*((S.grim[sp.id]||1)-1))*(sp.el===S.aff[0]?1.2:1);
@@ -1807,7 +1808,7 @@ function update(dt){
       if(k.kind==='xp'){gainXp(k.val);sfx.gem()}
       else if(k.kind==='gold'){if(hasM('ratRing'))k.val=Math.round(k.val*1.4);S.gold+=k.val;sfx.coin();G.texts.push({x:p.x,y:p.y-34,vy:-20,life:.6,str:'+'+k.val,col:'#ffe27a',sc:1})}
       else if(k.kind==='heart'){p.hp=Math.min(D.maxHp,p.hp+D.maxHp*.2);sfx.potion()}
-      else if(k.kind==='item'){if(S.inv.length>=32&&!k.item.my){const g=sellPrice(k.item);S.gold+=g;toast(`가방이 가득 차 ${itemName(k.item)} 자동 판매 (+${g})`)}else{S.inv.push(k.item);toast(`획득: <span style="color:${RAR[k.item.r].c}">[${RAR[k.item.r].n}] ${itemName(k.item)}</span>`)}sfx.item()}
+      else if(k.kind==='item'){if(S.inv.length>=BAG()&&!k.item.my){const g=sellPrice(k.item);S.gold+=g;toast(`가방이 가득 차 ${itemName(k.item)} 자동 판매 (+${g})`)}else{S.inv.push(k.item);toast(`획득: <span style="color:${RAR[k.item.r].c}">[${RAR[k.item.r].n}] ${itemName(k.item)}</span>`)}sfx.item()}
       else{S[k.kind]+=k.val;if(k.kind==='hpPot'||k.kind==='mpPot')S[k.kind]=Math.min(9,S[k.kind]);if(k.kind==='prot')toast('파괴 방지권을 얻었습니다');sfx.coin()}
       return false}
     return true});
@@ -1968,7 +1969,7 @@ function drawHUD(){
   // 기술 바
   const n=D.slots,extra=D.sk?4:3,tw=n*22+8+extra*22,x0=Math.round((W-tw)/2),y0=H-24;
   hudOrn(x0-5,y0-4,tw+8,28);
-  for(let i=0;i<n;i++){const id=S.slots[i],sp=id&&SP[id];if(sp){const k=(p.cd[id]||0)/(sp.cd*(1-D.cdr));hudSlot(x0+i*22,y0,A.sp[id],'s:'+id,k,p.mp<spellMp(sp),String(i+1),undefined,EL[sp.el].c[2])}else hudSlot(x0+i*22,y0,null,null,0,false,String(i+1))}
+  for(let i=0;i<n;i++){const id=S.slots[i],sp=id&&SP[id];if(sp){const k=(p.cd[id]||0)/(sp.cd*(1-D.cdr));hudSlot(x0+i*22,y0,A.sp[id],'s:'+id,k,p.mp<spellMp(sp),'1234567890-='[i],undefined,EL[sp.el].c[2])}else hudSlot(x0+i*22,y0,null,null,0,false,'1234567890-='[i])}
   const ux=x0+n*22+8;ctx.fillStyle='#6a5230';ctx.fillRect(ux-5,y0,1,20);
   hudSlot(ux,y0,A.hpPot,'p:hp',p.pcd/3,S.hpPot<1,'Q',S.hpPot,'#c04848');hudSlot(ux+22,y0,A.mpPot,'p:mp',p.pcd/3,S.mpPot<1,'E',S.mpPot,'#3a6ad0');hudSlot(ux+44,y0,A.blink,'b',p.bcd/(blinkCD()),false,'SPACE',undefined,'#7fd2ff');
   if(D.sk){const s=MYTH_SK[D.sk];hudSlot(ux+66,y0,A.m_staff,'m',(p.cd.myth||0)/(s.cd*(1-D.cdr*.5)),p.mp<s.mp,'R',undefined,'#ff4a6a')}
@@ -2046,7 +2047,7 @@ const blinkCost=()=>{const lv=(S.blinkLv||0)+1;return{gold:Math.round(150*Math.p
 function blinkRow(){const lv=S.blinkLv||0;return `<div class="li"><img src="${ICON.blink}" alt=""><div class="gr"><b>순간이동</b> <span class="gold">Lv.${lv}</span><div class="ds">이동하는 방향으로 짧게 순간이동, 0.3초 무적 · 쿨타임 ${blinkCD().toFixed(2)}초 (강화로 -${Math.round(lv*3.5)}%, 최대 -35%)${lv<BLINK_MAX?`<br>강화 → Lv.${lv+1}: ${costHTML(blinkCost())}`:''}</div></div><div class="bt">${lv<BLINK_MAX?btn('강화','blinkUp',can(blinkCost())):'<span class="gold">최대</span>'}</div></div>`}
 function grimList(mode){
   const els=S.circle>=9?['none'].concat(ELS):['none'].concat(S.aff);
-  let h=`<div class="slots">`;for(let i=0;i<D.slots;i++){const id=S.slots[i];h+=`<div>${id?`<img src="${ICON['sp_'+id]}" alt="">`:''}<b>${i+1}</b></div>`}h+=`</div>`;
+  let h=`<div class="slots">`;for(let i=0;i<D.slots;i++){const id=S.slots[i];h+=`<div>${id?`<img src="${ICON['sp_'+id]}" alt="">`:''}<b>${'1234567890-='[i]}</b></div>`}h+=`</div>`;
   h+=`<div class="tabs">${btn('전체','gf:all',true,ui.gf==='all'?'on':'')}${els.map(e=>btn(`${ic('el_'+e)}${EL[e].n}`,'gf:'+e,true,ui.gf===e?'on':'')).join('')}</div>`;
   h+=blinkRow();let any=false;
   for(let c=1;c<=9;c++){const list=SPL.filter(sp=>sp.c===c&&els.includes(sp.el)&&(ui.gf==='all'||sp.el===ui.gf)&&(mode==='shop'||S.grim[sp.id]));if(!list.length)continue;any=true;
@@ -2128,13 +2129,13 @@ const PANELS={
       h+='<div class="wallet"><div class="sec">재화</div>'+cur.map(([k,n,v])=>`<div class="wl"><img src="${ICON[k]||ICON.hpPot}" alt=""><span>${n}</span><b>${v}</b></div>`).join('')+'</div>';
       h+='<div class="two"><div><div class="sec">장착 장비</div><div class="eqs">';
       for(const k of['staff','robe','ring']){const it=S.eq[k];h+=it?`<div class="cell ${ui.sel===it.id?'sel':''}" style="border-color:${RAR[it.r].c}" data-a="sel:${it.id}"><img src="${itemIcon(it)}" alt="">${it.up?`<u>+${it.up}</u>`:''}</div>`:`<div class="cell" style="opacity:.35"><img src="${itemIcon({slot:k,r:0,v:0})}" alt=""></div>`}
-      h+=`</div><div class="sec">가방 ${S.inv.length}/32</div><div class="inv">`;
+      h+=`</div><div class="sec">가방 ${S.inv.length}/${BAG()}</div><div class="inv">`;
       for(const it of S.inv)h+=`<div class="cell ${ui.sel===it.id?'sel':''}" style="border-color:${RAR[it.r].c}" data-a="sel:${it.id}"><img src="${itemIcon(it)}" alt="">${it.up?`<u>+${it.up}</u>`:''}</div>`;
-      for(let i=S.inv.length;i<32;i++)h+='<div class="cell" style="cursor:default"></div>';
+      for(let i=S.inv.length;i<BAG();i++)h+='<div class="cell" style="cursor:default"></div>';
       {const sr=S.sellR??1;h+=`</div><div class="sellbar"><span>일괄 판매:</span>${[0,1,2,3,4].map(r=>`<button class="sr ${r<=sr?'on':''}" style="--rc:${RAR[r].c}" data-a="sellR:${r}">${RAR[r].n}</button>`).join('')}${btn(`${RAR[sr].n} 이하 모두 판매`,'sellJunk',S.inv.some(i=>!i.my&&i.r<=sr),'go')}</div></div><div>`}
       const eqd=Object.values(S.eq).find(i=>i&&i.id===ui.sel),it=eqd||S.inv.find(i=>i.id===ui.sel);
       if(it){const cur=S.eq[it.slot];h+=`<b style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</b><div class="ds">아이템 레벨 ${it.il}</div>${statLine(it).split(' · ').join('<br>')}${it.my?`<div style="color:${RAR[5].c}">${MYTH[it.my].fx}</div>`:''}`;
-        if(eqd)h+=`<div style="margin-top:.4em">${btn('해제','unequip:'+it.slot,S.inv.length<32)}</div>`;
+        if(eqd)h+=`<div style="margin-top:.4em">${btn('해제','unequip:'+it.slot,S.inv.length<BAG())}</div>`;
         else{if(cur)h+=`<p>지금 장착: <span style="color:${RAR[cur.r].c}">${itemName(cur)}</span><br>${statLine(cur)}</p>`;h+=`<div style="margin-top:.4em">${btn('장착','equip:'+it.id,true,'go')} ${btn(`판매 +${sellPrice(it)}`,'sell:'+it.id)}</div>`}}
       else h+='<p>아이템을 누르면 정보가 보입니다.<br>테두리 색이 등급입니다.<br><span style="color:#c9c9d6">일반</span> <span style="color:#5ed36b">고급</span> <span style="color:#4aa3ff">희귀</span> <span style="color:#c04cff">영웅</span> <span style="color:#ffb02e">전설</span> <span style="color:#ff4a6a">신화</span></p>';
       h+='</div></div>'}
@@ -2162,7 +2163,7 @@ const ACT={
     else if(k==='lvl'){const t=Math.min(99,S.lvl+10);while(S.lvl<t){S.lvl++;S.pts+=3}S.xp=0}else if(k==='circle'){if(S.circle<9){S.circle++;S.mast=0}}else if(k==='pts')S.pts+=50
     else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}
     else if(k==='all'){while(S.lvl<99){S.lvl++;S.pts+=3}S.xp=0;S.circle=9;S.mast=0;S.aff=ELS.slice();S.affPend=0;for(const sp of SPL)S.grim[sp.id]=10;S.blinkLv=BLINK_MAX;S.maxFloor=100;S.gold+=1e7;S.ore+=1e5;S.ess+=1e5;S.core=(S.core||0)+999;S.prot=(S.prot||0)+99;S.hpPot+=99;S.mpPot+=99;
-      const have=new Set(S.inv.concat(Object.values(S.eq)).filter(i=>i&&i.my).map(i=>i.my));for(const m of Object.keys(MYTH))if(!have.has(m)&&S.inv.length<32)S.inv.push(mkMyth(m,100));toast('전부 해금했어요')}else if(k==='blink')S.blinkLv=BLINK_MAX
+      const have=new Set(S.inv.concat(Object.values(S.eq)).filter(i=>i&&i.my).map(i=>i.my));for(const m of Object.keys(MYTH))if(!have.has(m)&&S.inv.length<BAG())S.inv.push(mkMyth(m,100));toast('전부 해금했어요')}else if(k==='blink')S.blinkLv=BLINK_MAX
     else if(k==='legset'){for(const sl of['staff','robe','ring']){const it=mkItem(f,4,sl);it.r=4;it.up=15;S.inv.push(it)}}else if(k==='clear'){S.inv=[]}
     else if(k==='myth'){if(MYTH[x])S.inv.push(mkMyth(x,f))}
     else if(k==='god')DEV.god=!DEV.god;else if(k==='ohk')DEV.ohk=!DEV.ohk;else if(k==='heal'&&G.p){G.p.hp=D.maxHp;G.p.mp=D.maxMp}
@@ -2177,10 +2178,10 @@ const ACT={
   ltab(t){ui.lunaTab=t;sfx.ui()},tab(t){ui.tab=t;sfx.ui()},gf(t){ui.gf=t;sfx.ui()},
   pot(k){const key=k+'Pot';if(S[key]>=9)return sfx.err();if(!pay({gold:20,ess:1}))return;S[key]++;sfx.buy()},
   potg(k){const key=k+'Pot';if(S[key]>=9)return sfx.err();if(!pay({gold:45}))return;S[key]++;sfx.buy()},
-  forge(slot){if(S.inv.length>=32){toast('가방이 가득 찼습니다');return sfx.err()}const il=Math.max(1,S.maxFloor);if(!pay({gold:80+il*20,ore:4+(il>>1)}))return;const it=mkItem(il,1,slot);S.inv.push(it);sfx.buy();toast(`제작 완료: <span style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</span>`)},
+  forge(slot){if(S.inv.length>=BAG()){toast('가방이 가득 찼습니다');return sfx.err()}const il=Math.max(1,S.maxFloor);if(!pay({gold:80+il*20,ore:4+(il>>1)}))return;const it=mkItem(il,1,slot);S.inv.push(it);sfx.buy();toast(`제작 완료: <span style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</span>`)},
   sel(id){ui.sel=+id;sfx.ui()},
   equip(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;const it=S.inv[i],old=S.eq[it.slot];S.inv.splice(i,1);if(old)S.inv.push(old);S.eq[it.slot]=it;recalc();sfx.buy()},
-  unequip(k){const it=S.eq[k];if(!it||S.inv.length>=32)return;S.eq[k]=null;S.inv.push(it);recalc();sfx.ui()},
+  unequip(k){const it=S.eq[k];if(!it||S.inv.length>=BAG())return;S.eq[k]=null;S.inv.push(it);recalc();sfx.ui()},
   sell(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;S.gold+=sellPrice(S.inv[i]);S.inv.splice(i,1);ui.sel=null;sfx.coin()},
   sellR(r){S.sellR=+r},
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
@@ -2235,7 +2236,7 @@ function bindInput(){
   addEventListener('keydown',e=>{
     if(!G.started)return;if(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat&&!/^Digit/.test(e.code))return;IN.keys[e.code]=true;
     if(ui.open){if(e.code==='Escape'||e.code==='Tab'||e.code==='KeyF')closePanel();return}
-    const m=/^Digit([1-8])$/.exec(e.code);if(m){const i=+m[1]-1,id=S.slots[i];if(id&&i<D.slots)cast(id)}
+    const m=/^Digit([1-8])$/.exec(e.code),xi={Digit9:8,Digit0:9,Minus:10,Equal:11}[e.code];if(m){const i=+m[1]-1,id=S.slots[i];if(id&&i<D.slots)cast(id)}else if(xi!==undefined&&xi<D.slots){const id=S.slots[xi];if(id)cast(id)}
     else if(e.code==='KeyF')tryInteract();else if(e.code==='KeyR')castMyth();else if(e.code==='Space')blink();else if(e.code==='KeyQ')usePot('hp');else if(e.code==='KeyE')usePot('mp');
     else if(e.code==='Tab'||e.code==='KeyI'||e.code==='KeyC'){ui.tab='stat';openPanel('char')}else if(e.code==='KeyK'){ui.tab='grim';openPanel('char')}else if(e.code==='KeyL')toggleScan();else if(e.code==='KeyM')toggleMute();else if(e.code==='KeyT')toggleAuto();else if(e.code==='F11'){e.preventDefault();toggleFull()}
   });
