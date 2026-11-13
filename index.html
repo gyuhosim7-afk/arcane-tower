@@ -81,7 +81,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
 #title h1{font-size:4.6em;margin:0;color:#fff;letter-spacing:.04em;text-shadow:.05em .05em 0 #4a2fa0,.1em .1em 0 #04050c}
 #title .sub{font-size:1.15em;margin:0;color:var(--gold)}
 #title .menu{display:flex;flex-direction:column;gap:1.4em;padding:.5em 1.6em .5em 1em;margin-top:.4em}
-#title .menu button{font-size:1.3em;background:none;border:0;text-align:left;padding:.25em .3em}#title .menu #bCont{font-size:1.5em;color:var(--gold)}#title .menu #bNew{font-size:1em;opacity:.8;border-top:1px solid rgba(223,228,255,.25);padding-top:.6em}#title .menu #bNew.warn{color:#ff6b6b;opacity:1}#title .menu #bImp{font-size:.8em;opacity:.7}#codeBox{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(90vw,34em);padding:.8em 1em;z-index:50;pointer-events:auto}#codeBox b{color:var(--gold);font-size:1.2em}#codeTa{width:100%;height:8em;font:12px monospace;background:#0b0d24;color:#d8dee9;border:.1em solid #6a74b8;border-radius:.2em;word-break:break-all;box-sizing:border-box}#codeBox .cbtn{display:flex;gap:.6em;justify-content:flex-end;margin-top:.5em}#codeBox .cbtn button{font-size:1em;padding:.3em .9em}
+#title .menu button{font-size:1.3em;background:none;border:0;text-align:left;padding:.25em .3em}#title .menu #bCont{font-size:1.5em;color:var(--gold)}#title .menu #bNew{font-size:1em;opacity:.8;border-top:1px solid rgba(223,228,255,.25);padding-top:.6em}#title .menu #bNew.warn{color:#ff6b6b;opacity:1}#title .menu #bImp,#title .menu #bChars{font-size:.8em;opacity:.8}#codeBox .chl{display:flex;align-items:center;gap:.6em;padding:.35em 0;border-bottom:1px solid rgba(223,228,255,.15)}#codeBox .chl img{width:2em;height:2em;image-rendering:pixelated}#codeBox .chl .gr{flex:1}#codeBox .chl button{font-size:.9em;padding:.2em .7em}#codeBox{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(90vw,34em);padding:.8em 1em;z-index:50;pointer-events:auto}#codeBox b{color:var(--gold);font-size:1.2em}#codeTa{width:100%;height:8em;font:12px monospace;background:#0b0d24;color:#d8dee9;border:.1em solid #6a74b8;border-radius:.2em;word-break:break-all;box-sizing:border-box}#codeBox .cbtn{display:flex;gap:.6em;justify-content:flex-end;margin-top:.5em}#codeBox .cbtn button{font-size:1em;padding:.3em .9em}
 #title .menu button::before{content:'▶ ';visibility:hidden;color:var(--gold)}
 #title .menu button:hover::before,#title .menu button:focus-visible::before{visibility:visible}
 #title .keys{font-size:.8em;color:var(--dim);text-align:center;line-height:1.5;margin-top:.4em}
@@ -127,7 +127,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
     <div id="title">
       <h1>아케인 타워</h1>
       <p class="sub">아홉 개의 서클, 백 층의 심연의 탑</p>
-      <div class="menu win"><button id="bCont" hidden>이어하기</button><button id="bNew">새로 시작</button><button id="bImp">저장 코드로 불러오기</button></div>
+      <div class="menu win"><button id="bCont" hidden>이어하기</button><button id="bNew">새로 시작</button><button id="bChars" hidden>캐릭터 선택</button><button id="bImp">저장 코드로 불러오기</button></div>
       <div class="keys">WASD 이동 · 마우스 조준, 클릭 매직 애로우 · 1~8 마법 · Space 순간이동(이동 방향)<br>F 대화·포탈·상자 · R 신화 스킬 · Q/E 물약 · Tab 메뉴 · L CRT · M 소리</div>
     </div>
     <div id="pick" class="win" hidden>
@@ -762,7 +762,11 @@ function deathFx(e,spr){const flip=e.face<0,x=e.x,y=e.y-e.z,sc=e.sc,boss=e.boss;
 const SAVE_KEY='arcane-tower-save-v3';
 function newSave(el){el=el||'ice';const s0=START[el];return{lvl:1,xp:0,gold:60,ess:0,ore:0,circle:1,mast:0,pts:0,st:{int:0,vit:0,crit:0,wis:0},aff:[el],affPend:0,grim:{arrow:1,[s0]:1},slots:[s0,null,null,null,null,null,null,null],eq:{robe:null,staff:null,ring:null},inv:[],hpPot:3,mpPot:2,prot:0,maxFloor:0,quests:[],codex:{},scan:true,mute:false,uid:1}}
 let S=newSave();
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+/* 캐릭터 여러 개: 지금 캐릭터는 SAVE_KEY, 모든 캐릭터는 SLOT_KEY에 고유번호별로 보관 */
+const SLOT_KEY='arcane-tower-slots';
+function getSlots(){try{return JSON.parse(localStorage.getItem(SLOT_KEY)||'{}')||{}}catch(e){return{}}}
+function putSlots(o){try{localStorage.setItem(SLOT_KEY,JSON.stringify(o))}catch(e){}}
+function save(){try{const j=JSON.stringify(S);localStorage.setItem(SAVE_KEY,j);if(S.pid){const sl=getSlots();sl[S.pid]=j;putSlots(sl)}}catch(e){}}
 function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.slots=r.slots.map(k=>k&&SP[k]?k:null);r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
 const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
 const RM=[1,1.3,1.7,2.2,3,4.2];
@@ -2116,7 +2120,7 @@ const PANELS={
       h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT','마법 피해 +4%, 마나 +5',S.st.int)+row('vit','체력 VIT','생명력 +12, 재생 증가',S.st.vit)+row('crit','치명 CRIT','치명타율 +1.5%, 치명 피해 증가',S.st.crit)+row('wis','정신 WIS','쿨타임 -1%, 마나 재생 증가',S.st.wis);
       h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 쿨타임 감소 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
       h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')} ${btn('저장 코드 복사','exportCode',true,'go')} ${btn('코드 입력','devCode')}${DEV.on?' '+btn('개발자 모드','devOpen',true,'go'):''}</div></div>`;
-      h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'처음부터 다시 (저장 삭제)','reset')}</div>`}
+      h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'이 캐릭터 삭제','reset')}</div>`}
     else if(ui.tab==='inv'){
       const cur=[['gold','골드',Math.floor(S.gold)],['ore','광석',S.ore],['ess','정수',S.ess],['core','마력 코어',S.core||0],['prot','파괴 방지권',S.prot||0],['hpPot','체력 물약',S.hpPot],['mpPot','마나 물약',S.mpPot]];
       h+='<div class="wallet"><div class="sec">재화</div>'+cur.map(([k,n,v])=>`<div class="wl"><img src="${ICON[k]||ICON.hpPot}" alt=""><span>${n}</span><b>${v}</b></div>`).join('')+'</div>';
@@ -2178,7 +2182,7 @@ const ACT={
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
   claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(q.xp)},
   enter(f){f=+f;if(!(f===1||f===Math.min(100,S.maxFloor+1)||(f%10===1&&f<=91&&f-1<=S.maxFloor)))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
-  reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}else{ui.resetArm=true}}
+  reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY);const sl=getSlots();delete sl[S.pid];putSlots(sl)}catch(e){}location.reload()}else{ui.resetArm=true}}
 };
 function openPanel(n){ui.open=n;ui.sel=null;ui.resetArm=false;IN.down=false;$('panel').hidden=false;refreshPanel()}
 function refreshPanel(){if(!ui.open)return;const P=PANELS[ui.open],b=$('panelBody'),st=b.scrollTop;$('panelTitle').textContent=P.t;$('panelWallet').innerHTML=ui.open==='char'&&ui.tab==='inv'?'':[['gold',Math.floor(S.gold)],['ore',S.ore],['ess',S.ess],['core',S.core||0],['prot',S.prot||0]].map(([k,v])=>`<span title="${({gold:'골드',ore:'광석',ess:'정수',core:'마력 코어',prot:'파괴 방지권'})[k]}"><img src="${ICON[k]}" alt="">${v}</span>`).join('');b.innerHTML=P.r();b.scrollTop=st}
@@ -2278,12 +2282,20 @@ function frame(t){
 const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t)));
 function saveCode(){save();return 'AT1-'+S.pid+'-'+b64e(JSON.stringify(S))}
 function parseCode(c){c=String(c||'').replace(/\s+/g,'');const m=/^AT1-([A-Z0-9]{4}-[A-Z0-9]{4})-(.+)$/.exec(c);if(!m)return null;try{const o=JSON.parse(b64d(m[2]));if(!o||!o.lvl||!o.aff||o.pid!==m[1])return null;return o}catch(e){return null}}
-function codeBox(mode){const box=$('codeBox'),ta=$('codeTa');box.hidden=false;
+function charBox(){const box=$('codeBox'),sl=getSlots();box.hidden=false;$('codeTitle').textContent='캐릭터 선택';$('codeHelp').textContent='이 기기에 있는 캐릭터예요. 고르면 그 캐릭터로 이어서 해요.';$('codeTa').style.display='none';$('codeGo').style.display='none';
+  let list=$('charList');if(!list){list=document.createElement('div');list.id='charList';$('codeTa').after(list)}list.style.display='';
+  const cur=loadSave(),rows=Object.entries(sl).map(([pid,j])=>{try{return[pid,JSON.parse(j)]}catch(e){return null}}).filter(Boolean).sort((a,b)=>(b[1].lvl||0)-(a[1].lvl||0));
+  list.innerHTML=rows.map(([pid,o])=>`<div class="chl"><img src="${ICON['hero_'+(o.aff&&o.aff[0])]||''}" alt=""><div class="gr"><b>${(o.nick||'마법사').replace(/[<>&]/g,'')}</b> <span class="dim">#${pid}</span><br>Lv.${o.lvl} · ${o.circle}서클 · 최고 ${o.maxFloor||0}층${cur&&cur.pid===pid?' · <span class="gold">지금 캐릭터</span>':''}</div><button data-pick="${pid}">선택</button><button data-del="${pid}">삭제</button></div>`).join('')||'<p class="dim">캐릭터가 없어요.</p>';
+  list.onclick=ev=>{const pk=ev.target.dataset.pick,dl=ev.target.dataset.del;
+    if(pk){try{localStorage.setItem(SAVE_KEY,sl[pk])}catch(e){}location.reload()}
+    if(dl){const o=JSON.parse(sl[dl]);if(!confirm(`${o.nick||'마법사'} #${dl} (Lv.${o.lvl})를 지울까요? 되돌릴 수 없어요.`))return;delete sl[dl];putSlots(sl);if(cur&&cur.pid===dl){try{localStorage.removeItem(SAVE_KEY)}catch(e){}}location.reload()}};
+  $('codeX').onclick=()=>{box.hidden=true;$('codeTa').style.display='';$('codeGo').style.display='';list.style.display='none'}}
+function codeBox(mode){{const l=$('charList');if(l)l.style.display='none';$('codeTa').style.display='';$('codeGo').style.display=''}const box=$('codeBox'),ta=$('codeTa');box.hidden=false;
   if(mode==='export'){const c=saveCode();$('codeTitle').textContent=`저장 코드 · ${S.nick} #${S.pid}`;$('codeHelp').textContent='이 코드를 통째로 복사해서 다른 기기의 시작 화면 [저장 코드로 불러오기]에 붙여 넣으세요. 코드는 지금 상태 그대로라, 이 기기에서 더 하면 다시 복사해야 해요.';ta.value=c;ta.readOnly=true;$('codeGo').textContent='복사';
     $('codeGo').onclick=()=>{ta.select();(navigator.clipboard?navigator.clipboard.writeText(c):Promise.reject()).then(()=>toast('저장 코드를 복사했어요')).catch(()=>{try{document.execCommand('copy');toast('저장 코드를 복사했어요')}catch(e){toast('코드를 길게 눌러 직접 복사해 주세요')}})}}
-  else{$('codeTitle').textContent='저장 코드로 불러오기';$('codeHelp').textContent='다른 기기에서 복사한 저장 코드를 붙여 넣으세요. 이 기기에 있던 저장은 덮어써집니다.';ta.value='';ta.readOnly=false;$('codeGo').textContent='불러오기';
+  else{$('codeTitle').textContent='저장 코드로 불러오기';$('codeHelp').textContent='다른 기기에서 복사한 저장 코드를 붙여 넣으세요. 지금 캐릭터는 [캐릭터 선택]에 그대로 남아요.';ta.value='';ta.readOnly=false;$('codeGo').textContent='불러오기';
     $('codeGo').onclick=()=>{const o=parseCode(ta.value);if(!o){$('codeHelp').textContent='코드가 올바르지 않아요. 처음부터 끝까지 빠짐없이 붙여 넣었는지 확인해 주세요.';return}
-      if(!confirm(`${o.nick||'마법사'} #${o.pid} · Lv.${o.lvl} · 최고 ${o.maxFloor||0}층\n이 저장으로 바꿀까요? 이 기기의 저장은 사라집니다.`))return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(o))}catch(e){}location.reload()}}
+      if(!confirm(`${o.nick||'마법사'} #${o.pid} · Lv.${o.lvl} · 최고 ${o.maxFloor||0}층\n이 캐릭터를 불러올까요? 지금 캐릭터는 [캐릭터 선택]에 남아요.`))return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(o))}catch(e){}location.reload()}}
   $('codeX').onclick=()=>{box.hidden=true}}
 const mkPid=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<8;i++){r+=c[Math.random()*c.length|0];if(i===3)r+='-'}return r};
 const cleanNick=n=>String(n||'').replace(/[<>&"'`]/g,'').trim().slice(0,10);
@@ -2302,15 +2314,16 @@ function showPick(){
 }
 buildAssets();
 (function boot(){
-  const sv=loadSave();if(sv){S=sv;ensureId();$('bCont').hidden=false;$('bCont').textContent=`이어하기 · ${S.nick} Lv.${S.lvl}`}
+  const sv=loadSave();if(sv){S=sv;ensureId();save();$('bCont').hidden=false;$('bCont').textContent=`이어하기 · ${S.nick} Lv.${S.lvl}`}
+  if(Object.keys(getSlots()).length>=2)$('bChars').hidden=false;
   resize();addEventListener('resize',resize);autoUpdate();
   TOWN=buildTown();G.map=TOWN;G.p={x:320,y:200,face:1};G.zone='town';bindInput();
-  let newArm=0;$('bImp').onclick=()=>{initAudio();codeBox('import')};$('bNew').onclick=()=>{const b=$('bNew');if(!loadSave()||newArm){showPick();return}newArm=1;b.classList.add('warn');b.textContent='정말 새로 시작? 저장이 지워져요 (한 번 더 누르기)';setTimeout(()=>{newArm=0;b.classList.remove('warn');b.textContent='새로 시작'},3500)};$('bCont').onclick=()=>start();
+  let newArm=0;$('bImp').onclick=()=>{initAudio();codeBox('import')};$('bNew').onclick=()=>{const b=$('bNew');if(!loadSave()||newArm){showPick();return}newArm=1;b.classList.add('warn');b.textContent='새 캐릭터 만들기? 지금 캐릭터는 [캐릭터 선택]에 남아요 (한 번 더 누르기)';setTimeout(()=>{newArm=0;b.classList.remove('warn');b.textContent='새로 시작'},3500)};$('bChars').onclick=()=>{initAudio();charBox()};$('bCont').onclick=()=>start();
   $('pickGrid').addEventListener('click',e=>{const b=e.target.closest('.pk');if(b)start(b.dataset.el)});
   setInterval(()=>{if(G.started)save()},20000);
   requestAnimationFrame(frame);
 })();
-window.__game={bossPattern,bossSig,bossSig2,applyDb,itemSprForTest:itemSpr,A,update,IN,MON,THEMES,BOSSES,MYTH,mkMyth,mkItem,xpNeed,hpScale,dmgScale,openChest,spawnChest,forgeAnim,G,get S(){return S},set S(v){S=v},D,SP,SPL,recalc,enterFloor,enterTown,cast,openPanel,closePanel,start};
+window.__game={save:()=>save(),bossPattern,bossSig,bossSig2,applyDb,itemSprForTest:itemSpr,A,update,IN,MON,THEMES,BOSSES,MYTH,mkMyth,mkItem,xpNeed,hpScale,dmgScale,openChest,spawnChest,forgeAnim,G,get S(){return S},set S(v){S=v},D,SP,SPL,recalc,enterFloor,enterTown,cast,openPanel,closePanel,start};
 </script>
 </body>
 </html>
