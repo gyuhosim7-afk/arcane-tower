@@ -59,7 +59,7 @@ button.muted{opacity:.5}
 img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right:.15em}
 .tabs{display:flex;gap:.35em;margin-bottom:.5em;flex-wrap:wrap}.tabs button.on{background:#3a2a9a;border-color:#fff}
 .gold{color:var(--gold)}.no{color:var(--no)}.dim{color:var(--dim)}.ok{color:var(--ok)}
-.inv{display:grid;grid-template-columns:repeat(8,1fr);gap:.3em}.sec{font-size:.85em;color:#c8b48a;margin:.2em 0 .3em;border-bottom:1px solid #4a3a28}.wallet{display:flex;flex-wrap:wrap;gap:.3em .8em;margin-bottom:.6em;padding:.3em .5em;background:rgba(0,0,0,.25);border:1px solid #4a3a28;border-radius:4px}.wallet .sec{width:100%;margin:0}.wl{display:flex;align-items:center;gap:.3em}.wl img{width:1.4em;height:1.4em;image-rendering:pixelated}.wl span{color:#a8a4b8;font-size:.85em}.wl b{color:#ffe27a}
+.inv{display:grid;grid-template-columns:repeat(8,1fr);gap:.3em}.sellbar{margin-top:.4em;display:flex;flex-wrap:wrap;gap:.25em;align-items:center}.sellbar>span{font-size:.85em;color:#a8a4b8}.sellbar .sr{padding:.15em .45em;font-size:.8em;border:1px solid var(--rc);color:var(--rc);background:transparent;opacity:.5}.sellbar .sr.on{opacity:1;background:rgba(255,255,255,.08)}.sec{font-size:.85em;color:#c8b48a;margin:.2em 0 .3em;border-bottom:1px solid #4a3a28}.wallet{display:flex;flex-wrap:wrap;gap:.3em .8em;margin-bottom:.6em;padding:.3em .5em;background:rgba(0,0,0,.25);border:1px solid #4a3a28;border-radius:4px}.wallet .sec{width:100%;margin:0}.wl{display:flex;align-items:center;gap:.3em}.wl img{width:1.4em;height:1.4em;image-rendering:pixelated}.wl span{color:#a8a4b8;font-size:.85em}.wl b{color:#ffe27a}
 .cell{aspect-ratio:1;background:var(--ink);border:.12em solid #39407a;border-radius:.15em;position:relative;cursor:pointer}
 .cell img{width:100%;height:100%;image-rendering:pixelated;display:block}
 .cell u{position:absolute;right:.1em;bottom:0;font-size:.75em;text-decoration:none}
@@ -2027,7 +2027,7 @@ const PANELS={
       h+=`</div><div class="sec">가방 ${S.inv.length}/32</div><div class="inv">`;
       for(const it of S.inv)h+=`<div class="cell ${ui.sel===it.id?'sel':''}" style="border-color:${RAR[it.r].c}" data-a="sel:${it.id}"><img src="${itemIcon(it)}" alt="">${it.up?`<u>+${it.up}</u>`:''}</div>`;
       for(let i=S.inv.length;i<32;i++)h+='<div class="cell" style="cursor:default"></div>';
-      h+=`</div><div style="margin-top:.4em">${btn('일반·고급 모두 판매','sellJunk',S.inv.some(i=>i.r<2))}</div></div><div>`;
+      {const sr=S.sellR??1;h+=`</div><div class="sellbar"><span>일괄 판매:</span>${[0,1,2,3,4].map(r=>`<button class="sr ${r<=sr?'on':''}" style="--rc:${RAR[r].c}" data-a="sellR:${r}">${RAR[r].n}</button>`).join('')}${btn(`${RAR[sr].n} 이하 모두 판매`,'sellJunk',S.inv.some(i=>!i.my&&i.r<=sr),'go')}</div></div><div>`}
       const eqd=Object.values(S.eq).find(i=>i&&i.id===ui.sel),it=eqd||S.inv.find(i=>i.id===ui.sel);
       if(it){const cur=S.eq[it.slot];h+=`<b style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</b><div class="ds">아이템 레벨 ${it.il}</div>${statLine(it).split(' · ').join('<br>')}${it.my?`<div style="color:${RAR[5].c}">${MYTH[it.my].fx}</div>`:''}`;
         if(eqd)h+=`<div style="margin-top:.4em">${btn('해제','unequip:'+it.slot,S.inv.length<32)}</div>`;
@@ -2060,7 +2060,8 @@ const ACT={
   equip(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;const it=S.inv[i],old=S.eq[it.slot];S.inv.splice(i,1);if(old)S.inv.push(old);S.eq[it.slot]=it;recalc();sfx.buy()},
   unequip(k){const it=S.eq[k];if(!it||S.inv.length>=32)return;S.eq[k]=null;S.inv.push(it);recalc();sfx.ui()},
   sell(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;S.gold+=sellPrice(S.inv[i]);S.inv.splice(i,1);ui.sel=null;sfx.coin()},
-  sellJunk(){let g=0;S.inv=S.inv.filter(it=>{if(it.r<2){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
+  sellR(r){S.sellR=+r},
+  sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
   claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(q.xp)},
   enter(f){closePanel();sfx.portal();fadeTo(()=>enterFloor(+f))},
   reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}else{ui.resetArm=true}}
