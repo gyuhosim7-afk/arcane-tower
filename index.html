@@ -1264,7 +1264,7 @@ function hurt(e,dmg,o={}){
   if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;
   const c=!o.dot&&Math.random()*100<D.crit;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
   let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
-  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*.05));/* 보스는 한 방에 최대 체력의 5%까지만 */
+  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*.05));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;/* 보스는 한 방에 최대 체력의 5%까지만 */
   const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));e.hp-=d;if(!o.dot)e.flash=.1;
   if(o.kb&&!e.boss&&o.sx!==undefined){const a=Math.atan2(e.y-o.sy,e.x-o.sx);e.kx+=Math.cos(a)*o.kb;e.ky+=Math.sin(a)*o.kb}
   G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+shown+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
@@ -1304,7 +1304,7 @@ function kill(e){
   qEvent('kill',e.type);
 }
 function hurtPlayer(d){
-  const p=G.p;if(p.ifr>0||G.dead)return;d=Math.max(1,Math.round(d*(1-D.def/(D.def+100))*(1-D.dr)*(p.stoneT>G.time?.6:1)));
+  const p=G.p;if(p.ifr>0||G.dead||(DEV.on&&DEV.god))return;d=Math.max(1,Math.round(d*(1-D.def/(D.def+100))*(1-D.dr)*(p.stoneT>G.time?.6:1)));
   if(hasM('gargHeart')&&p.hp-d<D.maxHp*.3&&!(p.stoneCd>G.time)){p.stoneT=G.time+6;p.stoneCd=G.time+45;G.texts.push({x:p.x,y:p.y-42,vy:-18,life:1.2,str:'석상의 심장!',col:'#c8c0b0',sc:1});burst(p.x,p.y-10,20,['#8b93a7','#d8dee9'],60,.5)}
   if(hasM('magmaCore')&&!(p.magT>G.time)){p.magT=G.time+1;aoe(p.x,p.y-6,50,D.pow*2,{el:'fire',st:'burn',proc:1});boom(p.x,p.y-6,30,['#ffffff','#ffd24a','#ff7a2a','#c0301a'],false)}
   if(p.shield>0){const a=Math.min(p.shield,Math.floor(d*.5));p.shield-=a;d=Math.max(1,d-a);flashFx(p.x,p.y-12,6,EL.none.c[1],.15);if(p.shield<=0){burst(p.x,p.y-12,20,EL.none.c,90,.4);sfx.frost()}}
@@ -1552,7 +1552,7 @@ function bossArchon(e,dt,p,d,ux,uy,sp){
 const DB={poison:{n:'중독',c:'#7ae05a',dot:.03},burn:{n:'화상',c:'#ff7a2a',dot:.04},bleed:{n:'출혈',c:'#e5484d',dot:.025},silence:{n:'침묵',c:'#c8a0ff'},curse:{n:'저주',c:'#a03ac8'},blind:{n:'실명',c:'#5a5a6a'},freeze:{n:'빙결',c:'#9ae0ff'}};
 function applyDb(k,t){const p=G.p;if(G.dead)return;if((k==='curse'&&hasM('pharaohRobe'))||(k==='bleed'&&hasM('knightCloak'))||(k==='burn'&&hasM('magmaCore'))||(k==='blind'&&hasM('shadowStaff')))return;p.db=p.db||{};const had=(p.db[k]||0)>0;p.db[k]=Math.max(p.db[k]||0,t);if(!had){G.texts.push({x:p.x,y:p.y-40,vy:-18,life:1,str:DB[k].n+'!',col:DB[k].c,sc:1});burst(p.x,p.y-12,12,[DB[k].c,'#ffffff'],50,.4)}}
 const healMul=()=>(G.p&&G.p.db&&G.p.db.curse>0)?.4:1;
-function dotPlayer(v){const p=G.p;if(G.dead)return;if(p.hp-v<=0){p.ifr=0;hurtPlayer(v*9)}else{p.hp-=v;if(Math.random()<.3)G.texts.push({x:p.x+rnd(-6,6),y:p.y-30,vy:-20,life:.6,str:'-'+Math.round(v),col:'#ff9a9a',sc:.8})}}
+function dotPlayer(v){const p=G.p;if(G.dead||(DEV.on&&DEV.god))return;if(p.hp-v<=0){p.ifr=0;hurtPlayer(v*9)}else{p.hp-=v;if(Math.random()<.3)G.texts.push({x:p.x+rnd(-6,6),y:p.y-30,vy:-20,life:.6,str:'-'+Math.round(v),col:'#ff9a9a',sc:.8})}}
 function updDb(p,dt){if(!p.db)return;for(const k in p.db){if(p.db[k]<=0)continue;p.db[k]-=dt;const d=DB[k];if(d.dot){p.dbT=(p.dbT||{});p.dbT[k]=(p.dbT[k]||0)-dt;if(p.dbT[k]<=0){p.dbT[k]=.5;dotPlayer(D.maxHp*d.dot*.5)}if(Math.random()<.3)part(p.x+rnd(-5,5),p.y-rnd(4,20),0,rnd(-24,-8),.5,d.c,1)}}}
 function dbZone(x,y,R,dur,dmg,col,col2,db,dbt){addFx({layer:'g',t:0,tk:0,upd(dt){this.t+=dt;this.tk-=dt;const P=G.p;if(this.tk<=0&&this.t>.4&&Math.hypot(P.x-x,(P.y-y)*1.4)<R){this.tk=.5;if(dmg)hurtPlayer(dmg);if(db)applyDb(db,dbt)}if(Math.random()<.5){const a=rnd(TAU),r=Math.sqrt(Math.random())*R;part(x+Math.cos(a)*r,y+Math.sin(a)*r*.62,rnd(-6,6),rnd(-14,-4),rnd(.6,1),pick([col,col2]),rnd(2,3),{pf:1})}return this.t<dur},
   draw(){const f=Math.max(0,Math.min(1,this.t/.4,(dur-this.t)/.4));ctx.globalAlpha=.3*f;pxEll(ctx,x,y,R,R*.62,col);ctx.globalAlpha=1;pxRing(ctx,x,y,R,R*.62,col2);if((this.t*6|0)%2)pxRing(ctx,x,y,R-2,(R-2)*.62,col,24)}})}
@@ -2050,7 +2050,20 @@ function grimList(mode){
   const hidden=SPL.filter(sp=>!els.includes(sp.el)).length;if(hidden)h+=`<p>다른 속성 마법 ${hidden}개는 그 속성을 깨우면 보입니다.</p>`;
   return h;
 }
+/* 개발자 모드: [코드 입력]에 개발자 코드를 넣으면 이 기기에서만 켜진다 */
+const DEV={on:(()=>{try{return localStorage.getItem('at-dev')==='1'}catch(e){return false}})(),god:false,ohk:false};
+const devHash=t=>{let x=0;for(const ch of t)x=(x*131+ch.charCodeAt(0))>>>0;return x};
 const PANELS={
+  dev:{t:'개발자 모드',r(){
+    const b=(l,a,c)=>btn(l,a,true,c);
+    let h=`<p class="dim">이 기기에서만 켜져 있어요. 친구들 게임에는 영향이 없어요.</p>`;
+    h+=`<div class="hd">재화</div><div class="li"><div class="gr">골드·광석·정수·코어·방지권·물약</div><div class="bt">${b('+100만 골드','dv:gold')}${b('재료 +1만','dv:mats')}${b('방지권 +50','dv:prot')}${b('물약 +50','dv:pots')}</div></div>`;
+    h+=`<div class="hd">성장</div><div class="li"><div class="gr">Lv.${S.lvl} · ${S.circle}서클 · 포인트 ${S.pts}</div><div class="bt">${b('레벨 +10','dv:lvl')}${b('서클 +1','dv:circle')}${b('포인트 +50','dv:pts')}${b('모든 마법 Lv10','dv:spells')}${b('순간이동 최대','dv:blink')}</div></div>`;
+    h+=`<div class="hd">장비</div><div class="li"><div class="gr">현재 최고 층 기준으로 만들어요</div><div class="bt">${b('전설 +15 세트','dv:legset')}${b('가방 비우기','dv:clear')}</div></div>`;
+    h+=`<div class="li"><div class="gr">신화 받기</div><div class="bt" style="flex-wrap:wrap">${Object.keys(MYTH).map(k=>b(MYTH[k].n,'dv:myth:'+k)).join('')}</div></div>`;
+    h+=`<div class="hd">전투</div><div class="li"><div class="gr">무적 ${DEV.god?'<b class="gold">켜짐</b>':'꺼짐'} · 한 방 ${DEV.ohk?'<b class="gold">켜짐</b>':'꺼짐'}</div><div class="bt">${b('무적','dv:god',DEV.god?'go':'')}${b('한 방','dv:ohk',DEV.ohk?'go':'')}${b('체력·마나 회복','dv:heal')}</div></div>`;
+    h+=`<div class="li"><div class="gr">아무 층으로 이동 · 최고 기록 바꾸기</div><div class="bt">${b('층 이동','dv:warp')}${b('최고 기록 설정','dv:max')}</div></div>`;
+    h+=`<div style="margin-top:.6em">${b('개발자 모드 끄기','dv:off')}</div>`;return h}},
   eldrin:{t:'마법사 엘드린',r(){
     const c=S.circle;let h=`<div class="say"><img src="${ICON.eldrin}" alt=""><p>"서클은 재물로 사는 게 아닐세. 마나를 쓰고 또 써서 심장에 고리를 새기는 걸세."</p></div>`;
     h+=`<div class="ladder">`;for(let i=1;i<=9;i++)h+=`<div class="${i<=c?'on':''}" style="${i<=c?`background:${AURA[i]}`:''}">${i}</div>`;h+=`</div>`;
@@ -2102,7 +2115,7 @@ const PANELS={
       const row=(k,n,d,v)=>`<div class="li"><div class="gr"><b>${n}</b> <span class="gold">${v}</span><div class="ds">${d}</div></div><div class="bt">${btn('+1','stat:'+k,S.pts>0)}</div></div>`;
       h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT','마법 피해 +4%, 마나 +5',S.st.int)+row('vit','체력 VIT','생명력 +12, 재생 증가',S.st.vit)+row('crit','치명 CRIT','치명타율 +1.5%, 치명 피해 증가',S.st.crit)+row('wis','정신 WIS','쿨타임 -1%, 마나 재생 증가',S.st.wis);
       h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 쿨타임 감소 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
-      h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')} ${btn('저장 코드 복사','exportCode',true,'go')}</div></div>`;
+      h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')} ${btn('저장 코드 복사','exportCode',true,'go')} ${btn('코드 입력','devCode')}${DEV.on?' '+btn('개발자 모드','devOpen',true,'go'):''}</div></div>`;
       h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'처음부터 다시 (저장 삭제)','reset')}</div>`}
     else if(ui.tab==='inv'){
       const cur=[['gold','골드',Math.floor(S.gold)],['ore','광석',S.ore],['ess','정수',S.ess],['core','마력 코어',S.core||0],['prot','파괴 방지권',S.prot||0],['hpPot','체력 물약',S.hpPot],['mpPot','마나 물약',S.mpPot]];
@@ -2136,6 +2149,19 @@ const ACT={
   aff(el){if(!S.affPend||S.aff.includes(el))return;S.aff.push(el);S.affPend--;sfx.circle();toast(`${EL[el].n} 속성이 깨어났습니다`);const s0=START[el];if(!S.grim[s0]){S.grim[s0]=1;toast(`마법서 ${SP[s0].n}을(를) 받았습니다`)}},
   craft(id){const sp=SP[id];if(!canUse(sp))return sfx.err();if(S.circle<sp.c){toast(`${sp.c}서클이 필요합니다`);return sfx.err()}if(!pay(craftCost(sp)))return;S.grim[id]=1;sfx.buy();toast(`마법서 제작: ${sp.n}`);const i=S.slots.slice(0,D.slots).indexOf(null);if(i>=0)S.slots[i]=id},
   exportCode(){closePanel();codeBox('export')},
+  devCode(){const c=(prompt('코드를 입력하세요')||'').trim();if(!c)return;if(devHash(c)===2771164979){DEV.on=true;try{localStorage.setItem('at-dev','1')}catch(e){}toast('개발자 모드가 켜졌어요');openPanel('dev')}else toast('올바르지 않은 코드예요')},
+  devOpen(){if(DEV.on)openPanel('dev')},
+  dv(a){if(!DEV.on)return;const [k,x]=a.split(':');const f=Math.max(1,S.maxFloor);
+    if(k==='gold')S.gold+=1e6;else if(k==='mats'){S.ore+=1e4;S.ess+=1e4;S.core=(S.core||0)+100}else if(k==='prot')S.prot=(S.prot||0)+50;else if(k==='pots'){S.hpPot+=50;S.mpPot+=50}
+    else if(k==='lvl'){const t=Math.min(99,S.lvl+10);while(S.lvl<t){S.lvl++;S.pts+=3}S.xp=0}else if(k==='circle'){if(S.circle<9){S.circle++;S.mast=0}}else if(k==='pts')S.pts+=50
+    else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}else if(k==='blink')S.blinkLv=BLINK_MAX
+    else if(k==='legset'){for(const sl of['staff','robe','ring']){const it=mkItem(f,4,sl);it.r=4;it.up=15;S.inv.push(it)}}else if(k==='clear'){S.inv=[]}
+    else if(k==='myth'){if(MYTH[x])S.inv.push(mkMyth(x,f))}
+    else if(k==='god')DEV.god=!DEV.god;else if(k==='ohk')DEV.ohk=!DEV.ohk;else if(k==='heal'&&G.p){G.p.hp=D.maxHp;G.p.mp=D.maxMp}
+    else if(k==='warp'){const n=+prompt('몇 층으로 갈까요? (1~100)');if(n>=1&&n<=100){closePanel();fadeTo(()=>enterFloor(Math.round(n)))}return}
+    else if(k==='max'){const n=+prompt('최고 기록을 몇 층으로 할까요? (0~100)',S.maxFloor);if(n>=0&&n<=100)S.maxFloor=Math.round(n)}
+    else if(k==='off'){DEV.on=false;DEV.god=false;DEV.ohk=false;try{localStorage.removeItem('at-dev')}catch(e){}closePanel();toast('개발자 모드를 껐어요');return}
+    recalc();save()},
   nick(){const n=cleanNick(prompt('새 닉네임 (최대 10글자)',S.nick||''));if(n){S.nick=n;toast(`닉네임: ${n}`)}},
   blinkUp(){if((S.blinkLv||0)>=BLINK_MAX)return;if(!pay(blinkCost()))return;S.blinkLv=(S.blinkLv||0)+1;sfx.buy();toast(`순간이동 Lv.${S.blinkLv} · 쿨타임 -${Math.round(S.blinkLv*3.5)}%`)},
   enh(id){const sp=SP[id];if((S.grim[id]||0)>=10)return;if(!pay(enhCost(sp)))return;S.grim[id]++;sfx.buy();toast(`${sp.n} Lv.${S.grim[id]}`)},
