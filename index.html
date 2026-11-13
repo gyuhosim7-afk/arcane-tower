@@ -1262,10 +1262,12 @@ function hurt(e,dmg,o={}){
   if(e.dead||e.hp<=0)return 0;const d0=MON[e.type];let mul=1,weak=false;
   if(o.el){if(d0.weak&&d0.weak.includes(o.el)){mul*=1.5;weak=true}if(d0.res&&d0.res.includes(o.el))mul*=.6;}
   if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;
-  const c=!o.dot&&Math.random()*100<D.crit;const d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
-  e.hp-=d;if(!o.dot)e.flash=.1;
+  const c=!o.dot&&Math.random()*100<D.crit;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
+  let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
+  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*.05));/* 보스는 한 방에 최대 체력의 5%까지만 */
+  const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));e.hp-=d;if(!o.dot)e.flash=.1;
   if(o.kb&&!e.boss&&o.sx!==undefined){const a=Math.atan2(e.y-o.sy,e.x-o.sx);e.kx+=Math.cos(a)*o.kb;e.ky+=Math.sin(a)*o.kb}
-  G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+d+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
+  G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+shown+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
   if(!o.dot){if(c){sfx.crit();G.hitstop=Math.max(G.hitstop,.03);shake(2)}else sfx.hit()}
   if(o.st)status(e,o.st,o.stT,dmg);if(o.st2)status(e,o.st2,4,dmg);
   if(!o.dot&&!o.proc&&e.hp>0){
