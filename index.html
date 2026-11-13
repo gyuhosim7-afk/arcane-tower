@@ -92,7 +92,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
 .pk span{font-size:.75em;color:var(--dim)}
 #touch{position:absolute;inset:0;pointer-events:none;display:none}
 #touch button{position:absolute;pointer-events:auto;width:4.2em;height:4.2em;border-radius:50%;font-size:1em;opacity:.85;padding:0}
-#tF{right:1.2em;bottom:5.6em}#tB{right:6.2em;bottom:4.6em}#tA{right:1.2em;bottom:10.4em;width:5em!important;height:5em!important;background:#7a2a3a;color:#fff;border:.15em solid #ffb0c0}#bAuto.on{background:#3a7a3a;color:#fff}
+#tF{right:1.2em;bottom:15.5em}#tB{right:6.2em;bottom:14.5em}#joy2{position:absolute;width:9em;height:9em;border-radius:50%;background:rgba(255,80,100,.08);border:.15em solid rgba(255,140,160,.35);display:none;transform:translate(-50%,-50%);pointer-events:none}#joy2 i{position:absolute;left:50%;top:50%;width:3.6em;height:3.6em;margin:-1.8em;border-radius:50%;background:rgba(255,140,160,.4)}#bAuto.on{background:#3a7a3a;color:#fff}
 #joy{position:absolute;width:9em;height:9em;border-radius:50%;background:rgba(255,255,255,.07);border:.15em solid rgba(255,255,255,.25);display:none;transform:translate(-50%,-50%)}
 #joy i{position:absolute;left:50%;top:50%;width:3.6em;height:3.6em;margin:-1.8em;border-radius:50%;background:rgba(255,255,255,.3)}
 .mbar{height:.35em;background:#161a36;border:.08em solid #04050c;margin:.25em 0}.mbar i{display:block;height:100%;background:linear-gradient(90deg,#7a4ac8,#c79bff)}
@@ -113,7 +113,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
       <div id="menuBtns"><button id="bBag">메뉴</button><button id="bScan">CRT</button><button id="bSnd">소리</button><button id="bAuto">수동</button></div>
       <div id="toasts"></div>
       <div id="banner"></div>
-      <div id="touch"><div id="joy"><i id="joyK"></i></div><button id="tF">F</button><button id="tB">블링크</button><button id="tA">공격</button></div>
+      <div id="touch"><div id="joy"><i id="joyK"></i></div><button id="tF">F</button><button id="tB">블링크</button></div><div id="joy2"><i id="joy2K"></i></div>
     </div>
     <div id="panel" hidden><div id="panelBox" class="win"><div id="panelHead"><span id="panelTitle"></span><button id="panelX">닫기</button></div><div id="panelBody"></div></div></div>
     <div id="forge" hidden><canvas id="forgeCv" width="160" height="96"></canvas><div id="forgeMsg"></div></div>
@@ -1072,7 +1072,7 @@ function tlLine(x,y,a,len,w,delay,dmg,col){const ex=x+Math.cos(a)*len,ey=y+Math.
 /* ============================ COMBAT ============================ */
 function nearestEnemy(x,y,maxD=1e9,skip){let b=null,bd=maxD;for(const e of G.en){if(e.dead||(skip&&skip.has(e)))continue;const d=Math.hypot(e.x-x,e.y-e.r-y);if(d<bd){bd=d;b=e}}return b}
 let AUTO_T=null;
-function aimPoint(){const p=G.p;if(AUTO_T)return AUTO_T;if(S.auto&&G.zone==='tower'){const e=nearestEnemy(p.x,p.y,300);if(e)return{x:e.x,y:e.y-e.r}}if(IN.touch){const a=p.aimA??(p.face<0?Math.PI:0);return{x:p.x+Math.cos(a)*90,y:p.y-8+Math.sin(a)*90}}return{x:IN.mx+G.cam.x,y:IN.my+G.cam.y}}
+function aimPoint(){const p=G.p;if(IN.touch&&IN.aiming){const a=p.aimA;return{x:p.x+Math.cos(a)*90,y:p.y-8+Math.sin(a)*90}}if(AUTO_T)return AUTO_T;if(S.auto&&G.zone==='tower'){const e=nearestEnemy(p.x,p.y,300);if(e)return{x:e.x,y:e.y-e.r}}if(IN.touch){const a=p.aimA??(p.face<0?Math.PI:0);return{x:p.x+Math.cos(a)*90,y:p.y-8+Math.sin(a)*90}}return{x:IN.mx+G.cam.x,y:IN.my+G.cam.y}}
 function status(e,st,t,dmg){
   if(st==='burn'){e.burn=Math.max(e.burn,3);e.burnD=Math.max(e.burnD||0,dmg*.18)}
   else if(st==='poison'){e.poi=Math.max(e.poi,4.5);e.poiD=Math.max(e.poiD||0,dmg*.5)}
@@ -1558,7 +1558,7 @@ function updPlayer(dt){
   const l=Math.hypot(mx,my);if(l>1){mx/=l;my/=l}p.mvx=l>.1?mx:0;p.mvy=l>.1?my:0;
   const spd=82*D.spd*(p.slowT>0?.55:1);
   const frz=p.db&&p.db.freeze>0;if(frz){mx=my=0;if(Math.random()<.3)part(p.x+rnd(-6,6),p.y-rnd(0,20),0,-6,.4,'#ffffff',1)}
-  if(l>.1&&!frz){moveEnt(p,mx*spd*dt,my*spd*dt,4);p.walk+=dt*9;if(IN.touch){if(Math.abs(mx)>.2)p.face=mx<0?-1:1;if(l>.3)p.aimA=Math.atan2(my,mx)}}else p.walk=0;
+  if(l>.1&&!frz){moveEnt(p,mx*spd*dt,my*spd*dt,4);p.walk+=dt*9;if(IN.touch){if(Math.abs(mx)>.2)p.face=mx<0?-1:1;if(l>.3&&!IN.aiming)p.aimA=Math.atan2(my,mx)}}else p.walk=0;
   if(!IN.touch&&p.castT<=0){const wx=IN.mx+G.cam.x;if(Math.abs(wx-p.x)>3)p.face=wx<p.x?-1:1}
   updDb(p,dt);p.hp=Math.min(D.maxHp,p.hp+(D.hpR+(p.regen>0?D.maxHp*.04:0))*dt*healMul());p.mp=Math.min(D.maxMp,p.mp+D.mpR*dt);
   for(const id in p.cd)if(p.cd[id]>0)p.cd[id]-=dt;p.mcd-=dt;p.bcd-=dt;p.pcd-=dt;p.ifr-=dt;p.castT-=dt;p.regen-=dt;p.hurtT=(p.hurtT||0)-dt;if(p.slowT>0)p.slowT-=dt;
@@ -1667,7 +1667,7 @@ function drawStaff(x,y,f,el,cast,t){
   if(cast)sparkle(tx+.5,cy,5,C[1]);light(tx,cy,cast?40:22)}
 function drawPlayer(p){
   if(G.dead)return;drawAura(p,false);shadow(p.x,p.y,14);
-  if(IN.touch&&!S.auto&&G.zone==='tower'){const a=p.aimA??(p.face<0?Math.PI:0),C=EL[S.aff[0]].c;for(let i=0;i<4;i++){const r=20+i*7;ctx.fillStyle=i===3?C[0]:C[2];ctx.fillRect(Math.round(p.x+Math.cos(a)*r)-1,Math.round(p.y-6+Math.sin(a)*r*.7)-1,i===3?3:2,i===3?3:2)}}
+  if(IN.touch&&(!S.auto||IN.aiming)&&G.zone==='tower'){const a=p.aimA??(p.face<0?Math.PI:0),C=EL[S.aff[0]].c;for(let i=0;i<4;i++){const r=20+i*7;ctx.fillStyle=i===3?C[0]:C[2];ctx.fillRect(Math.round(p.x+Math.cos(a)*r)-1,Math.round(p.y-6+Math.sin(a)*r*.7)-1,i===3?3:2,i===3?3:2)}}
   const el=S.aff[0],blink=p.ifr>0&&((G.time*20|0)%2)&&!(p.regen>0);
   if(!blink){const fr=p.walk?((p.walk|0)%2):0,bob=p.walk?((p.walk*2|0)%2):0,set=heroSet(el,fr);
     drawSpr(set,p.x,p.y+1-bob,p.face<0,'');drawStaff(p.x,p.y-bob,p.face,el,p.castT>0,G.time);
@@ -2001,18 +2001,18 @@ function bindInput(){
   cv.addEventListener('mousedown',e=>{if(e.button||!G.started)return;pos(e);IN.touch=false;if(hudHit(IN.mx,IN.my))return;const wx=IN.mx+G.cam.x,wy=IN.my+G.cam.y,p=G.p;
     for(const it of G.map.inter)if(Math.hypot(it.x-wx,it.y-10-wy)<18&&Math.hypot(it.x-p.x,it.y-p.y)<it.r+12){sfx.ui();it.act();return}IN.down=true});
   addEventListener('mouseup',()=>{IN.down=false});cv.addEventListener('contextmenu',e=>e.preventDefault());
-  const joy=$('joy'),jk=$('joyK');let jo=null;
+  const joy=$('joy'),jk=$('joyK');let jo=null,ao=null;
   cv.addEventListener('touchstart',e=>{e.preventDefault();if(!G.started)return;if(!IN.touch){IN.touch=true;$('touch').style.display='block'}const r=cv.getBoundingClientRect();
     for(const t of e.changedTouches){const gx=(t.clientX-r.left)/r.width*W,gy=(t.clientY-r.top)/r.height*H;if(hudHit(gx,gy))continue;
+      if(gx>W*.5&&IN.aid==null){IN.aid=t.identifier;ao={x:t.clientX,y:t.clientY};const sr=$('stage').getBoundingClientRect(),j2=$('joy2');j2.style.display='block';j2.style.left=(t.clientX-sr.left)+'px';j2.style.top=(t.clientY-sr.top)+'px';$('joy2K').style.transform='';continue}
       if(IN.jid===null){IN.jid=t.identifier;jo={x:t.clientX,y:t.clientY};const sr=$('stage').getBoundingClientRect();joy.style.display='block';joy.style.left=(t.clientX-sr.left)+'px';joy.style.top=(t.clientY-sr.top)+'px';jk.style.transform=''}}},{passive:false});
-  cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===IN.jid){let dx=t.clientX-jo.x,dy=t.clientY-jo.y;const d=Math.hypot(dx,dy),mx=40;if(d>mx){dx=dx/d*mx;dy=dy/d*mx}IN.jx=dx/mx;IN.jy=dy/mx;jk.style.transform=`translate(${dx}px,${dy}px)`}},{passive:false});
-  const tend=e=>{for(const t of e.changedTouches)if(t.identifier===IN.jid){IN.jid=null;IN.jx=IN.jy=0;joy.style.display='none'}};
+  cv.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===IN.aid){let dx=t.clientX-ao.x,dy=t.clientY-ao.y;const d=Math.hypot(dx,dy),mx=40;if(d>mx){dx=dx/d*mx;dy=dy/d*mx}$('joy2K').style.transform=`translate(${dx}px,${dy}px)`;if(d>8){G.p.aimA=Math.atan2(dy,dx);IN.aiming=true;IN.tfire=d>14}}else if(t.identifier===IN.jid){let dx=t.clientX-jo.x,dy=t.clientY-jo.y;const d=Math.hypot(dx,dy),mx=40;if(d>mx){dx=dx/d*mx;dy=dy/d*mx}IN.jx=dx/mx;IN.jy=dy/mx;jk.style.transform=`translate(${dx}px,${dy}px)`}},{passive:false});
+  const tend=e=>{for(const t of e.changedTouches)if(t.identifier===IN.aid){IN.aid=null;IN.aiming=false;IN.tfire=false;$('joy2').style.display='none'}else if(t.identifier===IN.jid){IN.jid=null;IN.jx=IN.jy=0;joy.style.display='none'}};
   cv.addEventListener('touchend',tend);cv.addEventListener('touchcancel',tend);
   $('tF').onclick=tryInteract;$('tB').onclick=blink;
   $('panelBody').addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const i=t.dataset.a.indexOf(':'),a=i<0?t.dataset.a:t.dataset.a.slice(0,i),arg=i<0?undefined:t.dataset.a.slice(i+1);if(ACT[a]){ACT[a](arg);refreshPanel();save()}});
   $('panelX').onclick=closePanel;$('panel').addEventListener('mousedown',e=>{if(e.target===$('panel'))closePanel()});
   $('bBag').onclick=()=>{ui.tab='stat';openPanel('char')};$('bScan').onclick=toggleScan;$('bSnd').onclick=toggleMute;$('bAuto').onclick=toggleAuto;
-  const tA=$('tA');tA.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();IN.tfire=true},{passive:false});const tAe=e=>{e.preventDefault();IN.tfire=false};tA.addEventListener('touchend',tAe);tA.addEventListener('touchcancel',tAe);
 }
 function toggleAuto(){S.auto=!S.auto;syncAuto();toast(S.auto?'자동 전투: 가까운 적에게 기술을 알아서 씁니다':'수동 전투: 직접 조준해서 씁니다');save()}
 function syncAuto(){const b=$('bAuto');b.textContent=S.auto?'자동':'수동';b.classList.toggle('on',!!S.auto)}
