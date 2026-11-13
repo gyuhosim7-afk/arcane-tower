@@ -761,14 +761,14 @@ const PRE=['낡은','견습생의','마도사의','대마법사의','심연의']
 const STN={pow:'마력',hp:'생명력',def:'방어',mp:'마나',crit:'치명타%',cdr:'쿨감%',int:'지능',vit:'체력',wis:'정신'};
 /* ---- 성장 곡선: 레벨은 느리게, 서클은 레벨 + 수련치(마나를 쓴 만큼 쌓임) ---- */
 const MAX_LVL=99;
-const floorCount=f=>Math.min(36,8+Math.floor(f*.3));
+const floorCount=f=>Math.min(42,9+Math.floor(f*.36));
 const curve=(T,f)=>{for(let i=1;i<T.length;i++)if(f<=T[i][0]){const a=T[i-1],b=T[i],k=(f-a[0])/(b[0]-a[0]);return a[1]+(b[1]-a[1])*k}return T[T.length-1][1]};
-const HPC=[[1,2],[8,2.1],[15,1.1],[25,.85],[35,1],[48,1.9],[62,1.2],[75,1.1],[88,1.45],[100,1.6]];
-const DMC=[[1,2],[8,2],[15,1.1],[25,.65],[35,.6],[48,1],[62,1],[75,1.2],[88,1.5],[100,1.5]];
+const HPC=[[1,2],[8,2.1],[15,1.25],[25,1.25],[35,1.45],[48,2.3],[62,1.6],[75,1.5],[88,1.85],[100,1.9]];
+const DMC=[[1,2],[8,2],[15,1.25],[25,1.3],[35,1.3],[48,1.5],[62,1.5],[75,1.65],[88,1.9],[100,1.9]];
 const hpScale=f=>(1+.056*Math.pow(f-1,2.2))*curve(HPC,f);
 const dmgScale=f=>(1+.32*Math.pow(f-1,1.02))*curve(DMC,f);
-const bossHp=f=>1.2+f/40;
-const bossDmg=f=>.5+f/300;
+const bossHp=f=>1.5+f/32;
+const bossDmg=f=>.85+f/220;
 const xpScale=f=>1+.2*(f-1);
 const XPN=(function(){const fx=f=>floorCount(Math.max(1,Math.round(f)))*9*xpScale(f)*1.4+60*xpScale(f)/10;
   const cum=f=>{let s=0;const n=Math.floor(f);for(let i=1;i<=n;i++)s+=fx(i);return s+fx(n+1)*(f-n)};
@@ -1450,7 +1450,7 @@ function ebullet(x,y,a,spd,dmg,col,r=2){const b={x,y,vx:Math.cos(a)*spd,vy:Math.
 function ezone(x,y,R,dur,dmg,col,col2){addFx({layer:'g',t:0,tk:0,upd(dt){this.t+=dt;this.tk-=dt;const P=G.p;if(this.tk<=0&&this.t>.3&&Math.hypot(P.x-x,(P.y-y)*1.4)<R){this.tk=.5;hurtPlayer(dmg)}if(Math.random()<.5){const a=rnd(TAU),r=Math.sqrt(Math.random())*R;part(x+Math.cos(a)*r,y+Math.sin(a)*r*.62,rnd(-6,6),rnd(-14,-4),rnd(.6,1),pick([col,col2]),rnd(2,3),{pf:1})}return this.t<dur},
   draw(){const f=Math.max(0,Math.min(1,this.t/.3,(dur-this.t)/.4));ctx.globalAlpha=.3*f;pxEll(ctx,x,y,R,R*.62,col);ctx.globalAlpha=1;pxRing(ctx,x,y,R,R*.62,col2)}})}
 function enemyShoot(e,p,s,big){const n=(s.n||1)+(big?2:0),a=Math.atan2(p.y-10-(e.y-e.hh*.6),p.x-e.x),ox=e.x+e.face*5,oy=e.y-e.hh*.6-e.z;
-  for(let i=0;i<n;i++){const b=ebullet(ox,oy,a+(i-(n-1)/2)*(s.spread||.18),s.spd,e.dmg,s.col,s.slow?2:3);b.slow=s.slow}burst(ox,oy,6,[s.col,'#ffffff'],40,.25);tone('square',500,260,.08,.03)}
+  for(let i=0;i<n;i++){const b=ebullet(ox,oy,a+(i-(n-1)/2)*(s.spread||.18),s.spd*(1+Math.min(.5,G.floor*.006)),e.dmg,s.col,s.slow?2:3);b.slow=s.slow}burst(ox,oy,6,[s.col,'#ffffff'],40,.25);tone('square',500,260,.08,.03)}
 function updEnemy(e,dt){
   const p=G.p,d0=MON[e.type];e.flash-=dt;e.t+=dt;
   if(e.burn>0){e.burn-=dt;e.bt-=dt;if(e.bt<=0){e.bt=.5;hurt(e,e.burnD,{dot:1,el:'fire'})}if(Math.random()<.4)part(e.x+rnd(-e.r,e.r),e.y-rnd(0,e.hh*.8),rnd(-6,6),rnd(-30,-14),.4,pick(EL.fire.c),1)}
@@ -1476,7 +1476,7 @@ function updEnemy(e,dt){
       else if(e.st==='wind'){e.stT-=dt;if(e.stT<=0){e.st='dash';e.stT=.38}}
       else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);e.cd-=dt;if(d<110&&e.cd<=0&&fire){e.st='wind';e.stT=.42;e.dx=ux;e.dy=uy;tone('square',300,600,.1,.03)}}break}
     case'shoot':case'brute':{const keep=d0.ai==='brute';const m=keep?1:(d>130?1:d<80?-1:0),sd=Math.sin(e.t*.7)>0?1:-1;chase(e,(ux*m-uy*sd*(keep?0:.6))*sp*dt,(uy*m+ux*sd*(keep?0:.6))*sp*dt,e.r-1);e.cd-=dt;
-      if(e.cd<=0&&d<d0.shot.range&&fire){e.cd=d0.shot.cd*rnd(.85,1.15);enemyShoot(e,p,d0.shot,e.elite)}break}
+      if(e.cd<=0&&d<d0.shot.range&&fire){e.cd=d0.shot.cd*rnd(.85,1.15)*(1-Math.min(.35,G.floor*.0045));enemyShoot(e,p,d0.shot,e.elite)}break}
     case'slam':{e.cd-=dt;if(e.atk>0){e.atk-=dt}else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);if(d<d0.slamR+6&&e.cd<=0&&fire){e.cd=2.6;e.atk=.9;telegraph(e.x,e.y-2,d0.slamR*(e.elite?1.3:1),.7,e.dmg,e.cols[1]||'#ff9a3c')}}break}
     case'bomb':{if(e.st==='fuse'){e.stT-=dt;if(e.stT<=0){const R=40*(e.elite?1.4:1);if(Math.hypot(p.x-e.x,p.y-e.y)<R+4)hurtPlayer(e.dmg);boom(e.x,e.y-4,R*.8,['#ffffff','#ffe27a','#ff9a3c','#c0392b'],false);sfx.boom();shake(4);e.noDrop=1;e.hp=0;kill(e)}}
       else{chase(e,ux*sp*dt,uy*sp*dt,e.r-1);if(d<26){e.st='fuse';e.stT=.65;tone('square',600,1400,.6,.04);const x=e.x,y=e.y;addFx({layer:'g',t:0,upd(dt2){this.t+=dt2;return this.t<.65&&!e.dead},draw(){pxRing(ctx,e.x,e.y,40,25,'#ff5a1a');ctx.globalAlpha=.2;pxEll(ctx,e.x,e.y,40*this.t/.65,25*this.t/.65,'#ff9a3c');ctx.globalAlpha=1}})}}break}
@@ -1674,7 +1674,7 @@ function enterFloor(f){
   f=clamp(f,1,100);clearWorld();G.zone='tower';G.floor=f;G.map=buildFloor(f);const p=G.p,m=G.map;p.x=m.pw/2;p.y=m.ph-70;setLabels();
   const th=themeOf(f);
   if(f%5===0){const b=bossOf(f);G.wave={q:[],t:1.2,boss:b,bossSp:false,cleared:false};banner(`${f}층 · ${f%10===0?'보스':'중간 보스'}`,MON[b].n);setMusic('boss')}
-  else{const q=[],n=floorCount(f);for(let i=0;i<n;i++)q.push(pick(th.pool));const el=Math.random()<.15?pick(th.pool.filter(k=>MON[k].ai!=='bomb')):null;G.wave={q,t:1.4,cleared:false,elite:el,hadElite:!!el};
+  else{const q=[],n=floorCount(f);for(let i=0;i<n;i++)q.push(pick(th.pool));const el=Math.random()<.22?pick(th.pool.filter(k=>MON[k].ai!=='bomb')):null;G.wave={q,t:1.4,cleared:false,elite:el,hadElite:!!el};
     banner(`${f}층`,th.n+(G.wave.elite?' · 정예 출현':''));setMusic('battle')}
 }
 function spawnChest(kind,x,y){const m=G.map;for(let r=0;r<10&&boxSol(x,y-4,8);r++){let ok=false;for(let a=0;a<8&&!ok;a++){const nx=x+Math.cos(a/8*TAU)*r*16,ny=y+Math.sin(a/8*TAU)*r*16;if(!boxSol(nx,ny-4,8)){x=nx;y=ny;ok=true}}if(ok)break}const c={x,y,r:16,chest:kind,open:false,label:CHEST_N[kind],pr:'[F] 열기',act(){openChest(c)}};m.inter.push(c);setLabels();burst(x,y-8,20,kind==='gold'?['#ffd84a','#ffffff']:['#c9d0dc','#ffffff'],70,.5);sfx.item()}
