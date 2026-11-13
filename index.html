@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>아케인 타워</title>
 <meta name="description" content="아홉 개의 서클, 백 층의 탑. 브라우저에서 바로 하는 픽셀 마법사 RPG.">
@@ -2192,6 +2194,11 @@ function bindInput(){
   $('panelX').onclick=closePanel;$('panel').addEventListener('mousedown',e=>{if(e.target===$('panel'))closePanel()});
   $('bBag').onclick=()=>{ui.tab='stat';openPanel('char')};$('bInv').onclick=()=>{ui.tab='inv';openPanel('char')};$('bScan').onclick=toggleScan;$('bSnd').onclick=toggleMute;$('bAuto').onclick=toggleAuto;$('bFull').onclick=toggleFull;document.addEventListener('fullscreenchange',()=>{$('bFull').textContent=document.fullscreenElement?'창 모드':'전체화면';setTimeout(resize,50)});
 }
+/* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장 데이터는 그대로) */
+function autoUpdate(){if(!/^https?:$/.test(location.protocol)||/claude/.test(location.host))return;const url=location.href.split('#')[0];
+  const sig=t=>{let h=0;for(let i=0;i<t.length;i+=7)h=(h*31+t.charCodeAt(i))|0;return h+':'+t.length};let base=null,ready=false;
+  const check=()=>fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(!t)return;const s2=sig(t);if(base===null){base=s2;return}if(s2!==base&&!ready){ready=true;banner('새 버전이 나왔어요','마을에 돌아가면 자동으로 업데이트됩니다 (저장은 그대로)')}}).catch(()=>{});
+  check();setInterval(check,90000);setInterval(()=>{if(ready&&G.zone==='town'&&!ui.open&&!G.dead&&!FORGE.on){try{save()}catch(e){}location.reload()}},2000)}
 function toggleFull(){const d=document,el=d.documentElement;try{if(d.fullscreenElement||d.webkitFullscreenElement)(d.exitFullscreen||d.webkitExitFullscreen).call(d);else{const r=(el.requestFullscreen||el.webkitRequestFullscreen);if(r)r.call(el,{navigationUI:'hide'});else toast('이 브라우저는 전체화면을 지원하지 않습니다')}}catch(e){toast('전체화면을 열 수 없습니다')}}
 function toggleAuto(){S.auto=!S.auto;syncAuto();toast(S.auto?'자동 전투: 가까운 적에게 기술을 알아서 씁니다':'수동 전투: 직접 조준해서 씁니다');save()}
 function syncAuto(){const b=$('bAuto');b.textContent=S.auto?'자동':'수동';b.classList.toggle('on',!!S.auto)}
@@ -2223,7 +2230,7 @@ function showPick(){
 buildAssets();
 (function boot(){
   const sv=loadSave();if(sv){S=sv;$('bCont').hidden=false}
-  resize();addEventListener('resize',resize);
+  resize();addEventListener('resize',resize);autoUpdate();
   TOWN=buildTown();G.map=TOWN;G.p={x:320,y:200,face:1};G.zone='town';bindInput();
   $('bNew').onclick=showPick;$('bCont').onclick=()=>start();
   $('pickGrid').addEventListener('click',e=>{const b=e.target.closest('.pk');if(b)start(b.dataset.el)});
