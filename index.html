@@ -413,7 +413,7 @@ const SPELL_DATA=[
   ['flash','플래시 붐','holy',3,'nova',31,6,6.7,{R:74,st:'stun',stT:1.3},'섬광으로 눈을 멀게 한다. 언데드에 큰 피해.'],
   ['critHeal','크리티컬 힐','holy',4,'heal',28,14,0.5,{regen:1,R:60,dm:18},'생명력 50% 회복, 잠시 재생. 주변 적을 빛으로 태운다.'],
   ['greatHeal','그레이트 힐','holy',6,'heal',50,22,1.0,{R:80,dm:34},'생명력을 모두 회복. 주변 적을 빛으로 태운다.'],
-  ['shining','샤이닝 샤워','holy',8,'rain',153,26,3.23,{dur:5,rate:.1,R:26,v:'holy'},'빛의 결정이 유성우처럼 내린다.'],
+  ['shining','샤이닝 샤워','holy',8,'rain',153,26,3.23,{dur:5,rate:.1,R:26,v:'holy',inv:1.5},'1.5초간 무적, 빛의 결정이 유성우처럼 내린다.'],
   ['heavy','헤비','dark',1,'strike',9,2,1.45,{R:30,delay:.1,st:'slow',stT:3,st2:'weak'},'대상을 무겁게 짓눌러 느리게 한다.'],
   ['wounds','라이트 운즈','dark',2,'bolt',9,1.2,2.53,{spd:240,st:'weak'},'저주로 상처를 입히고 약하게 만든다.'],
   ['poison','커스 포이즌','dark',3,'zone',31,6,0.36,{R:44,dur:5,tick:.5,v:'poison'},'독의 저주 구름을 깐다.'],
@@ -450,7 +450,6 @@ const SPELL_DATA=[
   ['holyShout','홀리 샤우트','holy',8,'nova',145,24,7.22,{R:200,pulses:3,st:'stun',stT:0.5},'신성한 외침이 세 번 넓게 퍼진다.'],
   ['godHand','갓 핸드','holy',9,'strike',204,36,41.0,{R:100,delay:0.7,st:'stun',stT:1.8,kb:180,big:1},'신의 손이 강림해 적을 내리누른다.'],
   ['resurrection','그레이트 리절렉션','holy',9,'heal',222,60,1,{R:200,dm:53,inv:3},'생명력을 모두 회복하고 3초간 무적, 거대한 빛의 폭발을 일으킨다.'],
-  ['absBarrier','앱솔루트 배리어','none',8,'shield',90,90,0.35,{dur:6,inv:1.5},'1.5초간 무적, 이후 6초간 받는 피해의 절반을 대신 받는다. (최대 생명력 35%까지)'],
   ['manaDrain','마나 드레인','dark',5,'bolt',34,4,10.28,{spd:240,homing:1,mdrain:1,size:2,st:'weak'},'적의 마나를 빼앗아 내 마나로 채운다.'],
   ['cloudKill','클라우드 킬','dark',7,'zone',110,18,0.97,{R:96,dur:6,tick:0.5,v:'poison'},'죽음의 구름이 넓게 퍼진다.'],
   ['chaosBlade','카오스 블레이드','dark',9,'wave',204,36,47.54,{wd:260,dist:500,spd:320,big:1,st:'weak'},'혼돈의 검이 공간째 벤다.'],
@@ -484,7 +483,6 @@ const IC={
 };
 const ICONS={
   arrow:(g,C)=>IC.arrow(g,3,15,13,5,C[2],C[0],C[1]),
-  absBarrier:(g,C)=>{pxPoly(g,[[3.5,3],[14.5,3],[14.5,9],[9,15.5],[3.5,9]],'#ffd24a');pxPoly(g,[[5.5,5],[12.5,5],[12.5,9],[9,13],[5.5,9]],'#fff6c8');pxRing(g,9,8.5,3,3,'#ffd24a',16)},
   holyArrow:(g,C)=>{IC.arrow(g,3,15,14,4,C[1],'#ffffff');IC.star(g,14,4,3,4,C[2],.3)},
   holyBolt:(g,C)=>{IC.orb(g,9,9,5.5,C);IC.cross(g,9,9,2,'#ffffff',C[1])},
   holyMissile:(g,C)=>{for(const[x,y]of[[4,13],[9,9],[14,5]]){pxLine(g,x-3,y+3,x,y,C[3]);IC.star(g,x,y,2.6,4,C[1],.35)}},
@@ -687,7 +685,7 @@ const SAVE_KEY='arcane-tower-save-v3';
 function newSave(el){el=el||'ice';const s0=START[el];return{lvl:1,xp:0,gold:60,ess:0,ore:0,circle:1,mast:0,pts:0,st:{int:0,vit:0,crit:0,wis:0},aff:[el],affPend:0,grim:{arrow:1,[s0]:1},slots:[s0,null,null,null,null,null,null,null],eq:{robe:null,staff:null,ring:null},inv:[],hpPot:3,mpPot:2,prot:0,maxFloor:0,quests:[],codex:{},scan:true,mute:false,uid:1}}
 let S=newSave();
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff)return Object.assign(newSave(o.aff[0]),o)}}catch(e){}return null}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.slots=r.slots.map(k=>k&&SP[k]?k:null);for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
 const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
 const RM=[1,1.3,1.7,2.2,3,4.2];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
@@ -1251,7 +1249,7 @@ function cast(id){
   if(['strike','zone','meteor','rain'].includes(sp.k)){const dx=tg.x-p.x,dy=tg.y-p.y,d=Math.hypot(dx,dy);if(d>190){tg.x=p.x+dx/d*190;tg.y=p.y+dy/d*190}}
   if(Math.abs(tg.x-p.x)>2)p.face=tg.x<p.x?-1:1;p.castT=.3;p.castEl=sp.el;
   const C=EL[sp.el].c;magicCircle(p.x,p.y,16,C,.4);
-  KIND[sp.k](sp,p,tg,dmg);sfx[CAST_SFX[sp.el]]();
+  KIND[sp.k](sp,p,tg,dmg);if(sp.o.inv&&sp.k!=='heal'&&sp.k!=='shield')p.ifr=Math.max(p.ifr,sp.o.inv);sfx[CAST_SFX[sp.el]]();
 }
 /* 신화 전용 스킬 [R] */
 function castMyth(){
