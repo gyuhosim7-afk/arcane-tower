@@ -110,7 +110,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
     <div id="hud" hidden>
       <div id="zone"></div>
       <div id="bossName" hidden></div>
-      <div id="menuBtns"><button id="bInv">가방</button><button id="bBag">메뉴</button><button id="bScan">CRT</button><button id="bSnd">소리</button><button id="bAuto">수동</button></div>
+      <div id="menuBtns"><button id="bInv">가방</button><button id="bBag">메뉴</button><button id="bScan">CRT</button><button id="bSnd">소리</button><button id="bAuto">수동</button><button id="bFull">전체화면</button></div>
       <div id="toasts"></div>
       <div id="banner"></div>
       <div id="touch"><div id="joy"><i id="joyK"></i></div><button id="tF">F</button><button id="tB">순간<br>이동</button></div><div id="joy2"><i id="joy2K"></i></div>
@@ -1721,7 +1721,7 @@ function hudSlot(x,y,img,act,k,dim,key,cnt,border){
   if(img){const ox=x+10-(img.width>>1),oy=y+10-(img.height>>1);ctx.drawImage(img,img.width>18?x+1:ox,img.height>18?y+1:oy,Math.min(18,img.width),Math.min(18,img.height))}
   if(dim){ctx.fillStyle='rgba(10,14,60,.6)';ctx.fillRect(x+1,y+1,18,18)}
   if(k>0){const hh=Math.round(18*clamp(k,0,1));ctx.fillStyle='rgba(2,3,10,.72)';ctx.fillRect(x+1,y+1,18,hh);ctx.fillStyle='#ffffff';ctx.fillRect(x+1,y+1+hh,18,1)}
-  if(key)drawText(key,x+3,y,'#ffe27a',1,'l');if(cnt!==undefined)drawText(String(cnt),x+19,y+13,'#ffffff',1,'r');
+  if(key)drawText(key,key.length>3?x+10:x+3,y,'#ffe27a',1,key.length>3?'c':'l');if(cnt!==undefined)drawText(String(cnt),x+19,y+13,'#ffffff',1,'r');
   HUDR.push({x,y,w:20,h:20,act});
 }
 function hudOrn(x,y,w,h){ctx.fillStyle='#05060c';ctx.fillRect(x,y,w,h);ctx.fillStyle='#6a5230';ctx.fillRect(x+1,y+1,w-2,h-2);ctx.fillStyle='#c9a060';ctx.fillRect(x+1,y+1,w-2,1);ctx.fillStyle='#0c0e1c';ctx.fillRect(x+2,y+2,w-4,h-4);
@@ -1763,7 +1763,7 @@ function drawHUD(){
   hudOrn(x0-5,y0-4,tw+8,28);
   for(let i=0;i<n;i++){const id=S.slots[i],sp=id&&SP[id];if(sp){const k=(p.cd[id]||0)/(sp.cd*(1-D.cdr));hudSlot(x0+i*22,y0,A.sp[id],'s:'+id,k,p.mp<spellMp(sp),String(i+1),undefined,EL[sp.el].c[2])}else hudSlot(x0+i*22,y0,null,null,0,false,String(i+1))}
   const ux=x0+n*22+8;ctx.fillStyle='#6a5230';ctx.fillRect(ux-5,y0,1,20);
-  hudSlot(ux,y0,A.hpPot,'p:hp',p.pcd/3,S.hpPot<1,'Q',S.hpPot,'#c04848');hudSlot(ux+22,y0,A.mpPot,'p:mp',p.pcd/3,S.mpPot<1,'E',S.mpPot,'#3a6ad0');hudSlot(ux+44,y0,A.blink,'b',p.bcd/(2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)),false,'SPC',undefined,'#7fd2ff');
+  hudSlot(ux,y0,A.hpPot,'p:hp',p.pcd/3,S.hpPot<1,'Q',S.hpPot,'#c04848');hudSlot(ux+22,y0,A.mpPot,'p:mp',p.pcd/3,S.mpPot<1,'E',S.mpPot,'#3a6ad0');hudSlot(ux+44,y0,A.blink,'b',p.bcd/(2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)),false,'SPACE',undefined,'#7fd2ff');
   if(D.sk){const s=MYTH_SK[D.sk];hudSlot(ux+66,y0,A.m_staff,'m',(p.cd.myth||0)/(s.cd*(1-D.cdr*.5)),p.mp<s.mp,'R',undefined,'#ff4a6a')}
   const boss=G.en.find(e=>e.boss);if(boss){hudOrn(W/2-94,20,188,11);hudBar(W/2-90,23,180,5,boss.hp/boss.max,'#c04cff','#f0a8ff','#5a1a8a')}
 }
@@ -1992,7 +1992,7 @@ function bindInput(){
     if(ui.open){if(e.code==='Escape'||e.code==='Tab'||e.code==='KeyF')closePanel();return}
     const m=/^Digit([1-8])$/.exec(e.code);if(m){const i=+m[1]-1,id=S.slots[i];if(id&&i<D.slots)cast(id)}
     else if(e.code==='KeyF')tryInteract();else if(e.code==='KeyR')castMyth();else if(e.code==='Space')blink();else if(e.code==='KeyQ')usePot('hp');else if(e.code==='KeyE')usePot('mp');
-    else if(e.code==='Tab'||e.code==='KeyI'||e.code==='KeyC'){ui.tab='stat';openPanel('char')}else if(e.code==='KeyK'){ui.tab='grim';openPanel('char')}else if(e.code==='KeyL')toggleScan();else if(e.code==='KeyM')toggleMute();else if(e.code==='KeyT')toggleAuto();
+    else if(e.code==='Tab'||e.code==='KeyI'||e.code==='KeyC'){ui.tab='stat';openPanel('char')}else if(e.code==='KeyK'){ui.tab='grim';openPanel('char')}else if(e.code==='KeyL')toggleScan();else if(e.code==='KeyM')toggleMute();else if(e.code==='KeyT')toggleAuto();else if(e.code==='F11'){e.preventDefault();toggleFull()}
   });
   addEventListener('keyup',e=>{IN.keys[e.code]=false});
   addEventListener('blur',()=>{IN.keys={};IN.down=false});
@@ -2012,13 +2012,14 @@ function bindInput(){
   for(const[id,fn]of[['tF',tryInteract],['tB',blink]]){const el=$(id);el.onclick=fn;el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn()},{passive:false})}
   $('panelBody').addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t)return;const i=t.dataset.a.indexOf(':'),a=i<0?t.dataset.a:t.dataset.a.slice(0,i),arg=i<0?undefined:t.dataset.a.slice(i+1);if(ACT[a]){ACT[a](arg);refreshPanel();save()}});
   $('panelX').onclick=closePanel;$('panel').addEventListener('mousedown',e=>{if(e.target===$('panel'))closePanel()});
-  $('bBag').onclick=()=>{ui.tab='stat';openPanel('char')};$('bInv').onclick=()=>{ui.tab='inv';openPanel('char')};$('bScan').onclick=toggleScan;$('bSnd').onclick=toggleMute;$('bAuto').onclick=toggleAuto;
+  $('bBag').onclick=()=>{ui.tab='stat';openPanel('char')};$('bInv').onclick=()=>{ui.tab='inv';openPanel('char')};$('bScan').onclick=toggleScan;$('bSnd').onclick=toggleMute;$('bAuto').onclick=toggleAuto;$('bFull').onclick=toggleFull;document.addEventListener('fullscreenchange',()=>{$('bFull').textContent=document.fullscreenElement?'창 모드':'전체화면';setTimeout(resize,50)});
 }
+function toggleFull(){const d=document,el=d.documentElement;try{if(d.fullscreenElement||d.webkitFullscreenElement)(d.exitFullscreen||d.webkitExitFullscreen).call(d);else{const r=(el.requestFullscreen||el.webkitRequestFullscreen);if(r)r.call(el,{navigationUI:'hide'});else toast('이 브라우저는 전체화면을 지원하지 않습니다')}}catch(e){toast('전체화면을 열 수 없습니다')}}
 function toggleAuto(){S.auto=!S.auto;syncAuto();toast(S.auto?'자동 전투: 가까운 적에게 기술을 알아서 씁니다':'수동 전투: 직접 조준해서 씁니다');save()}
 function syncAuto(){const b=$('bAuto');b.textContent=S.auto?'자동':'수동';b.classList.toggle('on',!!S.auto)}
 function toggleScan(){S.scan=!S.scan;$('scan').classList.toggle('off',!S.scan);$('bScan').classList.toggle('muted',!S.scan);save()}
 function toggleMute(){S.mute=!S.mute;if(AU.master)AU.master.gain.value=S.mute?0:.8;$('bSnd').classList.toggle('muted',S.mute);save()}
-function resize(){const st=$('stage');let s=Math.min(innerWidth/W,innerHeight/H);if(s>=2)s=Math.floor(s);st.style.width=W*s+'px';st.style.height=H*s+'px';st.style.fontSize=(s*8)+'px';st.style.setProperty('--px',Math.max(1,s)+'px')}
+function resize(){const st=$('stage');let s=Math.min(innerWidth/W,innerHeight/H);st.style.width=W*s+'px';st.style.height=H*s+'px';st.style.fontSize=(s*8)+'px';st.style.setProperty('--px',Math.max(1,s)+'px')}
 
 /* ============================ BOOT ============================ */
 let TOWN,lastT=0;
