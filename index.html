@@ -863,7 +863,8 @@ function recalc(){
   D.dr=(hasM('spiderRobe')?.15:0)+(hasM('gargHeart')?.1:0)+(hasM('magmaCore')?.1:0);D.spd=(hasM('stormFeather')?1.3:1)*(hasM('ratRing')?1.15:1);
   if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
 }
-const canUse=sp=>sp.el==='none'||S.circle>=9||S.aff.includes(sp.el);
+const DEV={on:(()=>{try{return localStorage.getItem('at-dev')==='1'}catch(e){return false}})(),god:false,ohk:false};
+const canUse=sp=>sp.el==='none'||S.circle>=9||S.aff.includes(sp.el)||DEV.on;
 const spellMp=sp=>Math.round(sp.mp*(S.circle>=4&&sp.c<S.circle?.85:1));
 const spellDmg=sp=>D.pow*sp.m*(1+.12*((S.grim[sp.id]||1)-1))*(sp.el===S.aff[0]?1.2:1);
 const craftCost=sp=>({gold:Math.round(50*Math.pow(sp.c,2.4)),ess:Math.round(2*Math.pow(sp.c,1.8))});
@@ -2055,12 +2056,12 @@ function grimList(mode){
   return h;
 }
 /* 개발자 모드: [코드 입력]에 개발자 코드를 넣으면 이 기기에서만 켜진다 */
-const DEV={on:(()=>{try{return localStorage.getItem('at-dev')==='1'}catch(e){return false}})(),god:false,ohk:false};
 const devHash=t=>{let x=0;for(const ch of t)x=(x*131+ch.charCodeAt(0))>>>0;return x};
 const PANELS={
   dev:{t:'개발자 모드',r(){
     const b=(l,a,c)=>btn(l,a,true,c);
     let h=`<p class="dim">이 기기에서만 켜져 있어요. 친구들 게임에는 영향이 없어요.</p>`;
+    h+=`<div class="hd">테스트 계정</div><div class="li"><div class="gr"><b>전부 해금</b><div class="ds">99레벨 · 9서클 · 8속성 전부 · 모든 마법 Lv10 · 마법 칸 8개 · 순간이동 최대 · 100층까지 기록 · 신화 20개 · 재화 넉넉히</div></div><div class="bt">${b('전부 해금','dv:all','go')}</div></div>`;
     h+=`<div class="hd">재화</div><div class="li"><div class="gr">골드·광석·정수·코어·방지권·물약</div><div class="bt">${b('+100만 골드','dv:gold')}${b('재료 +1만','dv:mats')}${b('방지권 +50','dv:prot')}${b('물약 +50','dv:pots')}</div></div>`;
     h+=`<div class="hd">성장</div><div class="li"><div class="gr">Lv.${S.lvl} · ${S.circle}서클 · 포인트 ${S.pts}</div><div class="bt">${b('레벨 +10','dv:lvl')}${b('서클 +1','dv:circle')}${b('포인트 +50','dv:pts')}${b('모든 마법 Lv10','dv:spells')}${b('순간이동 최대','dv:blink')}</div></div>`;
     h+=`<div class="hd">장비</div><div class="li"><div class="gr">현재 최고 층 기준으로 만들어요</div><div class="bt">${b('전설 +15 세트','dv:legset')}${b('가방 비우기','dv:clear')}</div></div>`;
@@ -2109,6 +2110,7 @@ const PANELS={
     return h}},
   tower:{t:'심연의 탑',r(){
     let h=`<p>100층까지 있습니다. 층마다 몰려오는 적을 모두 쓰러뜨리면 다음 층 포탈이 열립니다. 5층마다 보스가 나오고(10층마다 대보스), 높이 올라갈수록 보스 패턴이 거세집니다. 보스는 아래층부터 올라가야만 만날 수 있습니다. 쓰러지면 골드의 10%를 잃습니다.</p><div>최고 기록 <b class="gold">${S.maxFloor}층</b> / 100층</div>`;
+    if(DEV.on){h+=`<div class="hd">개발자 · 아무 층</div><div class="li"><div class="gr" style="display:flex;flex-wrap:wrap;gap:.2em">${Array.from({length:20},(_,i)=>(i+1)*5).map(n=>btn(n+'층','enter:'+n,true,n%10===0?'go':'')).join('')}</div><div class="bt">${btn('직접 입력','dv:warp')}</div></div>`}
     {const nf=Math.min(100,S.maxFloor+1);if(nf>1)h+=`<div class="hd">이어서 도전</div><div class="li"><div class="gr"><b>${nf}층</b> 마지막으로 깬 층의 다음 층 <span class="dim">· ${themeOf(nf).n}${nf%5===0?' · 보스':''}</span></div><div class="bt">${btn('도전','enter:'+nf,true,'go')}</div></div>`}
     h+=`<div class="hd">출발 층</div><div class="li"><div class="gr"><b>1층</b> <span class="dim">· ${THEMES[0].n}</span></div><div class="bt">${btn('입장','enter:1',true,'go')}</div></div>`;
     for(let k=Math.min(90,Math.floor(S.maxFloor/10)*10);k>=10;k-=10)h+=`<div class="li"><div class="gr"><b>${k+1}층</b> 저장된 체크포인트 <span class="dim">· ${themeOf(k+1).n}</span></div><div class="bt">${btn('입장','enter:'+(k+1),true,'go')}</div></div>`;
@@ -2158,7 +2160,9 @@ const ACT={
   dv(a){if(!DEV.on)return;const [k,x]=a.split(':');const f=Math.max(1,S.maxFloor);
     if(k==='gold')S.gold+=1e6;else if(k==='mats'){S.ore+=1e4;S.ess+=1e4;S.core=(S.core||0)+100}else if(k==='prot')S.prot=(S.prot||0)+50;else if(k==='pots'){S.hpPot+=50;S.mpPot+=50}
     else if(k==='lvl'){const t=Math.min(99,S.lvl+10);while(S.lvl<t){S.lvl++;S.pts+=3}S.xp=0}else if(k==='circle'){if(S.circle<9){S.circle++;S.mast=0}}else if(k==='pts')S.pts+=50
-    else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}else if(k==='blink')S.blinkLv=BLINK_MAX
+    else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}
+    else if(k==='all'){while(S.lvl<99){S.lvl++;S.pts+=3}S.xp=0;S.circle=9;S.mast=0;S.aff=ELS.slice();S.affPend=0;for(const sp of SPL)S.grim[sp.id]=10;S.blinkLv=BLINK_MAX;S.maxFloor=100;S.gold+=1e7;S.ore+=1e5;S.ess+=1e5;S.core=(S.core||0)+999;S.prot=(S.prot||0)+99;S.hpPot+=99;S.mpPot+=99;
+      const have=new Set(S.inv.concat(Object.values(S.eq)).filter(i=>i&&i.my).map(i=>i.my));for(const m of Object.keys(MYTH))if(!have.has(m)&&S.inv.length<32)S.inv.push(mkMyth(m,100));toast('전부 해금했어요')}else if(k==='blink')S.blinkLv=BLINK_MAX
     else if(k==='legset'){for(const sl of['staff','robe','ring']){const it=mkItem(f,4,sl);it.r=4;it.up=15;S.inv.push(it)}}else if(k==='clear'){S.inv=[]}
     else if(k==='myth'){if(MYTH[x])S.inv.push(mkMyth(x,f))}
     else if(k==='god')DEV.god=!DEV.god;else if(k==='ohk')DEV.ohk=!DEV.ohk;else if(k==='heal'&&G.p){G.p.hp=D.maxHp;G.p.mp=D.maxMp}
@@ -2181,7 +2185,7 @@ const ACT={
   sellR(r){S.sellR=+r},
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
   claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(q.xp)},
-  enter(f){f=+f;if(!(f===1||f===Math.min(100,S.maxFloor+1)||(f%10===1&&f<=91&&f-1<=S.maxFloor)))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
+  enter(f){f=+f;if(!(DEV.on&&f>=1&&f<=100)&&!(f===1||f===Math.min(100,S.maxFloor+1)||(f%10===1&&f<=91&&f-1<=S.maxFloor)))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
   reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY);const sl=getSlots();delete sl[S.pid];putSlots(sl)}catch(e){}location.reload()}else{ui.resetArm=true}}
 };
 function openPanel(n){ui.open=n;ui.sel=null;ui.resetArm=false;IN.down=false;$('panel').hidden=false;refreshPanel()}
