@@ -760,21 +760,21 @@ function deathFx(e,spr){const flip=e.face<0,x=e.x,y=e.y-e.z,sc=e.sc,boss=e.boss;
 
 /* ============================ DATA ============================ */
 const SAVE_KEY='arcane-tower-save-v3';
-function newSave(el){el=el||'ice';const s0=START[el];return{lvl:1,xp:0,gold:60,ess:0,ore:0,circle:1,mast:0,pts:0,st:{int:0,vit:0,crit:0,wis:0},aff:[el],affPend:0,grim:{arrow:1,[s0]:1},slots:[s0,null,null,null,null,null,null,null],eq:{robe:null,staff:null,ring:null},inv:[],hpPot:3,mpPot:2,prot:0,maxFloor:0,quests:[],codex:{},scan:true,mute:false,uid:1}}
+function newSave(el){el=el||'ice';const s0=START[el];return{lvl:1,xp:0,gold:60,ess:0,ore:0,circle:1,mast:0,pts:0,st:{int:0,vit:0,crit:0,wis:0},aff:[el],affPend:0,grim:{arrow:1,[s0]:1},slots:[s0,null,null,null,null,null,null,null],eq:{robe:null,staff:null,ring:null},inv:[],hpPot:3,mpPot:2,prot:0,maxFloor:0,quests:[],codex:{},scan:true,mute:false,uid:1,adv2Offer:[],adv2Entered:false}}
 let S=newSave();
 /* 캐릭터 여러 개: 지금 캐릭터는 SAVE_KEY, 모든 캐릭터는 SLOT_KEY에 고유번호별로 보관 */
 const SLOT_KEY='arcane-tower-slots';
 function getSlots(){try{return JSON.parse(localStorage.getItem(SLOT_KEY)||'{}')||{}}catch(e){return{}}}
 function putSlots(o){try{localStorage.setItem(SLOT_KEY,JSON.stringify(o))}catch(e){}}
 function save(){try{const j=JSON.stringify(S);localStorage.setItem(SAVE_KEY,j);if(S.pid){const sl=getSlots();sl[S.pid]=j;putSlots(sl)}}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.slots=r.slots.map(k=>k&&SP[k]?k:null);r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;r.slots=r.slots.map(k=>k&&SP[k]?k:null);r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
 const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
 const RM=[1,1.3,1.7,2.2,3,4.2];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
 const PRE=['낡은','견습생의','마도사의','대마법사의','심연의'];
 const STN={pow:'마력',hp:'생명력',def:'방어',mp:'마나',crit:'치명타%',cdr:'쿨감%',int:'지능',vit:'체력',wis:'정신'};
 /* ---- 성장 곡선: 레벨은 느리게, 서클은 레벨 + 수련치(마나를 쓴 만큼 쌓임) ---- */
-const MAX_LVL=99;
+const MAX_LVL=200;
 const floorCount=f=>Math.min(42,9+Math.floor(f*.36));
 const curve=(T,f)=>{for(let i=1;i<T.length;i++)if(f<=T[i][0]){const a=T[i-1],b=T[i],k=(f-a[0])/(b[0]-a[0]);return a[1]+(b[1]-a[1])*k}return T[T.length-1][1]};
 const HPC=[[1,2],[8,2.1],[15,1.1],[25,1.25],[35,1.45],[48,2.3],[62,1.6],[75,1.5],[88,1.85],[100,1.9]];
@@ -788,6 +788,7 @@ const DMM=[[1,1.6],[15,1.6],[25,1.84],[30,2.08],[35,2.34],[40,2.7],[50,3.37],[60
 const diffMul=(f,lo,mid,hi)=>f<=15?lo:f<=30?lo+(mid-lo)*(f-15)/15:mid+(hi-mid)*(f-30)/70;
 const hpScale=f=>(1+.056*Math.pow(f-1,2.2))*curve(HPM,f);
 const dmgScale=f=>(1+.32*Math.pow(f-1,1.02))*curve(DMM,f);
+const levelThreat=()=>1+Math.max(0,S.lvl-99)*.005;
 const bossHp=f=>1.9+f/26;
 const bossDmg=f=>1+f/180;
 const xpScale=f=>1+.2*(f-1);
@@ -1042,6 +1043,11 @@ function townV2Anim(t){
   for(const[qx,qy]of[[256,176],[384,176],[256,288],[384,288]]){ctx.globalAlpha=.16+.1*Math.sin(t*3+qx);pxDisc(ctx,qx,qy-20,11,'#c04cff');ctx.globalAlpha=1}
   for(const[x,y]of[[290,128],[350,128],[220,232],[420,232]]){ctx.globalAlpha=.14;pxDisc(ctx,x+1,y-26,12,'#ffc870');ctx.globalAlpha=1}
   ctx.globalCompositeOperation='source-over';
+  pxEll(ctx,cx,cy+7,29,16,'#211a2e');pxEll(ctx,cx,cy+4,26,14,'#6d6077');pxEll(ctx,cx,cy+1,22,12,'#40364c');pxEll(ctx,cx,cy-1,18,9,'#2a2235');
+  ctx.fillStyle='#a68ab7';ctx.fillRect(cx-18,cy-2,36,1);ctx.fillStyle='#32263e';ctx.fillRect(cx-16,cy+5,32,2);
+  {const offerings=S.adv2Offer||[];for(const[i,dx]of[-12,0,12].entries()){const full=!!offerings[i],sx=cx+dx,sy=cy-1;pxEll(ctx,sx,sy+1,4.5,3.5,'#17121f');pxEll(ctx,sx,sy,3.5,2.5,full?'#ff4a6a':'#82758f');if(full){ctx.fillStyle='#fff0d8';ctx.fillRect(sx,sy-2,1,3)}else{ctx.fillStyle='#c04cff';ctx.fillRect(sx,sy-1,1,2)}}}
+  ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.22+.12*k;pxEll(ctx,cx,cy,24,13,'#c04cff');ctx.globalAlpha=1;
+  ctx.globalCompositeOperation='source-over';
   if(Math.random()<.4)part(cx+rnd(-28,28),cy+rnd(-12,12),0,rnd(-26,-10),.9,pick(['#c04cff','#e0a8ff','#ffffff']),1);
 }
 function buildTown(){
@@ -1077,6 +1083,7 @@ function buildTown(){
   townV2(g,fg,T,w,h,solid);
   const inter=[
     {x:320,y:106,r:22,label:'심연의 탑',pr:'[F] 입장',ly:-58,act:()=>openPanel('tower')},
+    {x:320,y:226,r:28,label:'승급 제단',pr:'[F] 신화 무기 봉헌',act:()=>openPanel('altar')},
     {x:144,y:156,r:26,label:'마법사 엘드린',pr:'[F] 서클 승급',npc:'eldrin',act:()=>openPanel('eldrin')},
     {x:496,y:156,r:26,label:'연금술사 루나',pr:'[F] 마법서·물약',npc:'luna',act:()=>openPanel('luna')},
     {x:144,y:348,r:26,label:'대장장이 토르간',pr:'[F] 장비',npc:'thorgan',act:()=>openPanel('thorgan')},
@@ -1476,9 +1483,9 @@ const ECOL={ratKing:['#b08a6a','#ff3a3a'],shroomLord:['#3a8a2a','#7ae05a'],gargL
   kingslime:['#ffcf4a','#c98a1a','#fff0a8'],arachne:['#7a3ac8','#ffd84a'],golemlord:['#6a4252','#ffb23c','#ff5a2a'],ymir:['#c4e4ff','#6a9ad0','#ffffff'],lich:['#63309e','#b8f27a','#e9e2c8','#ffd84a'],ifrit:['#ff7a2a','#ffd24a','#fff6c0'],harpyQ:['#ffe27a','#ff7ad9'],archon:['#2e2230','#ff2a2a','#d8a03a','#c94cff'],dragon:['#3a2a5a','#c94cff','#ff3a3a'],demonLord:['#5a1a2a','#ff3a3a','#ffd84a','#3a1258']};
 const FLYERS=new Set(['wispLord','stormKing','shadowKing','bat','iwisp','fwisp','swisp','imp','harpy','wraith','harpyQ']);
 function mkEnemy(type,x,y,elite){
-  const d=MON[type],f=G.floor,nm=d.boss?[...D.my].reduce((t,k)=>t+.5+mythFloor(k)/100,0):0,sc=(d.sc||1)*(elite?1.4:1),hm=hpScale(f)*(elite?6:1)*(d.boss?bossHp(f)*(1+.1*nm):1)*(d.final?12:1),dm=dmgScale(f)*(elite?1.4:1)*(d.boss?bossDmg(f)*(1+.05*nm):1);
+  const d=MON[type],f=G.floor,nm=d.boss?[...D.my].reduce((t,k)=>t+.5+mythFloor(k)/100,0):0,sc=(d.sc||1)*(elite?1.4:1),hm=hpScale(f)*(elite?6:1)*levelThreat()*(d.boss?bossHp(f)*(1+.1*nm):1)*(d.final?12:1),dm=dmgScale(f)*(elite?1.4:1)*levelThreat()*(d.boss?bossDmg(f)*(1+.05*nm):1);
   const spr=type==='bat'?A.bat[0]:A[d.spr||type];
-  return{type,x,y,hp:d.hp*hm,max:d.hp*hm,dmg:d.dmg*dm,spd:d.spd*(1+Math.min(.25,f*.003)),r:d.r*(elite?1.3:1),xp:d.xp*xpScale(f)*(elite?5:1),t:rnd(10),kx:0,ky:0,flash:0,frozen:0,slow:0,stun:0,root:0,burn:0,bt:0,poi:0,pt:0,weak:0,z:0,face:1,cd:rnd(1.2,2.4),boss:d.boss,elite,sc,spr,hh:spr.H*sc,cols:ECOL[type]||['#fff','#888'],st:'idle',stT:1,atk:0,ph:0,dead:false};
+  return{type,x,y,hp:d.hp*hm,max:d.hp*hm,dmg:d.dmg*dm,spd:d.spd*(1+Math.min(.25,f*.003))*(1+Math.min(.2,Math.max(0,S.lvl-99)*.002)),r:d.r*(elite?1.3:1),xp:d.xp*xpScale(f)*(elite?5:1),t:rnd(10),kx:0,ky:0,flash:0,frozen:0,slow:0,stun:0,root:0,burn:0,bt:0,poi:0,pt:0,weak:0,z:0,face:1,cd:rnd(1.2,2.4),boss:d.boss,elite,sc,spr,hh:spr.H*sc,cols:ECOL[type]||['#fff','#888'],st:'idle',stT:1,atk:0,ph:0,dead:false};
 }
 function spawnMon(type,x,y,elite,minion){
   G.pending++;sfx.spawn();
@@ -1732,7 +1739,7 @@ function openChest(c){
   const items=({wood:1+(Math.random()<.5?1:0),iron:2+(Math.random()<.8?2:0),gold:4})[c.chest],minR=({wood:0,iron:1,gold:2})[c.chest];
   for(let i=0;i<items;i++)drop('item',x,y,0,mkItem(f,minR));
   if(f%5===0&&f%10!==0&&c.chest==='iron'){const key=Object.keys(MYTH).find(k=>MYTH[k].boss===bossOf(f));if(key&&Math.random()<MYTH_RATE)later(.6,()=>{drop('item',x,y,0,mkMyth(key,f));G.flash=.5;G.flashCol='#ff4a6a';shake(12);banner('신화 등장!',MYTH[key].n);sfx.circle()})}
-  if(c.chest==='gold'){const key=Object.keys(MYTH).find(k=>MYTH[k].boss===bossOf(f));if(key&&Math.random()<MYTH_RATE){later(.6,()=>{const it=mkMyth(key,f);drop('item',x,y,0,it);G.flash=.5;G.flashCol='#ff4a6a';shake(14);banner('신화 등장!',MYTH[key].n);sfx.circle();for(let i=0;i<4;i++)later(i*.15,()=>ringFx(x,y,60+i*30,['#ffffff','#ff7ad9','#ff4a6a','#9a1a3a'],.7,{top:1}))})}}
+  if(c.chest==='gold'){const owns100=[...(S.inv||[]),...(S.adv2Offer||[]),...Object.values(S.eq||{})].some(it=>it&&it.my==='demonEye');const guaranteed100=f===100&&!owns100;const key=guaranteed100?'demonEye':Object.keys(MYTH).find(k=>MYTH[k].boss===bossOf(f));if(key&&(guaranteed100||Math.random()<MYTH_RATE)){later(.6,()=>{const it=mkMyth(key,f);drop('item',x,y,0,it);G.flash=.5;G.flashCol='#ff4a6a';shake(14);banner('신화 등장!',MYTH[key].n);sfx.circle();for(let i=0;i<4;i++)later(i*.15,()=>ringFx(x,y,60+i*30,['#ffffff','#ff7ad9','#ff4a6a','#9a1a3a'],.7,{top:1}))})}}
 }
 function updWave(dt){
   const w=G.wave;if(!w||w.cleared||G.dead)return;w.t-=dt;
@@ -1776,17 +1783,17 @@ function updPlayer(dt){
   p.acd=(p.acd||0)-dt;
   if(S.auto&&G.zone==='tower'&&!G.dead&&!ui.open){const e=nearestEnemy(p.x,p.y,230),danger=!!e||G.ep.some(b=>Math.hypot(b.x-p.x,b.y-p.y)<110)||(p.db&&Object.values(p.db).some(v=>v>0));
     const ready=id=>{const sp=id&&SP[id];return sp&&canUse(sp)&&(p.cd[id]||0)<=0&&p.mp>=spellMp(sp)?sp:null};
-    // 공격 겸 회복/무적 효과가 있는 신성 주문은 적이 있으면 공격 루프에서 쿨마다 사용한다.
-    const holyAttack=sp=>sp.el==='holy'&&((sp.k==='heal'&&sp.o&&sp.o.dm>0)||(sp.o&&sp.o.inv&&sp.k!=='shield'));
+    // 자동 전투 중 장착한 신성 주문은 적 감지나 체력 임계값을 기다리지 않고 쿨마다 사용한다.
+    if(p.acd<=0){const holy=S.slots.map(id=>({id,sp:ready(id)})).filter(x=>x.sp&&x.sp.el==='holy');
+      if(holy.length){const next=holy.find(x=>x.sp.k==='heal'||(x.sp.o&&x.sp.o.inv))||holy[0];
+        if(e)AUTO_T={x:e.x,y:e.y-e.r};cast(next.id);AUTO_T=null;if((p.cd[next.id]||0)>0)p.acd=.35}}
     if(p.acd<=0){
       // 방어 마법 먼저: 회복(체력 70% 아래, 위험하면 50% 아래 대기 없이), 보호막(위험할 때 막이 없으면), 무적기(체력 40% 아래)
       for(const id of S.slots){const sp=ready(id);if(!sp)continue;const def=sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv);if(!def)continue;
         const ok=sp.k==='heal'?(sp.o.inv?p.hp<D.maxHp*.4:p.hp<D.maxHp*(sp.m>=.9?.45:.7)):sp.k==='shield'?(danger&&!(p.shield>0)):(p.hp<D.maxHp*.4&&danger);
         if(ok){if(e)AUTO_T={x:e.x,y:e.y-e.r};cast(id);AUTO_T=null;if((p.cd[id]||0)>0){p.acd=.35;break}}}}
     if(e&&p.acd<=0){AUTO_T={x:e.x,y:e.y-e.r};
-      for(const id of S.slots){const sp=ready(id);if(!sp)continue;const holyAtk=holyAttack(sp);if((sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv))&&!holyAtk)continue;
-        if(holyAtk&&sp.k==='heal'&&Math.hypot(e.x-p.x,e.y-p.y)>(sp.o.R||0)+e.r)continue;
-        cast(id);if((p.cd[id]||0)>0){p.acd=.35;break}}
+      for(const id of S.slots){const sp=ready(id);if(!sp||sp.el==='holy'||sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv))continue;cast(id);if((p.cd[id]||0)>0){p.acd=.35;break}}
       AUTO_T=null}
     if(e&&p.mcd<=0){AUTO_T={x:e.x,y:e.y-e.r};shoot();AUTO_T=null}}
   if((IN.down||IN.tfire)&&p.mcd<=0)shoot();
@@ -2080,10 +2087,26 @@ function grimList(mode){
 /* 개발자 모드는 캐릭터 ID별로 저장한다. */
 const devHash=t=>{let x=0;for(const ch of t)x=(x*131+ch.charCodeAt(0))>>>0;return x};
 const PANELS={
+  altar:{t:'마을 중앙 제단',r(){
+    const offer=S.adv2Offer||[],has100=offer.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord');
+    let h=`<div class="say"><img src="${ICON.el_none}" alt=""><p>2차 전직의 길을 여는 고대 제단입니다. 신화 장비 3개를 바치세요. <b class="gold">그중 하나는 100층 보스의 신화 장비</b>여야 합니다. 바친 장비는 돌려받을 수 없습니다.</p></div>`;
+    h+=`<div class="hd">신화 장비 봉헌 <span>${offer.length}/3</span></div>`;
+    h+=`<div class="inv" style="grid-template-columns:repeat(3,2.6em);width:max-content;margin:.4em 0">${[0,1,2].map(i=>{const it=offer[i];return it?`<div class="cell sel" style="border-color:#ff4a6a"><img src="${itemIcon(it)}" alt=""><u>${i+1}</u></div>`:`<div class="cell" style="opacity:.55"><span class="dim">${i+1}</span></div>`}).join('')}</div>`;
+    if(offer.length){h+=`<div class="li"><div class="gr"><b>제단에 놓인 장비</b><div class="ds">${offer.map((it,i)=>`${i+1}. ${MYTH[it.my].n}${MYTH[it.my].boss==='demonLord'?' · <span class="gold">100층 보스</span>':''}`).join('<br>')}</div></div><div class="bt">${offer.map((it,i)=>btn('회수 '+(i+1),'altarTake:'+i,true)).join('')}</div></div>`}
+    if(S.adv2Entered){h+=`<p class="gold">2차 전직 경로에 이미 진입했습니다. 전직 선택과 직업 효과는 추후 추가될 예정입니다.</p><div class="bt">${btn('2차 전직 안내','adv2Open',true,'go')}</div>`;return h}
+    const available=S.inv.filter(it=>it&&it.my&&MYTH[it.my]);
+    if(offer.length<3){h+=`<div class="hd">가방의 신화 장비 <span>${available.length}개</span></div>`;
+      h+=available.length?available.map(it=>`<div class="li"><img src="${itemIcon(it)}" alt=""><div class="gr"><b style="color:#ff4a6a">${MYTH[it.my].n}</b><div class="ds">${SLOTN[it.slot]} · ${mythFloor(it.my)}층 보스${MYTH[it.my].boss==='demonLord'?' · <span class="gold">필수 조건 충족</span>':''}</div></div><div class="bt">${btn('제단에 넣기','altarPut:'+it.id,true,'go')}</div></div>`).join(''):'<p class="dim">가방에 봉헌할 신화 장비가 없습니다. 장착 중인 장비는 먼저 가방으로 옮겨 주세요.</p>';
+    }
+    if(!has100&&offer.length===3)h+=`<p class="no">제단을 열려면 100층 보스 마왕 바알의 신화 장비 1개가 필요합니다.</p>`;
+    if(!S.adv2Entered&&offer.length===3&&has100)h+=`<div class="li"><div class="gr"><b class="gold">제단이 응답합니다</b><div class="ds">신화 장비 3개를 바치고 2차 전직 경로에 진입합니다. 바친 장비는 소모됩니다.</div></div><div class="bt">${btn('바치고 2차 전직으로','advance2',true,'go')}</div></div>`;
+    else if(offer.length<3)h+=`<p class="dim">신화 장비 ${3-offer.length}개가 더 필요합니다. 100층 보스 장비를 포함해야 합니다.</p>`;
+    return h}},
+  adv2:{t:'2차 전직 경로',r(){return `<div class="say"><img src="${ICON.el_none}" alt=""><p>제단이 열리며 2차 전직의 길에 들어섰습니다.</p></div><div class="hd">다음 단계</div><p>2차 전직 직업과 능력은 아직 정해지지 않았습니다. 현재는 경로 진입만 기록되며, 직업 선택이나 전투 능력 변화는 적용되지 않습니다.</p><div class="bt">${btn('제단으로 돌아가기','altarBack',true,'go')}</div>`}},
   dev:{t:'개발자 모드',r(){
     const b=(l,a,c)=>btn(l,a,true,c);
     let h=`<p class="dim">이 캐릭터에서만 켜져 있어요. 다른 캐릭터에는 적용되지 않아요.</p>`;
-    h+=`<div class="hd">현재 캐릭터 테스트 도구</div><div class="li"><div class="gr"><b>전부 해금</b><div class="ds">현재 선택한 캐릭터에 적용되며, 별도 계정을 만들지는 않습니다. 99레벨 · 9서클 · 8속성 전부 · 모든 마법 Lv10 · 마법 칸 8개 · 순간이동 최대 · 100층까지 기록 · 신화 20개 · 재화 넉넉히</div></div><div class="bt">${b('전부 해금','dv:all','go')}</div></div>`;
+    h+=`<div class="hd">현재 캐릭터 테스트 도구</div><div class="li"><div class="gr"><b>전부 해금</b><div class="ds">현재 선택한 캐릭터에 적용되며, 별도 계정을 만들지는 않습니다. 200레벨 · 9서클 · 8속성 전부 · 모든 마법 Lv10 · 마법 칸 8개 · 순간이동 최대 · 100층까지 기록 · 신화 20개 · 재화 넉넉히</div></div><div class="bt">${b('전부 해금','dv:all','go')}</div></div>`;
     h+=`<div class="hd">재화</div><div class="li"><div class="gr">골드·광석·정수·코어·방지권·물약</div><div class="bt">${b('+100만 골드','dv:gold')}${b('재료 +1만','dv:mats')}${b('방지권 +50','dv:prot')}${b('물약 +50','dv:pots')}</div></div>`;
     h+=`<div class="hd">성장</div><div class="li"><div class="gr">Lv.${S.lvl} · ${S.circle}서클 · 포인트 ${S.pts}</div><div class="bt">${b('레벨 +10','dv:lvl')}${b('서클 +1','dv:circle')}${b('포인트 +50','dv:pts')}${b('모든 마법 Lv10','dv:spells')}${b('순간이동 최대','dv:blink')}</div></div>`;
     h+=`<div class="hd">장비</div><div class="li"><div class="gr">현재 최고 층 기준으로 만들어요</div><div class="bt">${b('전설 +15 세트','dv:legset')}${b('가방 비우기','dv:clear')}</div></div>`;
@@ -2179,11 +2202,16 @@ const ACT={
   exportCode(){closePanel();codeBox('export')},
   devCode(){const c=(prompt('코드를 입력하세요')||'').trim();if(!c)return;if(devHash(c)===2771164979){setDevForCurrentCharacter(true);recalc();save();toast('이 캐릭터의 개발자 모드가 켜졌어요');openPanel('dev')}else toast('올바른 코드가 아니에요')},
   devOpen(){if(DEV.on)openPanel('dev')},
+  altarPut(id){if(S.adv2Entered||(S.adv2Offer||[]).length>=3)return sfx.err();const i=S.inv.findIndex(it=>it.id===+id&&it.my&&MYTH[it.my]);if(i<0)return sfx.err();S.adv2Offer.push(S.inv.splice(i,1)[0]);sfx.item()},
+  altarTake(i){i=+i;const offers=S.adv2Offer||[];if(i<0||i>=offers.length||S.inv.length>=BAG())return sfx.err();S.inv.push(offers.splice(i,1)[0]);sfx.ui()},
+  advance2(){const offers=S.adv2Offer||[];if(S.adv2Entered||offers.length!==3||!offers.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord')){toast('신화 장비 3개와 100층 보스 장비 1개가 필요합니다');return sfx.err()}S.adv2Offer=[];S.adv2Entered=true;sfx.circle();save();openPanel('adv2')},
+  adv2Open(){openPanel('adv2')},
+  altarBack(){openPanel('altar')},
   dv(a){if(!DEV.on)return;const [k,x]=a.split(':');const f=Math.max(1,S.maxFloor);
     if(k==='gold')S.gold+=1e6;else if(k==='mats'){S.ore+=1e4;S.ess+=1e4;S.core=(S.core||0)+100}else if(k==='prot')S.prot=(S.prot||0)+50;else if(k==='pots'){S.hpPot+=50;S.mpPot+=50}
-    else if(k==='lvl'){const t=Math.min(99,S.lvl+10);while(S.lvl<t){S.lvl++;S.pts+=3}S.xp=0}else if(k==='circle'){if(S.circle<9){S.circle++;S.mast=0}}else if(k==='pts')S.pts+=50
+    else if(k==='lvl'){const t=Math.min(MAX_LVL,S.lvl+10);while(S.lvl<t){S.lvl++;S.pts+=3}S.xp=0}else if(k==='circle'){if(S.circle<9){S.circle++;S.mast=0}}else if(k==='pts')S.pts+=50
     else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}
-    else if(k==='all'){while(S.lvl<99){S.lvl++;S.pts+=3}S.xp=0;S.circle=9;S.mast=0;S.aff=ELS.slice();S.affPend=0;for(const sp of SPL)S.grim[sp.id]=10;S.blinkLv=BLINK_MAX;S.maxFloor=100;S.gold+=1e7;S.ore+=1e5;S.ess+=1e5;S.core=(S.core||0)+999;S.prot=(S.prot||0)+99;S.hpPot+=99;S.mpPot+=99;
+    else if(k==='all'){while(S.lvl<MAX_LVL){S.lvl++;S.pts+=3}S.xp=0;S.circle=9;S.mast=0;S.aff=ELS.slice();S.affPend=0;for(const sp of SPL)S.grim[sp.id]=10;S.blinkLv=BLINK_MAX;S.maxFloor=100;S.gold+=1e7;S.ore+=1e5;S.ess+=1e5;S.core=(S.core||0)+999;S.prot=(S.prot||0)+99;S.hpPot+=99;S.mpPot+=99;
       const have=new Set(S.inv.concat(Object.values(S.eq)).filter(i=>i&&i.my).map(i=>i.my));for(const m of Object.keys(MYTH))if(!have.has(m)&&S.inv.length<BAG())S.inv.push(mkMyth(m,100));toast('전부 해금했어요')}else if(k==='blink')S.blinkLv=BLINK_MAX
     else if(k==='legset'){for(const sl of['staff','robe','ring']){const it=mkItem(f,4,sl);it.r=4;it.up=15;S.inv.push(it)}}else if(k==='clear'){S.inv=[]}
     else if(k==='myth'){if(MYTH[x])S.inv.push(mkMyth(x,f))}
