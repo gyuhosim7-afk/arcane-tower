@@ -1776,13 +1776,17 @@ function updPlayer(dt){
   p.acd=(p.acd||0)-dt;
   if(S.auto&&G.zone==='tower'&&!G.dead&&!ui.open){const e=nearestEnemy(p.x,p.y,230),danger=!!e||G.ep.some(b=>Math.hypot(b.x-p.x,b.y-p.y)<110)||(p.db&&Object.values(p.db).some(v=>v>0));
     const ready=id=>{const sp=id&&SP[id];return sp&&canUse(sp)&&(p.cd[id]||0)<=0&&p.mp>=spellMp(sp)?sp:null};
+    // 공격 겸 회복/무적 효과가 있는 신성 주문은 적이 있으면 공격 루프에서 쿨마다 사용한다.
+    const holyAttack=sp=>sp.el==='holy'&&((sp.k==='heal'&&sp.o&&sp.o.dm>0)||(sp.o&&sp.o.inv&&sp.k!=='shield'));
     if(p.acd<=0){
       // 방어 마법 먼저: 회복(체력 70% 아래, 위험하면 50% 아래 대기 없이), 보호막(위험할 때 막이 없으면), 무적기(체력 40% 아래)
       for(const id of S.slots){const sp=ready(id);if(!sp)continue;const def=sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv);if(!def)continue;
         const ok=sp.k==='heal'?(sp.o.inv?p.hp<D.maxHp*.4:p.hp<D.maxHp*(sp.m>=.9?.45:.7)):sp.k==='shield'?(danger&&!(p.shield>0)):(p.hp<D.maxHp*.4&&danger);
         if(ok){if(e)AUTO_T={x:e.x,y:e.y-e.r};cast(id);AUTO_T=null;if((p.cd[id]||0)>0){p.acd=.35;break}}}}
     if(e&&p.acd<=0){AUTO_T={x:e.x,y:e.y-e.r};
-      for(const id of S.slots){const sp=ready(id);if(!sp||sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv))continue;cast(id);if((p.cd[id]||0)>0){p.acd=.35;break}}
+      for(const id of S.slots){const sp=ready(id);if(!sp)continue;const holyAtk=holyAttack(sp);if((sp.k==='heal'||sp.k==='shield'||(sp.o&&sp.o.inv))&&!holyAtk)continue;
+        if(holyAtk&&sp.k==='heal'&&Math.hypot(e.x-p.x,e.y-p.y)>(sp.o.R||0)+e.r)continue;
+        cast(id);if((p.cd[id]||0)>0){p.acd=.35;break}}
       AUTO_T=null}
     if(e&&p.mcd<=0){AUTO_T={x:e.x,y:e.y-e.r};shoot();AUTO_T=null}}
   if((IN.down||IN.tfire)&&p.mcd<=0)shoot();
