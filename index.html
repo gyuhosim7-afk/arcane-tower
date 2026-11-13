@@ -84,6 +84,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
 #title .menu button:hover::before,#title .menu button:focus-visible::before{visibility:visible}
 #title .keys{font-size:.8em;color:var(--dim);text-align:center;line-height:1.5;margin-top:.4em}
 #pick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88%;padding:.7em 1.2em .9em;pointer-events:auto}
+#nickRow{display:flex;align-items:center;gap:.8em;margin-bottom:.5em;flex-wrap:wrap}#nickRow label{color:var(--gold)}#nickIn{font:inherit;font-size:1em;padding:.2em .4em;width:9em;background:#0b0d24;color:#fff;border:.1em solid #6a74b8;border-radius:.2em}#nickRow .dim{font-size:.8em}
 #pick h2{margin:0;font-size:1.5em;color:var(--gold);font-weight:normal}
 #pick p{margin:.2em 0 .6em;color:var(--dim);font-size:.9em}
 #pickGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.4em}
@@ -127,6 +128,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
       <div class="keys">WASD 이동 · 마우스 조준, 클릭 매직 애로우 · 1~8 마법 · Space 순간이동(이동 방향)<br>F 대화·포탈·상자 · R 신화 스킬 · Q/E 물약 · Tab 메뉴 · L CRT · M 소리</div>
     </div>
     <div id="pick" class="win" hidden>
+      <div id="nickRow"><label>닉네임 <input id="nickIn" maxlength="10" placeholder="최대 10글자" autocomplete="off"></label><span class="dim">고유번호는 자동으로 만들어져요</span></div>
       <h2>속성을 고르세요</h2>
       <p>처음 고른 속성이 주 속성이 됩니다(피해 +20%). 4서클과 7서클에서 속성을 하나씩 더 깨우고, 9서클에 오르면 모든 속성을 다룹니다.</p>
       <div id="pickGrid"></div>
@@ -1855,7 +1857,7 @@ function drawStaff(x,y,f,el,cast,t){
   ctx.globalCompositeOperation='lighter';ctx.globalAlpha=cast?.5:.22+.08*Math.sin(t*6);pxDisc(ctx,tx+.5,cy,cast?7:4,C[2]);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   if(cast)sparkle(tx+.5,cy,5,C[1]);light(tx,cy,cast?40:22)}
 function drawPlayer(p){
-  if(G.dead)return;drawAura(p,false);shadow(p.x,p.y,14);
+  if(G.dead)return;if(S.nick)drawText(S.nick,p.x,p.y-44,'#ffe27a',.8);drawAura(p,false);shadow(p.x,p.y,14);
   if(IN.touch&&(!S.auto||IN.aiming)&&G.zone==='tower'){const a=p.aimA??(p.face<0?Math.PI:0),C=EL[S.aff[0]].c;for(let i=0;i<4;i++){const r=20+i*7;ctx.fillStyle=i===3?C[0]:C[2];ctx.fillRect(Math.round(p.x+Math.cos(a)*r)-1,Math.round(p.y-6+Math.sin(a)*r*.7)-1,i===3?3:2,i===3?3:2)}}
   const el=S.aff[0],blink=p.ifr>0&&((G.time*20|0)%2)&&!(p.regen>0);
   if(!blink){const fr=p.walk?((p.walk|0)%2):0,bob=p.walk?((p.walk*2|0)%2):0,set=heroSet(el,fr);
@@ -2078,6 +2080,7 @@ const PANELS={
     return h}},
   tower:{t:'심연의 탑',r(){
     let h=`<p>100층까지 있습니다. 층마다 몰려오는 적을 모두 쓰러뜨리면 다음 층 포탈이 열립니다. 5층마다 보스가 나오고(10층마다 대보스), 높이 올라갈수록 보스 패턴이 거세집니다. 보스는 아래층부터 올라가야만 만날 수 있습니다. 쓰러지면 골드의 10%를 잃습니다.</p><div>최고 기록 <b class="gold">${S.maxFloor}층</b> / 100층</div>`;
+    {const nf=Math.min(100,S.maxFloor+1);if(nf>1)h+=`<div class="hd">이어서 도전</div><div class="li"><div class="gr"><b>${nf}층</b> 마지막으로 깬 층의 다음 층 <span class="dim">· ${themeOf(nf).n}${nf%5===0?' · 보스':''}</span></div><div class="bt">${btn('도전','enter:'+nf,true,'go')}</div></div>`}
     h+=`<div class="hd">출발 층</div><div class="li"><div class="gr"><b>1층</b> <span class="dim">· ${THEMES[0].n}</span></div><div class="bt">${btn('입장','enter:1',true,'go')}</div></div>`;
     for(let k=Math.min(90,Math.floor(S.maxFloor/10)*10);k>=10;k-=10)h+=`<div class="li"><div class="gr"><b>${k+1}층</b> 저장된 체크포인트 <span class="dim">· ${themeOf(k+1).n}</span></div><div class="bt">${btn('입장','enter:'+(k+1),true,'go')}</div></div>`;
     return h}},
@@ -2087,6 +2090,7 @@ const PANELS={
       const row=(k,n,d,v)=>`<div class="li"><div class="gr"><b>${n}</b> <span class="gold">${v}</span><div class="ds">${d}</div></div><div class="bt">${btn('+1','stat:'+k,S.pts>0)}</div></div>`;
       h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT','마법 피해 +4%, 마나 +5',S.st.int)+row('vit','체력 VIT','생명력 +12, 재생 증가',S.st.vit)+row('crit','치명 CRIT','치명타율 +1.5%, 치명 피해 증가',S.st.crit)+row('wis','정신 WIS','쿨타임 -1%, 마나 재생 증가',S.st.wis);
       h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 쿨타임 감소 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
+      h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')}</div></div>`;
       h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'처음부터 다시 (저장 삭제)','reset')}</div>`}
     else if(ui.tab==='inv'){
       const cur=[['gold','골드',Math.floor(S.gold)],['ore','광석',S.ore],['ess','정수',S.ess],['core','마력 코어',S.core||0],['prot','파괴 방지권',S.prot||0],['hpPot','체력 물약',S.hpPot],['mpPot','마나 물약',S.mpPot]];
@@ -2119,6 +2123,7 @@ const ACT={
   buyProt(){if(!pay(protCost()))return;S.prot++;sfx.buy();toast('파괴 방지권을 샀습니다')},
   aff(el){if(!S.affPend||S.aff.includes(el))return;S.aff.push(el);S.affPend--;sfx.circle();toast(`${EL[el].n} 속성이 깨어났습니다`);const s0=START[el];if(!S.grim[s0]){S.grim[s0]=1;toast(`마법서 ${SP[s0].n}을(를) 받았습니다`)}},
   craft(id){const sp=SP[id];if(!canUse(sp))return sfx.err();if(S.circle<sp.c){toast(`${sp.c}서클이 필요합니다`);return sfx.err()}if(!pay(craftCost(sp)))return;S.grim[id]=1;sfx.buy();toast(`마법서 제작: ${sp.n}`);const i=S.slots.slice(0,D.slots).indexOf(null);if(i>=0)S.slots[i]=id},
+  nick(){const n=cleanNick(prompt('새 닉네임 (최대 10글자)',S.nick||''));if(n){S.nick=n;toast(`닉네임: ${n}`)}},
   blinkUp(){if((S.blinkLv||0)>=BLINK_MAX)return;if(!pay(blinkCost()))return;S.blinkLv=(S.blinkLv||0)+1;sfx.buy();toast(`순간이동 Lv.${S.blinkLv} · 쿨타임 -${Math.round(S.blinkLv*3.5)}%`)},
   enh(id){const sp=SP[id];if((S.grim[id]||0)>=10)return;if(!pay(enhCost(sp)))return;S.grim[id]++;sfx.buy();toast(`${sp.n} Lv.${S.grim[id]}`)},
   slot(id){const i=S.slots.indexOf(id);if(i>=0&&i<D.slots)S.slots[i]=null;else{if(i>=0)S.slots[i]=null;const j=S.slots.slice(0,D.slots).indexOf(null);if(j<0){toast('빈 슬롯이 없습니다. 다른 마법을 먼저 해제하세요');return sfx.err()}S.slots[j]=id}sfx.ui()},
@@ -2133,7 +2138,7 @@ const ACT={
   sellR(r){S.sellR=+r},
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
   claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(q.xp)},
-  enter(f){f=+f;if(!(f===1||(f%10===1&&f<=91&&f-1<=S.maxFloor)))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
+  enter(f){f=+f;if(!(f===1||f===Math.min(100,S.maxFloor+1)||(f%10===1&&f<=91&&f-1<=S.maxFloor)))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
   reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}else{ui.resetArm=true}}
 };
 function openPanel(n){ui.open=n;ui.sel=null;ui.resetArm=false;IN.down=false;$('panel').hidden=false;refreshPanel()}
@@ -2230,8 +2235,11 @@ function frame(t){
   if(!ui.open&&dt>0)update(dt);
   render();updateDOM();
 }
+const mkPid=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<8;i++){r+=c[Math.random()*c.length|0];if(i===3)r+='-'}return r};
+const cleanNick=n=>String(n||'').replace(/[<>&"'`]/g,'').trim().slice(0,10);
+function ensureId(){if(!S.pid)S.pid=mkPid();if(!S.nick)S.nick='마법사'+(1000+(Math.random()*9000|0))}
 function start(el){
-  if(el)S=newSave(el);initAudio();if(AU.master)AU.master.gain.value=S.mute?0:.8;
+  if(el){S=newSave(el);const n=cleanNick($('nickIn').value);if(n)S.nick=n}ensureId();initAudio();if(AU.master)AU.master.gain.value=S.mute?0:.8;
   G.p={x:320,y:150,hp:1,mp:1,face:1,walk:0,ifr:0,cd:{},mcd:0,bcd:0,pcd:0,castT:0,mvx:0,mvy:0,shield:0,shMax:1,shT:0,regen:0};recalc();G.p.hp=D.maxHp;G.p.mp=D.maxMp;
   while(S.quests.length<3)S.quests.push(mkQuest());
   $('scan').classList.toggle('off',!S.scan);$('bScan').classList.toggle('muted',!S.scan);$('bSnd').classList.toggle('muted',S.mute);syncAuto();
@@ -2244,7 +2252,7 @@ function showPick(){
 }
 buildAssets();
 (function boot(){
-  const sv=loadSave();if(sv){S=sv;$('bCont').hidden=false}
+  const sv=loadSave();if(sv){S=sv;ensureId();$('bCont').hidden=false;$('bCont').textContent=`이어하기 · ${S.nick} Lv.${S.lvl}`}
   resize();addEventListener('resize',resize);autoUpdate();
   TOWN=buildTown();G.map=TOWN;G.p={x:320,y:200,face:1};G.zone='town';bindInput();
   let newArm=0;$('bNew').onclick=()=>{const b=$('bNew');if(!loadSave()||newArm){showPick();return}newArm=1;b.classList.add('warn');b.textContent='정말 새로 시작? 저장이 지워져요 (한 번 더 누르기)';setTimeout(()=>{newArm=0;b.classList.remove('warn');b.textContent='새로 시작'},3500)};$('bCont').onclick=()=>start();
