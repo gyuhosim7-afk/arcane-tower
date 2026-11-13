@@ -766,8 +766,8 @@ const curve=(T,f)=>{for(let i=1;i<T.length;i++)if(f<=T[i][0]){const a=T[i-1],b=T
 const HPC=[[1,2],[8,2.1],[15,1.25],[25,1.25],[35,1.45],[48,2.3],[62,1.6],[75,1.5],[88,1.85],[100,1.9]];
 const DMC=[[1,2],[8,2],[15,1.25],[25,1.3],[35,1.3],[48,1.5],[62,1.5],[75,1.65],[88,1.9],[100,1.9]];
 const ramp=f=>clamp((f-5)/10,0,1);
-const hpScale=f=>(1+.056*Math.pow(f-1,2.2))*curve(HPC,f)*(1+.7*ramp(f));
-const dmgScale=f=>(1+.32*Math.pow(f-1,1.02))*curve(DMC,f)*(1+.5*ramp(f));
+const hpScale=f=>(1+.056*Math.pow(f-1,2.2))*curve(HPC,f)*(1.4+.5*ramp(f));
+const dmgScale=f=>(1+.32*Math.pow(f-1,1.02))*curve(DMC,f)*(1.3+.35*ramp(f));
 const bossHp=f=>1.9+f/26;
 const bossDmg=f=>1+f/180;
 const xpScale=f=>1+.2*(f-1);
@@ -2068,7 +2068,7 @@ const PANELS={
   tower:{t:'심연의 탑',r(){
     let h=`<p>100층까지 있습니다. 층마다 몰려오는 적을 모두 쓰러뜨리면 다음 층 포탈이 열립니다. 5층마다 보스가 나오고(10층마다 대보스), 높이 올라갈수록 보스 패턴이 거세집니다. 보스는 아래층부터 올라가야만 만날 수 있습니다. 쓰러지면 골드의 10%를 잃습니다.</p><div>최고 기록 <b class="gold">${S.maxFloor}층</b> / 100층</div>`;
     h+=`<div class="hd">출발 층</div><div class="li"><div class="gr"><b>1층</b> <span class="dim">· ${THEMES[0].n}</span></div><div class="bt">${btn('입장','enter:1',true,'go')}</div></div>`;
-    {const k=Math.min(90,Math.floor(S.maxFloor/10)*10);if(k>=10)h+=`<div class="li"><div class="gr"><b>${k+1}층</b> 저장된 체크포인트 <span class="dim">· ${themeOf(k+1).n}</span></div><div class="bt">${btn('이어하기','enter:'+(k+1),true,'go')}</div></div>`}
+    for(let k=Math.min(90,Math.floor(S.maxFloor/10)*10);k>=10;k-=10)h+=`<div class="li"><div class="gr"><b>${k+1}층</b> 저장된 체크포인트 <span class="dim">· ${themeOf(k+1).n}</span></div><div class="bt">${btn('입장','enter:'+(k+1),true,'go')}</div></div>`;
     return h}},
   char:{t:'메뉴',r(){
     let h=`<div class="tabs">${btn('능력치','tab:stat',true,ui.tab==='stat'?'on':'')}${btn('가방','tab:inv',true,ui.tab==='inv'?'on':'')}${btn('마법','tab:grim',true,ui.tab==='grim'?'on':'')}</div>`;
@@ -2121,7 +2121,7 @@ const ACT={
   sellR(r){S.sellR=+r},
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
   claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(q.xp)},
-  enter(f){f=+f;if(!(f===1||f===Math.min(90,Math.floor(S.maxFloor/10)*10)+1))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
+  enter(f){f=+f;if(!(f===1||(f%10===1&&f<=91&&f-1<=S.maxFloor)))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
   reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}else{ui.resetArm=true}}
 };
 function openPanel(n){ui.open=n;ui.sel=null;ui.resetArm=false;IN.down=false;$('panel').hidden=false;refreshPanel()}
