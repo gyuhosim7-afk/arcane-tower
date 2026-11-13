@@ -841,16 +841,17 @@ function mkItem(il,minR=0,slot){
   for(let i=0;i<Math.min(3,r);i++){const[k,v]=rollAffix(il,r);it.a[k]=Math.round(((it.a[k]||0)+v)*10)/10}
   return it;
 }
-/* 신화 추가 능력치: 전설 옵션과 같은 비율로 아이템 레벨에 맞춰 커지고, 중간 보스 신화는 옵션 ×1.35 (기본 능력치는 10층 보스 신화가 더 높음) */
+/* 신화 추가 옵션은 아이템 레벨과 보스 층 배수에 따라 성장(5층 ×1.15~100층 ×1.60). */
 const mythAff=(k,v,il)=>k==='int'||k==='vit'||k==='wis'?v/16*(1+il/6):k==='hp'?v/50*(10+il*4):k==='mp'?v/30*(10+il*3):v;
 function applyMythLevel(it,il){il=Math.max(1,Math.floor(il||1));const m=MYTH[it.my],mul=1.15+.45*(mythFloor(it.my)-5)/95;it.il=il;it.a={};for(const k in m.a)it.a[k]=Math.round(mythAff(k,m.a[k],il)*mul*10)/10}
 function mkMyth(key){const m=MYTH[key],it={id:S.uid++,slot:m.slot,r:5,il:1,up:0,my:key,a:{}};applyMythLevel(it,S.lvl);return it}
 function syncMythLevels(){const il=Math.max(1,Math.floor(S.lvl||1));let changed=false;for(const it of (S.inv||[]).concat(Object.values(S.eq||{})))if(it&&it.my&&MYTH[it.my]&&it.il!==il){applyMythLevel(it,il);changed=true}return changed}
-/* 신화 기본 능력치: 같은 레벨 전설 +15강(×6.6)보다 높게. 10층 보스 신화 ×7.6, 중간 보스 신화 ×7.0 */
+/* 신화 기본 능력치: 같은 레벨 전설 +15강보다 10% 높게(×7.26 vs ×6.6). */
 const mythFloor=k=>{const b=MYTH[k].boss,i=MIDS.indexOf(b);return i>=0?i*10+5:BOSSES.indexOf(b)*10+10};
-/* 어려운 보스의 신화일수록 강하다: 5층 ×7.0 → 100층 ×8.9 */
-const mythMain=it=>7+1.9*(mythFloor(it.my)-5)/95;
-function itemStats(it){if(it.my)it.up=0;const m=it.my?mainStats(it.slot,it.il,4):mainStats(it.slot,it.il,it.r),o={};if(it.my)for(const k in m)if(k!=='crit')m[k]*=mythMain(it)/RM[4];else m[k]=2+5*1.5;for(const k in m)o[k]=m[k]*(1+.08*it.up);for(const k in it.a)o[k]=(o[k]||0)+it.a[k];for(const k in o)o[k]=Math.round(o[k]*10)/10;return o}
+/* 신화 주능력치 배수는 전설 +15의 계산식에 10% 보너스를 적용하며, 보스 층 차이는 고유 옵션에 반영 */
+const MYTH_FULL_UP=1+.08*15,MYTH_EDGE=1.1;
+const mythMain=()=>RM[4]*MYTH_FULL_UP*MYTH_EDGE;
+function itemStats(it){if(it.my)it.up=0;const m=it.my?mainStats(it.slot,it.il,4):mainStats(it.slot,it.il,it.r),o={};if(it.my)for(const k in m)if(k!=='crit')m[k]*=mythMain()/RM[4];else m[k]*=MYTH_FULL_UP*MYTH_EDGE;for(const k in m)o[k]=m[k]*(1+.08*it.up);for(const k in it.a)o[k]=(o[k]||0)+it.a[k];for(const k in o)o[k]=Math.round(o[k]*10)/10;return o}
 const itemName=it=>(it.my?MYTH[it.my].n:PRE[it.r]+' '+GEAR_N[it.slot][it.v||0])+(it.up?' +'+it.up:'');
 const sellPrice=it=>Math.round((6+it.il*3)*(it.r+1)*(it.r+1)*(1+it.up*.2));
 const D={my:new Set()};
