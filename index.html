@@ -38,6 +38,7 @@ button.muted{opacity:.5}
 #banner small{display:block;font-size:.36em;color:var(--gold);margin-top:.2em}
 #banner.on{opacity:1}
 #labels div{position:absolute;transform:translate(-50%,-100%);font-size:.9em;white-space:nowrap;text-align:center;line-height:1.2}
+#ktexts div{position:absolute;white-space:nowrap;pointer-events:none;line-height:1;text-shadow:0 .1em 0 #04050c,.1em 0 0 #04050c,-.1em 0 0 #04050c,0 -.1em 0 #04050c}
 #nickTag{position:absolute;transform:translate(-50%,-100%);font-size:.85em;color:#ffe27a;white-space:nowrap;pointer-events:none;text-shadow:0 .1em 0 #04050c,.1em 0 0 #04050c,-.1em 0 0 #04050c,0 -.1em 0 #04050c}
 #labels .pr{color:var(--gold);display:none}#labels .near .pr{display:block}
 #fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .25s steps(5)}#fade.on{opacity:1}
@@ -110,7 +111,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
   <canvas id="game" width="480" height="270"></canvas>
   <div id="scan"></div>
   <div id="ui">
-    <div id="labels"></div><div id="nickTag"></div>
+    <div id="labels"></div><div id="nickTag"></div><div id="ktexts"></div>
     <div id="hud" hidden>
       <div id="zone"></div>
       <div id="bossName" hidden></div>
@@ -277,7 +278,12 @@ function glyph(ch,col,sc){
   g.fillStyle=col;for(let i=0;i<15;i++)if(b[i]==='1')g.fillRect((i%3+1)*sc,((i/3|0)+1)*sc,sc,sc);
   return glyphs[k]=c;
 }
-function drawText(str,x,y,col,sc=1,al='c',g=ctx){if(/[^\x00-\x7f]/.test(str)){g.save();g.font=`bold ${Math.round(9*sc)}px "Do Hyeon","Malgun Gothic","Apple SD Gothic Neo",sans-serif`;g.textBaseline='top';g.textAlign=al==='c'?'center':al==='r'?'right':'left';g.lineWidth=2.5;g.strokeStyle='#04050c';g.lineJoin='round';g.strokeText(str,Math.round(x),Math.round(y)-1);g.fillStyle=col;g.fillText(str,Math.round(x),Math.round(y)-1);g.restore();return}const w=str.length*4*sc;let cx=Math.round(al==='c'?x-w/2:al==='r'?x-w:x);y=Math.round(y);for(const ch of str){g.drawImage(glyph(ch,col,sc),cx,y);cx+=4*sc}}
+/* 한글은 캔버스에 그리면 확대될 때 뭉개져서, 화면 위 HTML 글자로 띄운다 */
+const KQ=[],KPOOL=[];
+function flushK(){const box=$('ktexts');if(!box)return;let i=0;for(;i<KQ.length;i++){const q=KQ[i];let d=KPOOL[i];if(!d){d=document.createElement('div');box.appendChild(d);KPOOL.push(d)}
+  if(d.textContent!==q.str)d.textContent=q.str;d.style.display='';d.style.left=(q.x/W*100)+'%';d.style.top=(q.y/H*100)+'%';d.style.color=q.col;d.style.fontSize=(q.sc*1.05)+'em';d.style.transform=q.al==='c'?'translate(-50%,0)':q.al==='r'?'translate(-100%,0)':'none'}
+  for(;i<KPOOL.length;i++)KPOOL[i].style.display='none';KQ.length=0}
+function drawText(str,x,y,col,sc=1,al='c',g=ctx){if(/[^\x00-\x7f]/.test(str)&&g===ctx){const m=g.getTransform(),k=g.canvas.width/W;KQ.push({str,x:(m.a*x+m.e)/k,y:(m.d*y+m.f)/k,col,sc,al});return}if(/[^\x00-\x7f]/.test(str)){g.save();g.font=`bold ${Math.round(9*sc)}px "Do Hyeon","Malgun Gothic","Apple SD Gothic Neo",sans-serif`;g.textBaseline='top';g.textAlign=al==='c'?'center':al==='r'?'right':'left';g.lineWidth=2.5;g.strokeStyle='#04050c';g.lineJoin='round';g.strokeText(str,Math.round(x),Math.round(y)-1);g.fillStyle=col;g.fillText(str,Math.round(x),Math.round(y)-1);g.restore();return}const w=str.length*4*sc;let cx=Math.round(al==='c'?x-w/2:al==='r'?x-w:x);y=Math.round(y);for(const ch of str){g.drawImage(glyph(ch,col,sc),cx,y);cx+=4*sc}}
 
 /* ============================ SPRITES ============================ */
 const PAL={k:'#14121f',w:'#ffffff',W:'#d8dee9',g:'#8b93a7',G:'#565c73',d:'#33384d',s:'#f2c9a0',S:'#c98f6b',b:'#3b6cf0',B:'#24409e',c:'#6fd3ff',C:'#2a8fd0',p:'#a45cf0',P:'#63309e',r:'#e5484d',R:'#9b2335',o:'#ff9a3c',O:'#c75f1a',y:'#ffd84a',Y:'#c9972a',e:'#5ed36b',E:'#2f8f4a',n:'#8a5a34',N:'#573620',m:'#ff7ad9',l:'#b8f27a',t:'#3fd9c0',T:'#1f8f86',i:'#eaf6ff',x:'#000000',v:'#e9e2c8',V:'#a89f84'};
@@ -1960,7 +1966,7 @@ function drawHUD(){
   if(D.sk){const s=MYTH_SK[D.sk];hudSlot(ux+66,y0,A.m_staff,'m',(p.cd.myth||0)/(s.cd*(1-D.cdr*.5)),p.mp<s.mp,'R',undefined,'#ff4a6a')}
   const boss=G.en.find(e=>e.boss);if(boss){hudOrn(W/2-94,20,188,11);hudBar(W/2-90,23,180,5,boss.hp/boss.max,'#c04cff','#f0a8ff','#5a1a8a')}
 }
-function render(){
+function render(){flushK();
   const p=G.p,m=G.map;let cx=clamp(Math.round(p.x-W/2),0,m.pw-W),cy=clamp(Math.round(p.y-H/2-8),0,m.ph-H);
   G.cam.x=cx;G.cam.y=cy;if(G.shake>0){cx+=Math.round(rnd(-G.shake,G.shake));cy+=Math.round(rnd(-G.shake,G.shake))}
   G.lights.length=0;for(const l of m.lights)G.lights.push(l);
