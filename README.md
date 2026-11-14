@@ -6,6 +6,7 @@
 
 ## 효과 에셋 출처
 속성 공격 이펙트는 [Pixelfx](https://patch-gg.github.io/pixelfx/)의 Patch 및 Hugo Duprez 제작 에셋을 사용합니다. MIT 라이선스 조건에 따라 원본 프레임에서 투명 스프라이트시트를 생성하고 픽셀 품질을 유지하며 축소했습니다. 출처: [GitHub 저장소](https://github.com/patch-gg/pixelfx). 라이선스 전문은 `assets/pixelfx/LICENSE`에 포함되어 있습니다.
+기본 비전 투사체에는 같은 라이선스의 Arcane Beam을 추가했고, 8개 속성 투사체와 방향·파동형 공격에도 속성에 맞는 애니메이션을 연결했습니다. 적을 직접 타격하면 짧은 히트스톱, 흰색 피격 플래시, 색상별 스파크 파티클이 발생하며, 큰 스프라이트 효과는 주문의 착탄 지점에 집중해 화면이 과하게 겹치지 않게 했습니다.
 
 ## 실행
 `index.html`을 크롬으로 열면 됩니다.

@@ -147,6 +147,22 @@
         140,
         206
       ]
+    },
+    "arcane-beam": {
+      "id": "arcane/arcane-beam",
+      "file": "arcane-beam.png",
+      "frames": 36,
+      "fps": 30,
+      "loop": true,
+      "frameSize": [
+        264,
+        100
+      ],
+      "columns": 4,
+      "pivot": [
+        26,
+        84
+      ]
     }
   }
 }
