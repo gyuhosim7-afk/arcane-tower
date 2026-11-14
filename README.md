@@ -2,7 +2,10 @@
 
 **플레이: https://gyuhosim7-afk.github.io/arcane-tower/**
 
-픽셀 아트 마법사 육성 RPG. `index.html` 한 파일로 돌아갑니다 (외부 이미지·소리 파일 없음).
+픽셀 아트 마법사 육성 RPG. 게임 코드는 `index.html`에 있고, 공격 이펙트 스프라이트는 `assets/pixelfx/`에서 불러옵니다.
+
+## 효과 에셋 출처
+속성 공격 이펙트는 [Pixelfx](https://patch-gg.github.io/pixelfx/)의 Patch 및 Hugo Duprez 제작 에셋을 사용합니다. MIT 라이선스 조건에 따라 원본 프레임에서 투명 스프라이트시트를 생성하고 픽셀 품질을 유지하며 축소했습니다. 출처: [GitHub 저장소](https://github.com/patch-gg/pixelfx). 라이선스 전문은 `assets/pixelfx/LICENSE`에 포함되어 있습니다.
 
 ## 실행
 `index.html`을 크롬으로 열면 됩니다.

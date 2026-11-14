@@ -1,0 +1,152 @@
+{
+  "source": "https://github.com/patch-gg/pixelfx",
+  "gallery": "https://patch-gg.github.io/pixelfx/",
+  "license": "MIT",
+  "rasterScale": 0.5,
+  "assets": {
+    "fireball": {
+      "id": "fire/fireball",
+      "file": "fireball.png",
+      "frames": 36,
+      "fps": 30,
+      "loop": true,
+      "frameSize": [
+        136,
+        56
+      ],
+      "columns": 4,
+      "pivot": [
+        112,
+        28
+      ]
+    },
+    "fire-breath": {
+      "id": "fire/fire-breath",
+      "file": "fire-breath.png",
+      "frames": 45,
+      "fps": 30,
+      "loop": true,
+      "frameSize": [
+        160,
+        116
+      ],
+      "columns": 6,
+      "pivot": [
+        12,
+        72
+      ]
+    },
+    "water-wave-crash": {
+      "id": "water/wave-crash",
+      "file": "water-wave-crash.png",
+      "frames": 97,
+      "fps": 30,
+      "loop": false,
+      "frameSize": [
+        224,
+        104
+      ],
+      "columns": 7,
+      "pivot": [
+        112,
+        86
+      ]
+    },
+    "ice-frost-nova": {
+      "id": "ice/frost-nova",
+      "file": "ice-frost-nova.png",
+      "frames": 103,
+      "fps": 30,
+      "loop": false,
+      "frameSize": [
+        288,
+        192
+      ],
+      "columns": 9,
+      "pivot": [
+        144,
+        150
+      ]
+    },
+    "thunder-chain-lightning": {
+      "id": "lightning/chain-lightning",
+      "file": "thunder-chain-lightning.png",
+      "frames": 55,
+      "fps": 30,
+      "loop": false,
+      "frameSize": [
+        248,
+        104
+      ],
+      "columns": 5,
+      "pivot": [
+        40,
+        82
+      ]
+    },
+    "wind-tornado": {
+      "id": "nature/tornado",
+      "file": "wind-tornado.png",
+      "frames": 60,
+      "fps": 30,
+      "loop": true,
+      "frameSize": [
+        196,
+        168
+      ],
+      "columns": 8,
+      "pivot": [
+        98,
+        152
+      ]
+    },
+    "earth-quake": {
+      "id": "nature/quake",
+      "file": "earth-quake.png",
+      "frames": 94,
+      "fps": 30,
+      "loop": false,
+      "frameSize": [
+        288,
+        104
+      ],
+      "columns": 6,
+      "pivot": [
+        144,
+        88
+      ]
+    },
+    "holy-pillar": {
+      "id": "holy/holy-pillar",
+      "file": "holy-pillar.png",
+      "frames": 106,
+      "fps": 30,
+      "loop": false,
+      "frameSize": [
+        192,
+        232
+      ],
+      "columns": 12,
+      "pivot": [
+        96,
+        204
+      ]
+    },
+    "dark-explosion": {
+      "id": "shadow/dark-explosion",
+      "file": "dark-explosion.png",
+      "frames": 115,
+      "fps": 30,
+      "loop": false,
+      "frameSize": [
+        280,
+        248
+      ],
+      "columns": 11,
+      "pivot": [
+        140,
+        206
+      ]
+    }
+  }
+}
