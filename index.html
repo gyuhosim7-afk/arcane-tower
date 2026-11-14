@@ -453,7 +453,7 @@ const SPELL_DATA=[
   ['heavy','헤비','dark',1,'strike',9,2,1.45,{R:30,delay:.1,st:'slow',stT:3,st2:'weak'},'대상을 무겁게 짓눌러 느리게 한다.'],
   ['wounds','라이트 운즈','dark',2,'bolt',9,1.2,2.53,{spd:240,st:'weak'},'저주로 상처를 입히고 약하게 만든다.'],
   ['poison','커스 포이즌','dark',3,'zone',31,6,0.36,{R:44,dur:5,tick:.5,v:'poison'},'독의 저주 구름을 깐다.'],
-  ['vampire','뱀파이어릭 터치','dark',4,'bolt',29,4,9.83,{spd:220,homing:1,drain:.35,size:3},'생명력을 빼앗아 회복한다.'],
+  ['vampire','뱀파이어릭 터치','dark',4,'bolt',36,6,8.5,{spd:220,homing:1,drain:.12,size:3},'준 피해의 12%만큼 생명력을 빼앗는다. (한 번에 최대 생명력 3%까지)'],
   ['gravity','그래비티','dark',6,'zone',76,12,0.65,{R:72,dur:3,tick:.25,v:'grav',crush:6},'중력으로 적을 끌어모아 짓누른다.'],
   ['gravWave','그래비티 웨이브','dark',8,'nova',145,24,7.22,{R:200,pulses:3,st:'slow',stT:2},'중력의 파동이 세 번 퍼진다.'],
   ['fireLance','파이어 랜스','fire',4,'bolt',22,2.4,1.88,{spd:380,pierce:99,size:3,st:'burn'},'모든 적을 꿰뚫는 화염의 창.'],
@@ -1883,7 +1883,7 @@ function update(dt){
     if(!end)for(const e of G.en){if(e.dead||b.hit.has(e))continue;if(Math.hypot(e.x-b.x,e.y-e.r-e.z-b.y)<e.r+b.r){
       if(b.orb){end=true;break}
       b.hit.add(e);const dd=hurt(e,b.dmg,{el:b.el,kb:b.kb,sx:b.x-b.vx,sy:b.y-b.vy,st:b.st,stT:b.stT});hitFx(b.el,b.x,b.y);
-      if(b.drain&&dd){const v=Math.round(dd*b.drain);p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-20,life:.6,str:'+'+v,col:'#8ef0a0',sc:1});for(let i=0;i<6;i++)part(e.x,e.y-e.r,(p.x-e.x)*rnd(1,2),(p.y-12-e.y)*rnd(1,2),.5,pick(EL.dark.c),1)}
+      if(b.drain&&dd){const v=Math.round(Math.min(dd*b.drain,D.maxHp*.03)*healMul());p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-20,life:.6,str:'+'+v,col:'#8ef0a0',sc:1});for(let i=0;i<6;i++)part(e.x,e.y-e.r,(p.x-e.x)*rnd(1,2),(p.y-12-e.y)*rnd(1,2),.5,pick(EL.dark.c),1)}
       if(b.mdrain){p.mp=Math.min(D.maxMp,p.mp+D.maxMp*.1);for(let i=0;i<5;i++)part(e.x,e.y-e.r,(p.x-e.x)*rnd(1,2),(p.y-12-e.y)*rnd(1,2),.5,pick(['#6fa8ff','#cfe6ff']),1)}
       if(b.arc){const o=nearestEnemy(e.x,e.y-e.r,80,b.hit);if(o){boltFx(e.x,e.y-e.r,o.x,o.y-o.r,.18);hurt(o,b.dmg*.6,{el:'thunder',st:'stun',stT:.2})}}
       if(b.hit.size>b.pierce){end=true;break}}}
