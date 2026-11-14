@@ -1325,7 +1325,7 @@ function hurt(e,dmg,o={}){
   if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;
   const c=!o.dot&&Math.random()*100<D.crit+(jobIs('ice')&&(e.frozen>0||e.slow>0)?25:0);if(jobIs('ice')&&(e.frozen>0||e.slow>0))mul*=1.4;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
   let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
-  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*.05));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;/* 보스는 한 방에 최대 체력의 5%까지만 */
+  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*(o.dragonLordHit?0.10:0.05)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
   const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));e.hp-=d;if(S.hiddenJob==='dragonLord')addDragonRage(3);if(!o.dot)e.flash=.1;
   if(o.kb&&!e.boss&&o.sx!==undefined){const a=Math.atan2(e.y-o.sy,e.x-o.sx);e.kx+=Math.cos(a)*o.kb;e.ky+=Math.sin(a)*o.kb}
   G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+shown+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
@@ -1501,14 +1501,15 @@ function cast(id){
 function addDragonRage(v){if(S.hiddenJob!=='dragonLord')return;const before=S.dragonRage||0;S.dragonRage=Math.min(100,before+v);if(before<100&&S.dragonRage>=100){toast('용의 분노가 가득 찼습니다 · G로 용화');save()}}
 function dragonKey(){const p=G.p;if(S.hiddenJob!=='dragonLord'||!G.started||G.dead||ui.open)return;if((S.dragonRage||0)>=100){S.dragonRage=0;p.dragonFormUntil=G.time+15;p.dragonRoarUsed=false;p.ifr=Math.max(p.ifr,.45);banner('용화 · 심연룡','15초 동안 비행 · 지면 장판 무시 · G 용의 숨결 · F 심연의 포효');ringFx(p.x,p.y,88,['#ffffff','#c94cff','#ff7a2a','#16051f'],1,{top:1});burst(p.x,p.y-10,34,['#c94cff','#ff7a2a','#ffffff'],100,.7);shake(10);sfx.roar();save();return}cast('dragon_breath')}
 function dragonRoar(){const p=G.p;if(S.hiddenJob!=='dragonLord'||p.dragonFormUntil<=G.time){toast('용화 중에만 심연의 포효를 쓸 수 있습니다');return}if(p.dragonRoarUsed){toast('이번 용화에서 이미 포효했습니다');return}p.dragonRoarUsed=true;G.ep=[];G.fx=G.fx.filter(f=>f.layer!=='g');G.fxNew=G.fxNew.filter(f=>f.layer!=='g');let bossHit=false;for(const e of G.en){if(e.dead)continue;e.stun=Math.max(e.stun,2);if(e.boss&&!bossHit){e.roarUntil=G.time+2;e.st='idle';e.stT=0;e.atk=0;e.cd=Math.max(e.cd||0,2);bossHit=true}}ringFx(p.x,p.y,Math.max(W,H),['#ffffff','#c94cff','#ff7a2a','#16051f'],.7,{top:1});for(let i=0;i<24;i++){const a=i/24*TAU;part(p.x,p.y-12,Math.cos(a)*rnd(70,150),Math.sin(a)*rnd(40,100),.65,pick(['#ffffff','#c94cff','#ff7a2a']),2)}G.flash=.22;G.flashCol='#c94cff';shake(12);banner('심연의 포효','화면의 적 기절 · 보스 패턴 1회 취소');sfx.roar();save()}
+function dragonHit(e,dmg,o={}){if(e.dead)return 0;const ratio=e.boss ? 0.12 : 0.35;return hurt(e,Math.max(dmg,e.max*ratio),Object.assign({},o,{dragonLordHit:true}))}
 function dragonBreath(sp,dmg){const p=G.p,tg=aimPoint(),a=Math.atan2(tg.y-(p.y-14),tg.x-p.x),form=dragonFlying(),R=form?245:190;let t=0,tk=0;
   if(Math.abs(tg.x-p.x)>2)p.face=tg.x<p.x?-1:1;
-  addFx({layer:'t',t:0,upd(dt){this.t+=dt;tk-=dt;if(tk<=0){tk=.18;for(const e of G.en){if(e.dead)continue;const dx=e.x-p.x,dy=e.y-(p.y-14),d=Math.hypot(dx,dy),da=Math.atan2(dy,dx)-a,ang=Math.atan2(Math.sin(da),Math.cos(da));if(d<R+e.r&&Math.abs(ang)<.62)hurt(e,dmg*.2*(form?1.65:1),{el:'fire',st:'burn',proc:1})}}return this.t<3&&!G.dead},draw(){const tipx=p.x+Math.cos(a)*R,tipy=p.y-14+Math.sin(a)*R;ctx.globalAlpha=.20;pxPoly(ctx,[[p.x,p.y-19],[tipx-Math.sin(a)*R*.38,tipy+Math.cos(a)*R*.38],[tipx+Math.sin(a)*R*.38,tipy-Math.cos(a)*R*.38]],'#ff5a1a');ctx.globalAlpha=.42;pxPoly(ctx,[[p.x,p.y-16],[p.x+Math.cos(a)*R*.78-Math.sin(a)*R*.18,p.y-14+Math.sin(a)*R*.78+Math.cos(a)*R*.18],[p.x+Math.cos(a)*R*.78+Math.sin(a)*R*.18,p.y-14+Math.sin(a)*R*.78-Math.cos(a)*R*.18]],'#ffd84a');ctx.globalAlpha=1;light((p.x+tipx)/2,(p.y+tipy)/2,form?90:65)}});
+  addFx({layer:'t',t:0,upd(dt){this.t+=dt;tk-=dt;if(tk<=0){tk=.18;for(const e of G.en){if(e.dead)continue;const dx=e.x-p.x,dy=e.y-(p.y-14),d=Math.hypot(dx,dy),da=Math.atan2(dy,dx)-a,ang=Math.atan2(Math.sin(da),Math.cos(da));if(d<R+e.r&&Math.abs(ang)<.86)dragonHit(e,dmg*.25*(form?1.65:1),{el:'fire',st:'burn',proc:1})}}return this.t<3&&!G.dead},draw(){const tipx=p.x+Math.cos(a)*R,tipy=p.y-14+Math.sin(a)*R;ctx.globalAlpha=.20;pxPoly(ctx,[[p.x,p.y-19],[tipx-Math.sin(a)*R*.38,tipy+Math.cos(a)*R*.38],[tipx+Math.sin(a)*R*.38,tipy-Math.cos(a)*R*.38]],'#ff5a1a');ctx.globalAlpha=.42;pxPoly(ctx,[[p.x,p.y-16],[p.x+Math.cos(a)*R*.78-Math.sin(a)*R*.18,p.y-14+Math.sin(a)*R*.78+Math.cos(a)*R*.18],[p.x+Math.cos(a)*R*.78+Math.sin(a)*R*.18,p.y-14+Math.sin(a)*R*.78-Math.cos(a)*R*.18]],'#ffd84a');ctx.globalAlpha=1;light((p.x+tipx)/2,(p.y+tipy)/2,form?90:65)}});
   for(let i=0;i<20;i++){const aa=a+rnd(-.5,.5),d=rnd(18,R);part(p.x+Math.cos(aa)*d,p.y-14+Math.sin(aa)*d,Math.cos(aa)*rnd(25,65),Math.sin(aa)*rnd(25,65),rnd(.2,.6),pick(['#fff3b0','#ffd84a','#ff7a2a','#ff3a1a']),2)}sfx.fire()}
-function castDragonSpell(sp,dmg){const p=G.p,form=dragonFlying(),tg=aimPoint(),mul=form?1.7:1;
+function castDragonSpell(sp,dmg){const p=G.p,form=dragonFlying(),mul=form?1.7:1;
   if(sp.id==='dragon_breath'){banner('용의 숨결',form?'심연룡의 화염':'전방 부채꼴 화염');dragonBreath(sp,dmg);return}
-  if(sp.id==='dragon_wing'){const a=Math.atan2(tg.y-(p.y-12),tg.x-p.x),R=form?235:175;for(const e of G.en){if(e.dead)continue;const dx=e.x-p.x,dy=e.y-(p.y-12),d=Math.hypot(dx,dy),da=Math.atan2(dy,dx)-a,ang=Math.atan2(Math.sin(da),Math.cos(da));if(d<R+e.r&&Math.abs(ang)<.95){hurt(e,dmg*mul,{el:'wind',kb:form?150:100,sx:p.x,sy:p.y});if(!e.boss)moveEnt(e,Math.cos(a)*55,Math.sin(a)*55,e.r-2)}}windBurst(p.x+Math.cos(a)*80,p.y+Math.sin(a)*55,form?130:95);banner('날개 돌풍','적을 밀쳐냅니다');sfx.blink();return}
-  const R=form?130:90;for(const e of G.en){if(e.dead||Math.hypot(e.x-p.x,e.y-p.y)>R+e.r)continue;hurt(e,dmg*mul,{el:'earth',st:'stun',stT:e.boss?.7:1.1,kb:e.boss?0:90,sx:p.x,sy:p.y,proc:1})}rocks(p.x,p.y,R*.8,true);ringFx(p.x,p.y,R,EL.earth.c,.45,{top:1});banner('꼬리 강타','주변 적을 내리칩니다');sfx.earth()
+  if(sp.id==='dragon_wing'){const R=form?360:260;for(const e of G.en){if(e.dead)continue;const dx=e.x-p.x,dy=e.y-(p.y-12),d=Math.hypot(dx,dy);if(d>R+e.r)continue;const a=Math.atan2(dy,dx);dragonHit(e,dmg*mul,{el:'wind',kb:form?190:140,sx:p.x,sy:p.y});if(!e.boss)moveEnt(e,Math.cos(a)*65,Math.sin(a)*65,e.r-2)}windBurst(p.x,p.y,R*.72);ringFx(p.x,p.y,R,EL.wind.c,.55,{top:1});banner('날개 돌풍','주변의 적을 휩쓸어 밀쳐냅니다');sfx.blink();return}
+  const R=form?330:220;for(const e of G.en){if(e.dead||Math.hypot(e.x-p.x,e.y-p.y)>R+e.r)continue;dragonHit(e,dmg*mul,{el:'earth',st:'stun',stT:e.boss ? 1.2 : 1.8,kb:e.boss?0:130,sx:p.x,sy:p.y,proc:1})}rocks(p.x,p.y,R*.8,true);ringFx(p.x,p.y,R,EL.earth.c,.55,{top:1});banner('꼬리 강타','넓은 주변 범위에 큰 피해와 기절');sfx.earth()
 }
 /* 신화 전용 스킬 [R] */
 
@@ -1527,9 +1528,9 @@ const jobIs=k=>S.hiddenJob==='dragonLord'?false:S.job===k;
 function grantJobSpells(){if(!S.job)return;for(const sp of SPL)if(sp.o&&sp.o.job===S.job&&!S.grim[sp.id])S.grim[sp.id]=1}
 const DRAGON_CLASS={n:'드래곤 로드',c:'#c94cff',d:'용왕의 권능: 모든 피해 +30%. 용의 피: 최대 체력 +30%, 화상·중독·출혈 면역. 용린: 받는 피해 -15%, 체력 50% 아래에서 3초간 피해 -50% (60초마다). 용의 분노: 주거나 받는 피해로 분노 게이지가 찬다.'};
 const DRAGON_SPS=[
-  {id:'dragon_breath',n:'용의 숨결',d:'전방 부채꼴 화염 브레스 3초 · 분노 소모 없음',el:'fire',c:9,k:'dragon',mp:0,cd:15,m:1.8,o:{},dragonSkill:true,job:'dragonLord',icon:'fireStorm'},
-  {id:'dragon_wing',n:'날개 돌풍',d:'전방 넓은 바람으로 적을 밀쳐낸다',el:'wind',c:9,k:'dragon',mp:0,cd:12,m:4,o:{},dragonSkill:true,job:'dragonLord',icon:'windStorm'},
-  {id:'dragon_tail',n:'꼬리 강타',d:'주변을 꼬리로 내리쳐 큰 피해와 기절을 준다',el:'earth',c:9,k:'dragon',mp:0,cd:14,m:5.5,o:{},dragonSkill:true,job:'dragonLord',icon:'earthWall'}
+  {id:'dragon_breath',n:'용의 숨결',d:'전방 부채꼴을 3초간 불태우는 반복 피해 · 분노 소모 없음',el:'fire',c:9,k:'dragon',mp:0,cd:15,m:28,o:{},dragonSkill:true,job:'dragonLord',icon:'fireStorm'},
+  {id:'dragon_wing',n:'날개 돌풍',d:'주변 넓은 범위를 휩쓸어 큰 피해를 주고 밀쳐낸다',el:'wind',c:9,k:'dragon',mp:0,cd:12,m:76,o:{},dragonSkill:true,job:'dragonLord',icon:'windStorm'},
+  {id:'dragon_tail',n:'꼬리 강타',d:'주변 대범위를 내리쳐 압도적인 피해와 기절을 준다',el:'earth',c:9,k:'dragon',mp:0,cd:14,m:92,o:{},dragonSkill:true,job:'dragonLord',icon:'earthWall'}
 ];
 for(const sp of DRAGON_SPS)SP[sp.id]=sp;
 KIND_N.dragon='용술';
