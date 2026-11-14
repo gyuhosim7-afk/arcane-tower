@@ -381,7 +381,32 @@ const ELS=['fire','water','ice','wind','earth','thunder','holy','dark'];
 const HERO={fire:['#e65a4a','#a82c30','#5e1620','#ffcf7a'],water:['#5aa6ff','#2c68cc','#173478','#bfe6ff'],ice:['#a2c6ff','#6888e6','#3648a2','#eef8ff'],wind:['#6ccf98','#2c9a68','#165438','#e2ffea'],earth:['#c89c62','#8a5c32','#462c16','#f4e2b0'],thunder:['#4e5ea2','#2c3672','#151a3e','#ffe45a'],holy:['#f2ecdc','#c9bf9f','#847a60','#ffd04a'],dark:['#6c4c8e','#44306c','#22163a','#d070ff']};
 const START={fire:'fire',water:'aqua',ice:'ice',wind:'wind',earth:'rock',thunder:'lightning',holy:'light',dark:'heavy'};
 // [id, 이름, 속성, 서클, 종류, 마나, 쿨, 배율, 옵션, 설명]
+/* 2차 전직 전용 마법 (c:10, o.job=속성) */
 const SPELL_DATA=[
+  ['jfNova','플레임 노바','fire',10,'nova',127,14,14,{R:120,pulses:2,st:'burn',job:'fire'},'불꽃 고리가 두 번 터지며 주변을 태운다.'],
+  ['jfMeteor','메테오 레인','fire',10,'rain',223,36,6.2,{dur:5,rate:.07,R:44,v:'meteor',job:'fire'},'거대한 운석이 비처럼 쏟아진다.'],
+  ['jfPhoenix','피닉스 스트라이크','fire',10,'bolt',147,18,26,{spd:360,pierce:99,size:4,st:'burn',kb:160,job:'fire'},'불사조가 일직선으로 모든 적을 꿰뚫는다.'],
+  ['jwVortex','소용돌이','water',10,'zone',147,18,2.2,{R:100,dur:6,tick:.35,v:'flood',job:'water'},'거대한 소용돌이로 적을 붙잡아 휩쓴다.'],
+  ['jwLance','아쿠아 랜스','water',10,'bolt',97,9,9,{spd:380,n:3,spread:.12,pierce:99,kb:200,size:3,st:'slow',job:'water'},'물의 창 세 자루가 적을 꿰뚫고 밀어낸다.'],
+  ['jwWrath','대해의 분노','water',10,'wave',231,38,60,{wd:340,dist:560,spd:280,big:1,job:'water'},'바다 전체가 일어나 앞을 쓸어버린다.'],
+  ['jiAge','아이스 에이지','ice',10,'nova',238,40,26,{R:220,pulses:2,st:'freeze',stT:3,job:'ice'},'주변 세상을 통째로 얼린다.'],
+  ['jiLance','프로스트 랜스','ice',10,'spikes',104,10,9,{n:10,gap:22,R:20,st:'freeze',stT:2,job:'ice'},'얼음 창이 길게 솟아 적을 얼린다.'],
+  ['jiStorm','빙결 폭풍','ice',10,'rain',184,26,3.2,{dur:6,rate:.08,R:34,v:'ice',job:'ice'},'얼음 결정이 폭풍처럼 내린다.'],
+  ['jaCyclone','하이퍼 사이클론','wind',10,'zone',192,28,1.6,{R:50,dur:7,tick:.2,v:'torn',n:4,job:'wind'},'회오리 네 개가 적을 쫓아다닌다.'],
+  ['jaVacuum','진공 참','wind',10,'bolt',84,7,4.2,{spd:420,n:7,spread:.2,pierce:99,size:2,kb:140,job:'wind'},'진공의 칼날 일곱 줄기가 모든 것을 벤다.'],
+  ['jaSky','천공의 칼날','wind',10,'wave',223,36,58,{wd:300,dist:600,spd:320,big:1,job:'wind'},'하늘을 가르는 거대한 칼바람.'],
+  ['jeGaia','가이아의 분노','earth',10,'strike',166,22,30,{R:110,delay:.7,st:'stun',stT:2,kb:200,big:1,job:'earth'},'대지가 들고일어나 적을 짓뭉갠다.'],
+  ['jeWave','대지 파동','earth',10,'spikes',97,9,8,{n:14,gap:20,R:22,st:'stun',stT:1,job:'earth'},'땅을 따라 바위 가시가 길게 솟는다.'],
+  ['jeCollapse','대지 붕괴','earth',10,'zone',238,40,6.8,{R:250,dur:5,tick:.4,v:'quake',stT:.5,self:1,job:'earth'},'주변 땅이 모두 무너져 내린다.'],
+  ['jtStorm','썬더 스톰','thunder',10,'rain',192,28,3.4,{dur:6,rate:.06,R:40,v:'thunder',job:'thunder'},'번개 폭풍이 화면을 뒤덮는다.'],
+  ['jtPlasma','플라즈마 체인','thunder',10,'chain',76,6,5.5,{jumps:10,range:180,job:'thunder'},'플라즈마가 적 열 명을 잇달아 꿰뚫는다.'],
+  ['jtJudge','천벌','thunder',10,'strike',157,20,34,{R:90,delay:.5,st:'stun',stT:1.5,big:1,job:'thunder'},'하늘의 벌이 한 곳에 떨어진다.'],
+  ['jhCross','세인트 크로스','holy',10,'nova',127,14,15,{R:140,pulses:2,st:'stun',stT:.6,healP:.1,job:'holy'},'빛의 십자가가 두 번 터지며 적을 태우고 몸을 회복한다.'],
+  ['jhLance','홀리 랜스','holy',10,'bolt',91,8,8,{spd:400,n:3,spread:.15,pierce:99,size:3,job:'holy'},'빛의 창 세 자루가 적을 꿰뚫는다.'],
+  ['jhHeaven','천상의 빛','holy',10,'rain',200,30,4,{dur:6,rate:.07,R:36,v:'holy',job:'holy'},'하늘에서 빛의 기둥이 쏟아진다.'],
+  ['jdHole','블랙홀','dark',10,'zone',184,26,1.2,{R:110,dur:4,tick:.25,v:'grav',crush:8,job:'dark'},'모든 것을 빨아들여 짓누르는 검은 구멍.'],
+  ['jdSoul','소울 이터','dark',10,'bolt',97,9,7,{spd:240,n:4,spread:.4,homing:1,drain:.2,size:2,job:'dark'},'영혼을 먹는 탄 네 발이 적을 쫓아 생명력을 빼앗는다.'],
+  ['jdScythe','종말의 낫','dark',10,'wave',223,36,56,{wd:280,dist:520,spd:320,big:1,st:'weak',job:'dark'},'종말의 낫이 공간째 베어 낸다.'],
   ['arrow','매직 애로우','none',1,'bolt',0,.3,1.0,{spd:300,kb:40},'마나 덩어리를 쏘는 기본 공격. 좌클릭으로 쓴다.'],
   ['shield','쉴드','none',2,'shield',18,40,0.2,{dur:5},'5초간 받는 피해의 절반을 대신 받는다. (최대 생명력 20%까지)'],
   ['meteorS','메테오 스트라이크','none',9,'meteor',150,45,75.8,{R:100},'우주에서 거대한 운석을 떨어뜨린다.'],
@@ -485,6 +510,7 @@ const IC={
   spike(g,x,yb,h,w,C){pxPoly(g,[[x-w,yb],[x+.5,yb-h],[x+w+1,yb]],C[2]);pxPoly(g,[[x-w,yb],[x+.5,yb-h],[x+.5,yb]],C[1]);IC.px(g,Math.round(x),Math.round(yb-h+1),C[0])},
   funnel(g,x,y,h,c,c2){for(let i=0;i<h;i++){const w=1+i*.55;pxLine(g,x-w+Math.sin(i*.8),y-i,x+w+Math.sin(i*.8),y-i,i%3===0?c2:c)}}
 };
+const JOB_ICON={jfNova:'ringFire',jfMeteor:'meteorSwarm',jfPhoenix:'fireLance',jwVortex:'aquaField',jwLance:'aquaArrow',jwWrath:'seaBlast',jiAge:'frozenKingdom',jiLance:'iceSpear',jiStorm:'iceStorm',jaCyclone:'windStorm',jaVacuum:'windBlade',jaSky:'destructWind',jeGaia:'graveGround',jeWave:'earthWall',jeCollapse:'ruinGround',jtStorm:'ctrlWeather',jtPlasma:'chainL',jtJudge:'gigaRaidane',jhCross:'purify',jhLance:'holyMissile',jhHeaven:'shining',jdHole:'gravity',jdSoul:'vampire',jdScythe:'chaosBlade'};
 const ICONS={
   arrow:(g,C)=>IC.arrow(g,3,15,13,5,C[2],C[0],C[1]),
   holyMissile:(g,C)=>{for(const[x,y]of[[4,13],[9,9],[14,5]]){pxLine(g,x-3,y+3,x,y,C[3]);IC.star(g,x,y,2.6,4,C[1],.35)}},
@@ -563,6 +589,7 @@ const ICONS={
   chaosBlade:(g,C)=>{pxPoly(g,[[2,16],[13,3],[16,1],[15,5],[4,16]],'#14121f');pxPoly(g,[[3,15],[13,4],[15,2],[14,5]],C[1]);pxLine(g,4,15,14,4,'#ffffff');for(const[x,y]of[[5,5],[13,12],[8,15]])IC.px(g,x,y,C[0])},
   naturalArrow:(g,C)=>{const L=['fire','ice','earth'];L.forEach((e,i)=>IC.arrow(g,2+i*2,15-i,12+i*2,4+i*1.5,EL[e].c[2],EL[e].c[0]))}
 };
+for(const id in JOB_ICON){const base=JOB_ICON[id];ICONS[id]=(g,C)=>{ICONS[base]&&ICONS[base](g,C);IC.star(g,14.5,3.5,3,4,'#ffd84a',.35);g.fillStyle='#fff';g.fillRect(14,3,1,1)}}
 function mkSpellIcon(sp){
   const c=mkC(18,18),g=g2(c),C=EL[sp.el].c;
   const fr=sp.c>=9?null:sp.c>=7?['#ffd84a','#8a6a1a']:sp.c>=4?['#d8dee9','#6a7488']:['#c98f6b','#6b4426'];
@@ -767,7 +794,7 @@ const SLOT_KEY='arcane-tower-slots';
 function getSlots(){try{return JSON.parse(localStorage.getItem(SLOT_KEY)||'{}')||{}}catch(e){return{}}}
 function putSlots(o){try{localStorage.setItem(SLOT_KEY,JSON.stringify(o))}catch(e){}}
 function save(){try{const j=JSON.stringify(S);localStorage.setItem(SAVE_KEY,j);if(S.pid){const sl=getSlots();sl[S.pid]=j;putSlots(sl)}}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];r.slots=r.slots.map(k=>{const sp=k&&SP[k];return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];if(r.job)for(const sp of SPL)if(sp.o&&sp.o.job===r.job&&!r.grim[sp.id])r.grim[sp.id]=1;r.slots=r.slots.map(k=>{const sp=k&&SP[k];return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
 const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
 const RM=[1,1.3,1.7,2.2,3,4.2];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
@@ -882,7 +909,7 @@ function setDevForCurrentCharacter(enabled){
   DEV.on=!!enabled;
 }
 const BAG=()=>DEV.on?64:32;
-const canUse=sp=>sp.el==='none'||(S.job?sp.el===S.job:S.circle>=9||S.aff.includes(sp.el)||DEV.on);
+const canUse=sp=>(sp.o&&sp.o.job)?(S.job===sp.o.job||DEV.on):sp.el==='none'||(S.job?sp.el===S.job:S.circle>=9||S.aff.includes(sp.el)||DEV.on);
 const spellMp=sp=>Math.round(sp.mp*(S.circle>=4&&sp.c<S.circle?.85:1));
 const spellDmg=sp=>D.pow*sp.m*(1+.12*((S.grim[sp.id]||1)-1))*(sp.el===S.aff[0]?1.2:1);
 const craftCost=sp=>({gold:Math.round(50*Math.pow(sp.c,2.4)),ess:Math.round(2*Math.pow(sp.c,1.8))});
@@ -1474,6 +1501,7 @@ const JOBS={
   dark:{n:'네크로맨서',c:'#c94cff',sk:'망자의 군세',d:'적이 죽으면 해골 하수인으로 되살린다 (최대 5마리, 20초)',sd:'해골 하수인 6마리를 바로 불러낸다 (15초)',ic:'gravWave'}};
 const JOB_CD=40,JOB_MP=90,JB={tide:0,armor:0,allies:0};
 const jobIs=k=>S.job===k;
+function grantJobSpells(){if(!S.job)return;for(const sp of SPL)if(sp.o&&sp.o.job===S.job&&!S.grim[sp.id])S.grim[sp.id]=1}
 function summonAlly(x,y,life){if(JB.allies>=8)return;JB.allies++;const a={x,y,t:0,cd:0,face:1};burst(x,y-8,14,['#c94cff','#b8f27a','#ffffff'],60,.5);
   addFx({layer:'t',t:0,upd(dt){a.t+=dt;a.cd-=dt;const e=nearestEnemy(a.x,a.y,260);if(e){const dx=e.x-a.x,dy=e.y-a.y,d=Math.hypot(dx,dy)||1;a.face=dx<0?-1:1;if(d>e.r+6){const v=78*dt;if(!boxSol(a.x+dx/d*v,a.y-3,5))a.x+=dx/d*v;if(!boxSol(a.x,a.y-3+dy/d*v,5))a.y+=dy/d*v}else if(a.cd<=0){a.cd=.7;hurt(e,D.pow*1.6,{el:'dark',proc:1});part(e.x,e.y-e.r,0,-20,.4,'#b8f27a',2)}}
     else{const p=G.p,dx=p.x-24*a.face-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy);if(d>30){a.x+=dx/d*70*dt;a.y+=dy/d*70*dt}}
@@ -2101,7 +2129,7 @@ function updateDOM(){
   $('bossName').hidden=!boss;if(boss)$('bossName').textContent=MON[boss.type].n;
 }
 function spellRow(sp,mode){
-  const lv=S.grim[sp.id]||0,ok=canUse(sp),circleOk=S.circle>=sp.c,slotI=S.slots.indexOf(sp.id),eq=slotI>=0&&slotI<D.slots;
+  const lv=S.grim[sp.id]||0,ok=canUse(sp),circleOk=(sp.o&&sp.o.job)?S.job===sp.o.job:S.circle>=sp.c,slotI=S.slots.indexOf(sp.id),eq=slotI>=0&&slotI<D.slots;
   let b='';
   if(sp.id==='arrow'){b+=lv<10?btn('강화','enh:arrow',can(enhCost(sp))):'<span class="gold">최대</span>'}
   else if(lv){b+=btn(eq?`해제 (${slotI+1})`:'장착','slot:'+sp.id,true,eq?'':'go');b+=lv<10?btn('강화','enh:'+sp.id,can(enhCost(sp))):'<span class="gold">최대</span>'}
@@ -2123,8 +2151,9 @@ function grimList(mode){
   h+=blinkRow();let any=false;
   for(let c=1;c<=9;c++){const list=SPL.filter(sp=>sp.c===c&&els.includes(sp.el)&&(ui.gf==='all'||sp.el===ui.gf)&&(mode==='shop'||S.grim[sp.id]));if(!list.length)continue;any=true;
     h+=`<div class="hd">${c}서클 · ${CT[c]}<span>${S.circle>=c?'':'잠김'}</span></div>`+list.map(sp=>spellRow(sp,mode)).join('')}
+  if(S.job){const list=SPL.filter(sp=>sp.o&&sp.o.job===S.job);h+=`<div class="hd" style="color:${JOBS[S.job].c}">2차 전직 전용 · ${JOBS[S.job].n}<span>전직하면 자동으로 배워요</span></div>`+list.map(sp=>spellRow(sp,'own')).join('');any=true}
   if(!any)h+='<p>아직 배운 마법이 없습니다. 연금술사 루나에게서 마법서를 만드세요.</p>';
-  const hidden=SPL.filter(sp=>!els.includes(sp.el)).length;if(hidden)h+=S.job?`<p class="no">다른 속성 마법 ${hidden}개는 2차 전직으로 잠겨 있습니다.</p>`:`<p>다른 속성 마법 ${hidden}개는 그 속성을 깨우면 보입니다.</p>`;
+  const hidden=SPL.filter(sp=>!els.includes(sp.el)&&!(sp.o&&sp.o.job)).length;if(hidden)h+=S.job?`<p class="no">다른 속성 마법 ${hidden}개는 2차 전직으로 잠겨 있습니다.</p>`:`<p>다른 속성 마법 ${hidden}개는 그 속성을 깨우면 보입니다.</p>`;
   return h;
 }
 /* 개발자 모드는 캐릭터 ID별로 저장한다. */
@@ -2248,14 +2277,14 @@ const ACT={
   devOpen(){if(DEV.on)openPanel('dev')},
   altarPut(id){if(S.adv2Entered||(S.adv2Offer||[]).length>=3)return sfx.err();const i=S.inv.findIndex(it=>it.id===+id&&it.my&&MYTH[it.my]);if(i<0)return sfx.err();S.adv2Offer.push(S.inv.splice(i,1)[0]);sfx.item()},
   altarTake(i){i=+i;const offers=S.adv2Offer||[];if(i<0||i>=offers.length||S.inv.length>=BAG())return sfx.err();S.inv.push(offers.splice(i,1)[0]);sfx.ui()},
-  advance2(){const offers=S.adv2Offer||[];if(S.circle<9){toast('9서클을 달성해야 전직할 수 있습니다');return sfx.err()}if(S.lvl<120){toast('Lv.120을 달성해야 전직할 수 있습니다');return sfx.err()}if(S.adv2Entered||offers.length!==3||!offers.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord')){toast('신화 장비 3개와 100층 보스 장비 1개가 필요합니다');return sfx.err()}S.adv2Offer=[];S.adv2Entered=true;S.job=S.aff[0];recalc();S.slots=S.slots.map(id=>{const sp=id&&SP[id];return sp&&(sp.el==='none'||sp.el===S.job)?id:null});const jobSpell=SPL.find(sp=>sp.el===S.job&&S.grim[sp.id]);if(jobSpell&&!S.slots.slice(0,D.slots).includes(jobSpell.id)){const free=S.slots.slice(0,D.slots).indexOf(null);if(free>=0)S.slots[free]=jobSpell.id}sfx.circle();save();
+  advance2(){const offers=S.adv2Offer||[];if(S.circle<9){toast('9서클을 달성해야 전직할 수 있습니다');return sfx.err()}if(S.lvl<120){toast('Lv.120을 달성해야 전직할 수 있습니다');return sfx.err()}if(S.adv2Entered||offers.length!==3||!offers.some(it=>MYTH[it.my]&&MYTH[it.my].boss==='demonLord')){toast('신화 장비 3개와 100층 보스 장비 1개가 필요합니다');return sfx.err()}S.adv2Offer=[];S.adv2Entered=true;S.job=S.aff[0];grantJobSpells();recalc();S.slots=S.slots.map(id=>{const sp=id&&SP[id];return sp&&(sp.el==='none'||sp.el===S.job)?id:null});const jobSpell=SPL.find(sp=>sp.el===S.job&&S.grim[sp.id]);if(jobSpell&&!S.slots.slice(0,D.slots).includes(jobSpell.id)){const free=S.slots.slice(0,D.slots).indexOf(null);if(free>=0)S.slots[free]=jobSpell.id}sfx.circle();save();
     {const J=JOBS[S.job],p=G.p;banner(`${J.n} 전직!`,`전용기 [G] ${J.sk}`);G.flash=.6;G.flashCol=J.c;shake(14);for(let i=0;i<4;i++)later(i*.2,()=>ringFx(p.x,p.y,40+i*40,['#ffffff',J.c,J.c,'#000'],.8,{top:1}))}openPanel('adv2')},
   adv2Open(){openPanel('adv2')},
   altarBack(){openPanel('altar')},
   dv(a){if(!DEV.on)return;const [k,x]=a.split(':');const f=Math.max(1,S.maxFloor);
     if(k==='gold')S.gold+=1e6;else if(k==='mats'){S.ore+=1e4;S.ess+=1e4;S.core=(S.core||0)+100}else if(k==='prot')S.prot=(S.prot||0)+50;else if(k==='pots'){S.hpPot+=50;S.mpPot+=50}
     else if(k==='lvl'){const t=Math.min(MAX_LVL,S.lvl+10);while(S.lvl<t){S.lvl++;S.pts+=3}S.xp=0}else if(k==='circle'){if(S.circle<9){S.circle++;S.mast=0}}else if(k==='pts')S.pts+=50
-    else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}else if(k==='job'){S.job=S.aff[0];S.adv2Entered=true;recalc();S.slots=S.slots.map(id=>{const sp=id&&SP[id];return sp&&(sp.el==='none'||sp.el===S.job)?id:null});toast(JOBS[S.job].n+' 전직')}else if(k==='unjob'){S.job=null;S.adv2Entered=false}
+    else if(k==='spells'){for(const sp of SPL)S.grim[sp.id]=10}else if(k==='job'){S.job=S.aff[0];S.adv2Entered=true;grantJobSpells();recalc();S.slots=S.slots.map(id=>{const sp=id&&SP[id];return sp&&(sp.el==='none'||sp.el===S.job)?id:null});toast(JOBS[S.job].n+' 전직')}else if(k==='unjob'){S.job=null;S.adv2Entered=false}
     else if(k==='all'){while(S.lvl<MAX_LVL){S.lvl++;S.pts+=3}S.xp=0;S.circle=9;S.mast=0;S.aff=ELS.slice();S.affPend=0;for(const sp of SPL)S.grim[sp.id]=10;S.blinkLv=BLINK_MAX;S.maxFloor=100;S.gold+=1e7;S.ore+=1e5;S.ess+=1e5;S.core=(S.core||0)+999;S.prot=(S.prot||0)+99;S.hpPot+=99;S.mpPot+=99;
       const have=new Set(S.inv.concat(Object.values(S.eq)).filter(i=>i&&i.my).map(i=>i.my));for(const m of Object.keys(MYTH))if(!have.has(m)&&S.inv.length<BAG())S.inv.push(mkMyth(m,100));toast('전부 해금했어요')}else if(k==='blink')S.blinkLv=BLINK_MAX
     else if(k==='legset'){for(const sl of['staff','robe','ring']){const it=mkItem(f,4,sl);it.r=4;it.up=15;S.inv.push(it)}}else if(k==='clear'){S.inv=[]}
