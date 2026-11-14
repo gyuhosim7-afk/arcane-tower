@@ -816,8 +816,8 @@ const diffMul=(f,lo,mid,hi)=>f<=15?lo:f<=30?lo+(mid-lo)*(f-15)/15:mid+(hi-mid)*(
 const hpScale=f=>(1+.056*Math.pow(f-1,2.2))*curve(HPM,f);
 const dmgScale=f=>(1+.32*Math.pow(f-1,1.02))*curve(DMM,f);
 const levelThreat=()=>1+Math.max(0,S.lvl-99)*.005;
-const bossHp=f=>1.9+f/26;
-const bossDmg=f=>1+f/180;
+const bossHp=f=>(1.9+f/26)*1.35;
+const bossDmg=f=>(1+f/180)*1.35;
 const xpScale=f=>1+.2*(f-1);
 const XPN=(function(){const fx=f=>floorCount(Math.max(1,Math.round(f)))*9*xpScale(f)*1.4+60*xpScale(f)/10;
   const cum=f=>{let s=0;const n=Math.floor(f);for(let i=1;i<=n;i++)s+=fx(i);return s+fx(n+1)*(f-n)};
@@ -888,14 +888,16 @@ const itemName=it=>(it.my?MYTH[it.my].n:PRE[it.r]+' '+GEAR_N[it.slot][it.v||0])+
 const sellPrice=it=>Math.round((6+it.il*3)*(it.r+1)*(it.r+1)*(1+it.up*.2));
 const D={my:new Set()};
 const hasM=k=>D.my.has(k);
+/* 60레벨부터 레벨마다 능력치가 더 크게 오른다 (120레벨 공격 ×1.6·체력 ×2.2, 200레벨 공격 ×2.4·체력 ×3.8) */
+const lateGrow=k=>1+Math.max(0,S.lvl-60)*k;
 function recalc(){
   const mythChanged=syncMythLevels();
   const g={pow:0,hp:0,def:0,mp:0,crit:0,cdr:0,int:0,vit:0,wis:0};D.my=new Set();D.sk=null;
   for(const k in S.eq){const it=S.eq[k];if(!it)continue;const s=itemStats(it);for(const j in s)g[j]+=s[j];if(it.my){D.my.add(it.my);if(MYTH[it.my].sk)D.sk=MYTH[it.my].sk}}
   const st=S.st,I=st.int+g.int,V=st.vit+g.vit,Wi=st.wis+g.wis,c=S.circle;
-  D.maxHp=Math.round((100+V*12+S.lvl*8+g.hp)*(c>=7?1.3:1)*(hasM('dragonScale')?1.5:1)*(S.hiddenJob==='dragonLord'?1.3:1));D.maxMp=Math.round(60+I*5+c*25+g.mp);
-  D.pow=(10+S.lvl*1.5+g.pow)*(1+I*.04)*(1+(c-1)*.12);D.crit=Math.min(75,5+st.crit*1.5+g.crit);D.critM=1.6+st.crit*.02+(hasM('demonEye')?1:0)+(hasM('cerbRing')?.5:0);
-  D.cdr=Math.min(hasM('demonEye')?.7:.6,Wi*.01+g.cdr/100+(c>=9?.15:0)+(hasM('demonEye')?.25:0));D.mpR=(2+Wi*.35+c*.7)*(c>=8?2:1);D.hpR=.3+V*.08;D.def=g.def;D.slots=DEV.on?12:SLOTC[c];while(S.slots.length<D.slots)S.slots.push(null);
+  D.maxHp=Math.round((100+V*18+S.lvl*8+g.hp)*(c>=7?1.3:1)*lateGrow(.02)*(hasM('dragonScale')?1.5:1)*(S.hiddenJob==='dragonLord'?1.3:1));D.maxMp=Math.round(60+I*5+c*25+g.mp);
+  D.pow=(10+S.lvl*1.5+g.pow)*(1+I*.04)*(1+(c-1)*.12)*lateGrow(.01);D.crit=Math.min(75,5+st.crit*1.5+g.crit);D.critM=1.6+st.crit*.02+(hasM('demonEye')?1:0)+(hasM('cerbRing')?.5:0);
+  D.cdr=Math.min(hasM('demonEye')?.7:.6,Wi*.01+g.cdr/100+(c>=9?.15:0)+(hasM('demonEye')?.25:0));D.mpR=(2+Wi*.35+c*.7)*(c>=8?2:1);D.hpR=.3+V*.08;D.def=g.def+Math.max(0,S.lvl-60)*6;D.slots=DEV.on?12:SLOTC[c];while(S.slots.length<D.slots)S.slots.push(null);
   D.dr=(S.hiddenJob==='dragonLord'?.15:0)+(hasM('spiderRobe')?.15:0)+(hasM('gargHeart')?.1:0)+(hasM('magmaCore')?.1:0);D.spd=(hasM('stormFeather')?1.3:1)*(hasM('ratRing')?1.15:1);
   if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
   if(mythChanged)save();
@@ -1569,7 +1571,7 @@ const ECOL={ratKing:['#b08a6a','#ff3a3a'],shroomLord:['#3a8a2a','#7ae05a'],gargL
   kingslime:['#ffcf4a','#c98a1a','#fff0a8'],arachne:['#7a3ac8','#ffd84a'],golemlord:['#6a4252','#ffb23c','#ff5a2a'],ymir:['#c4e4ff','#6a9ad0','#ffffff'],lich:['#63309e','#b8f27a','#e9e2c8','#ffd84a'],ifrit:['#ff7a2a','#ffd24a','#fff6c0'],harpyQ:['#ffe27a','#ff7ad9'],archon:['#2e2230','#ff2a2a','#d8a03a','#c94cff'],dragon:['#3a2a5a','#c94cff','#ff3a3a'],demonLord:['#5a1a2a','#ff3a3a','#ffd84a','#3a1258']};
 const FLYERS=new Set(['wispLord','stormKing','shadowKing','bat','iwisp','fwisp','swisp','imp','harpy','wraith','harpyQ']);
 function mkEnemy(type,x,y,elite){
-  const d=MON[type],f=G.floor,nm=d.boss?[...D.my].reduce((t,k)=>t+.5+mythFloor(k)/100,0):0,sc=(d.sc||1)*(elite?1.4:1),hm=hpScale(f)*(elite?6:1)*levelThreat()*(d.boss?bossHp(f)*(1+.1*nm):1)*(d.final?12:1),dm=dmgScale(f)*(elite?1.4:1)*levelThreat()*(d.boss?bossDmg(f)*(1+.05*nm):1);
+  const d=MON[type],f=G.floor,nm=d.boss?[...D.my].reduce((t,k)=>t+.5+mythFloor(k)/100,0):0,sc=(d.sc||1)*(elite?1.4:1),hm=hpScale(f)*(elite?6:1)*levelThreat()*(d.boss?bossHp(f)*(1+.1*nm):1)*(d.final?12/1.35:1),dm=dmgScale(f)*(elite?1.4:1)*levelThreat()*(d.boss?bossDmg(f)*(1+.05*nm)*(d.final?1/1.35:1):1);
   const spr=type==='bat'?A.bat[0]:A[d.spr||type];
   return{type,x,y,hp:d.hp*hm,max:d.hp*hm,dmg:d.dmg*dm,spd:d.spd*(1+Math.min(.25,f*.003))*(1+Math.min(.2,Math.max(0,S.lvl-99)*.002)),r:d.r*(elite?1.3:1),xp:d.xp*xpScale(f)*(elite?5:1),t:rnd(10),kx:0,ky:0,flash:0,frozen:0,slow:0,stun:0,root:0,burn:0,bt:0,poi:0,pt:0,weak:0,z:0,face:1,cd:rnd(1.2,2.4),boss:d.boss,elite,sc,spr,hh:spr.H*sc,cols:ECOL[type]||['#fff','#888'],st:'idle',stT:1,atk:0,ph:0,dead:false};
 }
@@ -1672,7 +1674,7 @@ function dotPlayer(v){const p=G.p;if(G.dead||(DEV.on&&DEV.god))return;if(p.hp-v<
 function updDb(p,dt){if(!p.db)return;for(const k in p.db){if(p.db[k]<=0)continue;p.db[k]-=dt;const d=DB[k];if(d.dot){p.dbT=(p.dbT||{});p.dbT[k]=(p.dbT[k]||0)-dt;if(p.dbT[k]<=0){p.dbT[k]=.5;dotPlayer(D.maxHp*d.dot*.5)}if(Math.random()<.3)part(p.x+rnd(-5,5),p.y-rnd(4,20),0,rnd(-24,-8),.5,d.c,1)}}}
 function dbZone(x,y,R,dur,dmg,col,col2,db,dbt){addFx({layer:'g',t:0,tk:0,upd(dt){this.t+=dt;this.tk-=dt;const P=G.p;if(this.tk<=0&&this.t>.4&&Math.hypot(P.x-x,(P.y-y)*1.4)<R){this.tk=.5;if(dmg)hurtPlayer(dmg,{ground:true});if(db)applyDb(db,dbt)}if(Math.random()<.5){const a=rnd(TAU),r=Math.sqrt(Math.random())*R;part(x+Math.cos(a)*r,y+Math.sin(a)*r*.62,rnd(-6,6),rnd(-14,-4),rnd(.6,1),pick([col,col2]),rnd(2,3),{pf:1})}return this.t<dur},
   draw(){const f=Math.max(0,Math.min(1,this.t/.4,(dur-this.t)/.4));ctx.globalAlpha=.3*f;pxEll(ctx,x,y,R,R*.62,col);ctx.globalAlpha=1;pxRing(ctx,x,y,R,R*.62,col2);if((this.t*6|0)%2)pxRing(ctx,x,y,R-2,(R-2)*.62,col,24)}})}
-function barrier(e,R0,R1,dur,dmg){const P=G.p,cx=(P.x+e.x)/2,cy=(P.y+e.y)/2;banner('공간 봉쇄','빛나는 원 밖으로 나가면 즉사합니다!');addFx({layer:'t',t:0,tk:0,upd(dt){this.t+=dt;this.tk-=dt;const R=R0+(R1-R0)*Math.min(1,this.t/(dur*.7)),P=G.p;const out=Math.hypot(P.x-cx,(P.y-cy)*1.61)>R;if(out&&this.t>1.5&&!G.dead){P.ifr=0;P.shield=0;P.revived=true;G.texts.push({x:P.x,y:P.y-44,vy:-18,life:1.2,str:'공간에 짓눌렸다!',col:'#ff3a3a',sc:1.2});hurtPlayer(1e9)}else if(out&&(this.t*8|0)%2&&this.t<=1.5)G.texts.length<60&&G.texts.push({x:P.x,y:P.y-40,vy:-30,life:.2,str:'원 안으로!',col:'#ff3a3a',sc:1});return this.t<dur&&!e.dead},
+function barrier(e,R0,R1,dur,dmg){if(G.bar)return;const P=G.p,cx=(P.x+e.x)/2,cy=(P.y+e.y)/2;G.bar={cx,cy,R0,R1,dur,t0:G.time};banner('공간 봉쇄','빛나는 원 밖으로 나가면 즉사합니다!');addFx({layer:'t',t:0,tk:0,upd(dt){this.t+=dt;this.tk-=dt;const R=R0+(R1-R0)*Math.min(1,this.t/(dur*.7)),P=G.p;const out=Math.hypot(P.x-cx,(P.y-cy)*1.61)>R;if(out&&this.t>1.5&&!G.dead){P.ifr=0;P.shield=0;P.revived=true;G.texts.push({x:P.x,y:P.y-44,vy:-18,life:1.2,str:'공간에 짓눌렸다!',col:'#ff3a3a',sc:1.2});hurtPlayer(1e9)}else if(out&&(this.t*8|0)%2&&this.t<=1.5)G.texts.length<60&&G.texts.push({x:P.x,y:P.y-40,vy:-30,life:.2,str:'원 안으로!',col:'#ff3a3a',sc:1});if(!(this.t<dur&&!e.dead))G.bar=null;return this.t<dur&&!e.dead},
   draw(){const R=R0+(R1-R0)*Math.min(1,this.t/(dur*.7));pxRing(ctx,cx,cy,R,R*.62,'#ff3a3a');pxRing(ctx,cx,cy,R+2,(R+2)*.62,'#ffffff',48);ctx.globalAlpha=.18;ctx.fillStyle='#3a0010';const W2=G.map.pw,H2=G.map.ph;ctx.fillRect(0,0,W2,Math.max(0,cy-R*.62));ctx.fillRect(0,cy+R*.62,W2,H2);ctx.fillRect(0,cy-R*.62,Math.max(0,cx-R),R*1.24);ctx.fillRect(cx+R,cy-R*.62,W2,R*1.24);ctx.globalAlpha=1}})}
 function rift(x,y,R,dur,dmg,pull){addFx({layer:'g',t:0,tk:0,upd(dt){this.t+=dt;this.tk-=dt;const P=G.p,dx=x-P.x,dy=y-P.y,d=Math.hypot(dx,dy)||1;if(this.t>.6&&d<R*2.2&&!G.dead){const f=(pull||45)*dt*(1-d/(R*2.4));if(!boxSol(P.x+dx/d*f,P.y-3,5))P.x+=dx/d*f;if(!boxSol(P.x,P.y-3+dy/d*f,5))P.y+=dy/d*f}if(this.t>.6&&d<R*.55&&this.tk<=0){this.tk=.4;if(!(S.hiddenJob==='dragonLord'&&P.dragonFormUntil>G.time)){P.ifr=0;hurtPlayer(dmg,{ground:true})}}if(Math.random()<.9){const a=rnd(TAU),r=R*rnd(1.2,2);part(x+Math.cos(a)*r,y+Math.sin(a)*r*.62,-Math.cos(a)*r*1.5,-Math.sin(a)*r,.6,pick(['#c94cff','#000000','#ff7ad9']),2)}return this.t<dur},
   draw(){const k=Math.min(1,this.t/.6),sp=G.time*4;ctx.fillStyle='#000';pxEll(ctx,x,y,R*.55*k,R*.34*k,'#000000');for(let i=0;i<3;i++)pxArc(ctx,x,y,R*k*(.6+i*.25),R*k*(.6+i*.25)*.62,sp+i*2,sp+i*2+2.4,i%2?'#c94cff':'#ff7ad9');pxRing(ctx,x,y,R*.55*k,R*.34*k,'#ffffff',30)}})}
@@ -1703,7 +1705,7 @@ function bossSig2(e,p){
     case'magmaTitan':{for(let i=0;i<7;i++){const tx=rnd(40,W-40),ty=rnd(70,H-40);later(i*.2,()=>{if(!e.dead)telegraph(tx,ty,30,.8*td,dm,'#ff5a1a',()=>dbZone(tx,ty,34,9,dm*.3,'#8a2a0a','#ff9a3c','burn',3))})}shake(8);break}
     case'dragon':{banner('차원 붕괴','틈에 빨려 들어가지 마세요');for(let i=0;i<3;i++){const s=spawnPos(80);later(i*.4,()=>{if(!e.dead)rift(s.x,s.y,36,6,dm,50)})}G.flash=.3;G.flashCol='#2a0040';shake(10);sfx.bigboom();break}
     case'shadowKing':mkClones(e,4,.05);applyDb('blind',3);break;
-    case'demonLord':{barrier(e,240,110,9,dm*.5);for(let i=0;i<2;i++){const s=spawnPos(90);later(1+i*.6,()=>{if(!e.dead)rift(s.x,s.y,40,7,dm*.6,55)})}applyDb('silence',2);applyDb('curse',6);sfx.bigboom();break}
+    case'demonLord':{barrier(e,240,110,9,dm*.5);if(G.bar){const B=G.bar;for(let i=0;i<2;i++){const a=rnd(TAU),x=B.cx+Math.cos(a)*55,y=B.cy+Math.sin(a)*34;later(1+i*.6,()=>{if(!e.dead)rift(x,y,32,7,dm*.6,40)})}}applyDb('silence',2);applyDb('curse',6);sfx.bigboom();break}
   }
 }
 /* ===== 보스 전용 패턴: 보스마다 하나씩, 일정 시간마다 쓴다 ===== */
@@ -1803,7 +1805,7 @@ const BOSS_EXTRA={demonLord:['sweep','grid','orbit','cross','flower','pincer','m
 function bossExtra(e,dt,p){const L=BOSS_EXTRA[e.type];if(!L||e.hp>e.max*(e.type==='demonLord'?.75:bossT()>=.5?.85:.5)||G.dead)return;e.cd2=(e.cd2===undefined?1.5:e.cd2)-dt;if(e.cd2<=0){const T=bossT();e.cd2=(3.4-T*1.4)*(e.hp<e.max*.3?.7:1)*(e.type==='demonLord'?.75:1);e.ph2i=(e.ph2i||0)+1;bossPattern(e,p,L[e.ph2i%L.length],true)}}
 
 /* ============================ ZONES / WAVES ============================ */
-function clearWorld(){if(S.dragonPending&&S.dragonPending.length){collectDragonPending();save()}G.en=[];G.pr=[];G.ep=[];G.parts=[];G.texts=[];G.picks=[];G.fx=[];G.fxNew=[];G.pending=0;G.wave=null;G.dead=0;JB.allies=0;JB.armor=0;if(G.p){G.p.db={};G.p.shield=0;G.p.regen=0;G.p.revived=false;G.p.slowT=0}}
+function clearWorld(){if(S.dragonPending&&S.dragonPending.length){collectDragonPending();save()}G.en=[];G.pr=[];G.ep=[];G.parts=[];G.texts=[];G.picks=[];G.fx=[];G.fxNew=[];G.pending=0;G.wave=null;G.dead=0;JB.allies=0;JB.armor=0;G.bar=null;if(G.p){G.p.db={};G.p.shield=0;G.p.regen=0;G.p.revived=false;G.p.slowT=0}}
 function setLabels(){const L=$('labels');L.innerHTML='';for(const it of G.map.inter){const d=document.createElement('div');d.innerHTML=`${it.label}<span class="pr">${it.pr}</span>`;L.appendChild(d);it.el=d}}
 function fadeTo(fn){const f=$('fade');f.classList.add('on');setTimeout(()=>{fn();setTimeout(()=>f.classList.remove('on'),80)},260)}
 function enterTown(){clearWorld();G.zone='town';G.floor=0;G.map=TOWN;const p=G.p;p.x=320;p.y=150;p.hp=D.maxHp;p.mp=D.maxMp;p.ifr=0;setLabels();setMusic('town');save()}
