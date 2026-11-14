@@ -787,14 +787,15 @@ function deathFx(e,spr){const flip=e.face<0,x=e.x,y=e.y-e.z,sc=e.sc,boss=e.boss;
 
 /* ============================ DATA ============================ */
 const SAVE_KEY='arcane-tower-save-v3';
-function newSave(el){el=el||'ice';const s0=START[el];return{lvl:1,xp:0,gold:60,ess:0,ore:0,circle:1,mast:0,pts:0,st:{int:0,vit:0,crit:0,wis:0},aff:[el],affPend:0,grim:{arrow:1,[s0]:1},slots:[s0,null,null,null,null,null,null,null],eq:{robe:null,staff:null,ring:null},inv:[],hpPot:3,mpPot:2,prot:0,maxFloor:0,quests:[],codex:{},scan:true,mute:false,uid:1,adv2Offer:[],adv2Entered:false,dragonTokens:[],dragonPending:[],dragonOffer:[],dragonRingOffer:null,hiddenJob:null,dragonRage:0}}
+const cleanTitle=t=>String(t||'').replace(/[<>&"'`]/g,'').trim().slice(0,24);
+function newSave(el){el=el||'ice';const s0=START[el];return{title:'',lvl:1,xp:0,gold:60,ess:0,ore:0,circle:1,mast:0,pts:0,st:{int:0,vit:0,crit:0,wis:0},aff:[el],affPend:0,grim:{arrow:1,[s0]:1},slots:[s0,null,null,null,null,null,null,null],eq:{robe:null,staff:null,ring:null},inv:[],hpPot:3,mpPot:2,prot:0,maxFloor:0,quests:[],codex:{},scan:true,mute:false,uid:1,adv2Offer:[],adv2Entered:false,dragonTokens:[],dragonPending:[],dragonOffer:[],dragonRingOffer:null,hiddenJob:null,dragonRage:0}}
 let S=newSave();
 /* 캐릭터 여러 개: 지금 캐릭터는 SAVE_KEY, 모든 캐릭터는 SLOT_KEY에 고유번호별로 보관 */
 const SLOT_KEY='arcane-tower-slots';
 function getSlots(){try{return JSON.parse(localStorage.getItem(SLOT_KEY)||'{}')||{}}catch(e){return{}}}
 function putSlots(o){try{localStorage.setItem(SLOT_KEY,JSON.stringify(o))}catch(e){}}
 function save(){try{const j=JSON.stringify(S);localStorage.setItem(SAVE_KEY,j);if(S.pid){const sl=getSlots();sl[S.pid]=j;putSlots(sl)}}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];r.hiddenJob=r.hiddenJob==='dragonLord'?'dragonLord':null;r.dragonTokens=[...new Set((Array.isArray(r.dragonTokens)?r.dragonTokens:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];r.dragonPending=[...new Set((Array.isArray(r.dragonPending)?r.dragonPending:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];for(const k of r.dragonPending)if(!r.dragonTokens.includes(k))r.dragonTokens.push(k);r.dragonPending=[];r.dragonOffer=[...new Set((Array.isArray(r.dragonOffer)?r.dragonOffer:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))].slice(0,3);r.dragonRingOffer=r.dragonRingOffer&&r.dragonRingOffer.my==='demonEye'?r.dragonRingOffer:null;r.dragonRage=clamp(+r.dragonRage||0,0,100);if(r.job)for(const sp of SPL)if(sp.o&&sp.o.job===r.job&&!r.grim[sp.id])r.grim[sp.id]=1;r.slots=(Array.isArray(r.slots)?r.slots:[]).map(k=>{const sp=k&&SP[k];if(r.hiddenJob==='dragonLord')return sp&&sp.dragonSkill?k:null;return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.title=cleanTitle(r.title);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];r.hiddenJob=r.hiddenJob==='dragonLord'?'dragonLord':null;r.dragonTokens=[...new Set((Array.isArray(r.dragonTokens)?r.dragonTokens:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];r.dragonPending=[...new Set((Array.isArray(r.dragonPending)?r.dragonPending:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];for(const k of r.dragonPending)if(!r.dragonTokens.includes(k))r.dragonTokens.push(k);r.dragonPending=[];r.dragonOffer=[...new Set((Array.isArray(r.dragonOffer)?r.dragonOffer:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))].slice(0,3);r.dragonRingOffer=r.dragonRingOffer&&r.dragonRingOffer.my==='demonEye'?r.dragonRingOffer:null;r.dragonRage=clamp(+r.dragonRage||0,0,100);if(r.job)for(const sp of SPL)if(sp.o&&sp.o.job===r.job&&!r.grim[sp.id])r.grim[sp.id]=1;r.slots=(Array.isArray(r.slots)?r.slots:[]).map(k=>{const sp=k&&SP[k];if(r.hiddenJob==='dragonLord')return sp&&sp.dragonSkill?k:null;return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
 const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
 const RM=[1,1.3,1.7,2.2,3,4.2];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
@@ -1392,7 +1393,8 @@ function hurtPlayer(d,source={}){
   if(p.hp<=0&&hasM('dragonScale')&&!p.revived){p.revived=true;p.hp=D.maxHp*.4;p.ifr=2;banner('심연룡의 가호','죽음을 버텨 냈습니다');boom(p.x,p.y-8,70,['#ffffff','#ffd24a','#c94cff','#3a1258'],true);aoe(p.x,p.y-8,90,D.pow*12,{el:'fire',st:'burn',proc:1,kb:200});shake(12);sfx.bigboom();return}
   if(p.hp<=0){p.hp=0;G.dead=2.4;sfx.die();burst(p.x,p.y-8,60,EL[S.aff[0]].c,140,1,{drag:1.5});const lost=Math.floor(S.gold*.1);S.gold-=lost;banner('쓰러졌습니다',`골드 ${lost}을(를) 잃고 마을로 돌아갑니다`)}
 }
-function gainXp(v){if(S.lvl>=MAX_LVL){S.xp=0;return}S.xp+=v;let up=false;while(S.lvl<MAX_LVL&&S.xp>=xpNeed(S.lvl)){S.xp-=xpNeed(S.lvl);S.lvl++;S.pts+=3;up=true}if(up){recalc();G.p.hp=D.maxHp;G.p.mp=D.maxMp;levelFx();sfx.lvl();banner('레벨 업!',`Lv.${S.lvl} · 능력치 포인트 +3 (Tab)`);save()}}
+const levelStatPoints=lvl=>lvl<=30?4:3;
+function gainXp(v){if(S.lvl>=MAX_LVL){S.xp=0;return}S.xp+=v;let up=false,totalPts=0;while(S.lvl<MAX_LVL&&S.xp>=xpNeed(S.lvl)){S.xp-=xpNeed(S.lvl);S.lvl++;const pts=levelStatPoints(S.lvl);S.pts+=pts;totalPts+=pts;up=true}if(up){recalc();G.p.hp=D.maxHp;G.p.mp=D.maxMp;levelFx();sfx.lvl();banner('레벨 업!',`Lv.${S.lvl} · 능력치 포인트 +${totalPts} (Tab)`);save()}}
 function gainMast(v){if(S.circle>=9)return;const need=CIRC_MAST[S.circle+1],was=S.mast>=need;S.mast=Math.min(need,S.mast+v);if(!was&&S.mast>=need&&S.lvl>=CIRC_LVL[S.circle+1])toast('서클 수련이 찼습니다. 엘드린에게 가세요')}
 function levelFx(){const p=G.p;ringFx(p.x,p.y,70,['#ffffff','#ffe27a','#ffaa4a','#c88a20'],.8,{top:1});pillarFx(p.x,p.y,8,90,EL.holy.c,.6);for(let i=0;i<40;i++)part(p.x+rnd(-8,8),p.y,rnd(-20,20),rnd(-90,-30),rnd(.5,1.1),pick(['#ffd84a','#ffffff','#ff9a3c']),1,{g:60})}
 /* ---- 마법 ---- */
@@ -1858,6 +1860,7 @@ function mkQuest(){
   else q={type:'boss',n:1,gold:200+bf*40,ess:10,ore:8};
   q.cur=0;q.done=false;q.xp=Math.round(xpNeed(S.lvl)*.15);return q;
 }
+const questXpReward=q=>Math.round((+q.xp||0)*.2);
 const questText=q=>q.type==='kill'?`${MON[q.mon].n} ${q.n}마리 처치`:q.type==='floor'?`탑 ${q.n}개 층 클리어`:'탑의 보스 처치';
 
 /* ============================ UPDATE ============================ */
@@ -2128,7 +2131,7 @@ function render(){flushK();
   if(G.title)return;
   if(p.hp<D.maxHp*.3&&!G.dead&&G.zone==='tower'){ctx.globalAlpha=.1+.08*Math.sin(G.time*6);ctx.fillStyle='#e5484d';ctx.fillRect(0,0,W,6);ctx.fillRect(0,H-6,W,6);ctx.fillRect(0,0,6,H);ctx.fillRect(W-6,0,6,H);ctx.globalAlpha=1}
   drawHUD();
-  {const nt=$('nickTag');if(nt){const show=G.started&&!G.dead&&S.nick;nt.style.display=show?'':'none';if(show){if(nt.textContent!==S.nick)nt.textContent=S.nick;nt.style.left=((p.x-G.cam.x)/W*100)+'%';nt.style.top=((p.y-G.cam.y-40)/H*100)+'%'}}}
+  {const nt=$('nickTag');if(nt){const show=G.started&&!G.dead&&S.nick;nt.style.display=show?'':'none';if(show){const label=S.title?`「${S.title}」 ${S.nick}`:S.nick;if(nt.textContent!==label)nt.textContent=label;nt.style.left=((p.x-G.cam.x)/W*100)+'%';nt.style.top=((p.y-G.cam.y-40)/H*100)+'%'}}}
   for(const it of m.inter){if(!it.el)continue;const sx=it.x-G.cam.x,sy=it.y-G.cam.y+(it.ly||-26);if(sx<-20||sx>W+20||sy<0||sy>H+10){it.el.style.display='none';continue}it.el.style.display='';it.el.style.left=(sx/W*100)+'%';it.el.style.top=(sy/H*100)+'%';it.el.className=Math.hypot(it.x-p.x,it.y-p.y)<it.r+12?'near':''}
 }
 
@@ -2266,7 +2269,7 @@ const PANELS={
   quest:{t:'현상금 게시판',r(){
     while(S.quests.length<3)S.quests.push(mkQuest());
     let h=`<div class="say"><img src="${ICON.quest}" alt=""><p>"탑의 괴물에겐 전부 현상금이 걸려 있어. 끝내면 다음 의뢰가 바로 붙지."</p></div>`;
-    S.quests.forEach((q,i)=>{h+=`<div class="li"><img src="${ICON.scroll}" alt=""><div class="gr"><b>${questText(q)}</b> <span class="${q.done?'gold':'dim'}">${q.cur}/${q.n}</span><div class="ds">보상 ${ic('gold')}${q.gold} ${ic('ess')}${q.ess}${q.ore?' '+ic('ore')+q.ore:''} ${ic('xp')}${q.xp}</div></div><div class="bt">${btn('보상 받기','claim:'+i,q.done,'go')}</div></div>`});
+    S.quests.forEach((q,i)=>{h+=`<div class="li"><img src="${ICON.scroll}" alt=""><div class="gr"><b>${questText(q)}</b> <span class="${q.done?'gold':'dim'}">${q.cur}/${q.n}</span><div class="ds">보상 ${ic('gold')}${q.gold} ${ic('ess')}${q.ess}${q.ore?' '+ic('ore')+q.ore:''} ${ic('xp')}${questXpReward(q)}</div></div><div class="bt">${btn('보상 받기','claim:'+i,q.done,'go')}</div></div>`});
     return h}},
   tower:{t:'심연의 탑',r(){
     let h=`<p>100층까지 있습니다. 층마다 몰려오는 적을 모두 쓰러뜨리면 다음 층 포탈이 열립니다. 5층마다 보스가 나오고(10층마다 대보스), 높이 올라갈수록 보스 패턴이 거세집니다. 체크포인트에서 다음 중간 보스 방으로 바로 갈 수 있습니다. 쓰러지면 골드의 10%를 잃습니다.</p><div>최고 기록 <b class="gold">${S.maxFloor}층</b> / 100층</div>`;
@@ -2279,7 +2282,7 @@ const PANELS={
     let h=`<div class="tabs">${btn('능력치','tab:stat',true,ui.tab==='stat'?'on':'')}${btn('가방','tab:inv',true,ui.tab==='inv'?'on':'')}${btn('마법','tab:grim',true,ui.tab==='grim'?'on':'')}</div>`;
     if(ui.tab==='stat'){
       const row=(k,n,d,v)=>`<div class="li"><div class="gr"><b>${n}</b> <span class="gold">${v}</span><div class="ds">${d}</div></div><div class="bt">${btn('+1','stat:'+k,S.pts>0)}</div></div>`;
-      h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}${S.hiddenJob==='dragonLord'?` · 히든 직업 <b style="color:${DRAGON_CLASS.c}">${DRAGON_CLASS.n}</b>`:S.job?` · 2차 직업 <b style="color:${JOBS[S.job].c}">${JOBS[S.job].n}</b>`:''}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT','마법 피해 +4%, 마나 +5',S.st.int)+row('vit','체력 VIT','생명력 +12, 재생 증가',S.st.vit)+row('crit','치명 CRIT','치명타율 +1.5%, 치명 피해 증가',S.st.crit)+row('wis','정신 WIS','쿨타임 -1%, 마나 재생 증가',S.st.wis);
+      h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>${S.title?`<b class="gold">「${S.title}」</b><br>`:''}Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}${S.hiddenJob==='dragonLord'?` · 히든 직업 <b style="color:${DRAGON_CLASS.c}">${DRAGON_CLASS.n}</b>`:S.job?` · 2차 직업 <b style="color:${JOBS[S.job].c}">${JOBS[S.job].n}</b>`:''}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT','마법 피해 +4%, 마나 +5',S.st.int)+row('vit','체력 VIT','생명력 +12, 재생 증가',S.st.vit)+row('crit','치명 CRIT','치명타율 +1.5%, 치명 피해 증가',S.st.crit)+row('wis','정신 WIS','쿨타임 -1%, 마나 재생 증가',S.st.wis);
       h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 쿨타임 감소 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
       h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')} ${btn('저장 코드 복사','exportCode',true,'go')} ${btn('코드 입력','devCode')}${DEV.on?' '+btn('개발자 모드','devOpen',true,'go'):''}</div></div>`;
       h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'이 캐릭터 삭제','reset')}</div>`}
@@ -2355,7 +2358,7 @@ const ACT={
   sell(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;S.gold+=sellPrice(S.inv[i]);S.inv.splice(i,1);ui.sel=null;sfx.coin()},
   sellR(r){S.sellR=+r},
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
-  claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(q.xp)},
+  claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(questXpReward(q))},
   enter(f){f=+f;const midBossShortcut=f>=15&&f<=95&&f%10===5&&f-5<=S.maxFloor;if(!(DEV.on&&f>=1&&f<=100)&&!(f===1||f===Math.min(100,S.maxFloor+1)||(f%10===1&&f<=91&&f-1<=S.maxFloor)||midBossShortcut))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
   reset(){if(ui.resetArm){try{localStorage.removeItem(SAVE_KEY);const sl=getSlots();delete sl[S.pid];putSlots(sl)}catch(e){}location.reload()}else{ui.resetArm=true}}
 };
@@ -2460,7 +2463,7 @@ function parseCode(c){c=String(c||'').replace(/\s+/g,'');const m=/^AT1-([A-Z0-9]
 function charBox(){const box=$('codeBox'),sl=getSlots();box.hidden=false;$('codeTitle').textContent='캐릭터 선택';$('codeHelp').textContent='이 기기에 있는 캐릭터예요. 고르면 그 캐릭터로 이어서 해요.';$('codeTa').style.display='none';$('codeGo').style.display='none';
   let list=$('charList');if(!list){list=document.createElement('div');list.id='charList';$('codeTa').after(list)}list.style.display='';
   const cur=loadSave(),rows=Object.entries(sl).map(([pid,j])=>{try{return[pid,JSON.parse(j)]}catch(e){return null}}).filter(Boolean).sort((a,b)=>(b[1].lvl||0)-(a[1].lvl||0));
-  list.innerHTML=rows.map(([pid,o])=>`<div class="chl"><img src="${ICON['hero_'+(o.aff&&o.aff[0])]||''}" alt=""><div class="gr"><b>${(o.nick||'마법사').replace(/[<>&]/g,'')}</b> <span class="dim">#${pid}</span><br>Lv.${o.lvl} · ${o.circle}서클 · 최고 ${o.maxFloor||0}층${cur&&cur.pid===pid?' · <span class="gold">지금 캐릭터</span>':''}</div><button data-pick="${pid}">선택</button><button data-del="${pid}">삭제</button></div>`).join('')||'<p class="dim">캐릭터가 없어요.</p>';
+  list.innerHTML=rows.map(([pid,o])=>`<div class="chl"><img src="${ICON['hero_'+(o.aff&&o.aff[0])]||''}" alt=""><div class="gr"><b>${cleanTitle(o.title)?`「${cleanTitle(o.title)}」 `:''}${(o.nick||'마법사').replace(/[<>&]/g,'')}</b> <span class="dim">#${pid}</span><br>Lv.${o.lvl} · ${o.circle}서클 · 최고 ${o.maxFloor||0}층${cur&&cur.pid===pid?' · <span class="gold">지금 캐릭터</span>':''}</div><button data-pick="${pid}">선택</button><button data-del="${pid}">삭제</button></div>`).join('')||'<p class="dim">캐릭터가 없어요.</p>';
   list.onclick=ev=>{const pk=ev.target.dataset.pick,dl=ev.target.dataset.del;
     if(pk){try{localStorage.setItem(SAVE_KEY,sl[pk])}catch(e){}location.reload()}
     if(dl){const o=JSON.parse(sl[dl]);if(!confirm(`${o.nick||'마법사'} #${dl} (Lv.${o.lvl})를 지울까요? 되돌릴 수 없어요.`))return;delete sl[dl];putSlots(sl);if(cur&&cur.pid===dl){try{localStorage.removeItem(SAVE_KEY)}catch(e){}}location.reload()}};
@@ -2502,7 +2505,7 @@ buildAssets();
   setInterval(()=>{if(G.started)save()},20000);
   requestAnimationFrame(frame);
 })();
-window.__game={save:()=>save(),bossPattern,bossSig,bossSig2,applyDb,itemSprForTest:itemSpr,A,update,IN,MON,THEMES,BOSSES,MYTH,mkMyth,mkItem,xpNeed,hpScale,dmgScale,openChest,spawnChest,forgeAnim,G,get S(){return S},set S(v){S=v},D,SP,SPL,DRAGON_SPS,DRAGON_SIGILS,DRAGON_SIGIL_RATE,hasDragonSigils,dragonKey,dragonRoar,addDragonRage,dragonFlying,hurtPlayer,canUse,recalc,enterFloor,enterTown,cast,openPanel,closePanel,start,ACT};
+window.__game={save:()=>save(),saveCode,parseCode,questXpReward,levelStatPoints,bossPattern,bossSig,bossSig2,applyDb,itemSprForTest:itemSpr,A,update,IN,MON,THEMES,BOSSES,MYTH,mkMyth,mkItem,xpNeed,hpScale,dmgScale,openChest,spawnChest,forgeAnim,G,get S(){return S},set S(v){S=v},D,SP,SPL,DRAGON_SPS,DRAGON_SIGILS,DRAGON_SIGIL_RATE,hasDragonSigils,dragonKey,dragonRoar,addDragonRage,dragonFlying,hurtPlayer,canUse,recalc,enterFloor,enterTown,cast,openPanel,closePanel,start,ACT};
 </script>
 </body>
 </html>
