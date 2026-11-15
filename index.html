@@ -796,14 +796,14 @@ function deathFx(e,spr){const flip=e.face<0,x=e.x,y=e.y-e.z,sc=e.sc,boss=e.boss;
 const SAVE_KEY='arcane-tower-save-v3';
 const cleanTitle=t=>String(t||'').replace(/[<>&"'`]/g,'').trim().slice(0,24);
 const adv2Choices=(aff=S.aff)=>[...new Set((Array.isArray(aff)?aff:[]).slice(0,3).filter(el=>ELS.includes(el)))];
-function newSave(el){el=el||'ice';const s0=START[el];return{title:'',lvl:1,xp:0,gold:60,ess:0,ore:0,circle:1,mast:0,pts:0,st:{int:0,vit:0,crit:0,wis:0},aff:[el],affPend:0,grim:{arrow:1,[s0]:1},slots:[s0,null,null,null,null,null,null,null],eq:{robe:null,staff:null,ring:null},inv:[],hpPot:3,mpPot:2,prot:0,maxFloor:0,quests:[],codex:{},scan:true,mute:false,uid:1,adv2Offer:[],adv2Entered:false,adv2Pick:null,dragonTokens:[],dragonPending:[],dragonOffer:[],dragonRingOffer:null,hiddenJob:null,dragonRage:0}}
+function newSave(el){el=el||'ice';const s0=START[el];return{title:'',lvl:1,xp:0,gold:60,ess:0,ore:0,circle:1,mast:0,pts:0,st:{int:0,vit:0,crit:0,wis:0},aff:[el],affPend:0,grim:{arrow:1,[s0]:1},slots:[s0,null,null,null,null,null,null,null],eq:{robe:null,staff:null,ring:null},inv:[],hpPot:3,mpPot:2,prot:0,potScroll:0,epotScroll:0,maxFloor:0,quests:[],codex:{},scan:true,mute:false,uid:1,adv2Offer:[],adv2Entered:false,adv2Pick:null,dragonTokens:[],dragonPending:[],dragonOffer:[],dragonRingOffer:null,hiddenJob:null,dragonRage:0}}
 let S=newSave();
 /* 캐릭터 여러 개: 지금 캐릭터는 SAVE_KEY, 모든 캐릭터는 SLOT_KEY에 고유번호별로 보관 */
 const SLOT_KEY='arcane-tower-slots';
 function getSlots(){try{return JSON.parse(localStorage.getItem(SLOT_KEY)||'{}')||{}}catch(e){return{}}}
 function putSlots(o){try{localStorage.setItem(SLOT_KEY,JSON.stringify(o))}catch(e){}}
 function save(){try{const j=JSON.stringify(S);localStorage.setItem(SAVE_KEY,j);if(S.pid){const sl=getSlots();sl[S.pid]=j;putSlots(sl)}}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.title=cleanTitle(r.title);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];const jc=adv2Choices(r.aff);r.adv2Pick=r.adv2Entered?(jc.includes(r.job)?r.job:null):(jc.includes(r.adv2Pick)?r.adv2Pick:null);r.hiddenJob=r.hiddenJob==='dragonLord'?'dragonLord':null;r.dragonTokens=[...new Set((Array.isArray(r.dragonTokens)?r.dragonTokens:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];r.dragonPending=[...new Set((Array.isArray(r.dragonPending)?r.dragonPending:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];for(const k of r.dragonPending)if(!r.dragonTokens.includes(k))r.dragonTokens.push(k);r.dragonPending=[];r.dragonOffer=[...new Set((Array.isArray(r.dragonOffer)?r.dragonOffer:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))].slice(0,3);r.dragonRingOffer=r.dragonRingOffer&&r.dragonRingOffer.my==='demonEye'?r.dragonRingOffer:null;r.dragonRage=clamp(+r.dragonRage||0,0,100);if(r.job)for(const sp of SPL)if(sp.o&&sp.o.job===r.job&&!r.grim[sp.id])r.grim[sp.id]=1;r.slots=(Array.isArray(r.slots)?r.slots:[]).map(k=>{const sp=k&&SP[k];if(r.hiddenJob==='dragonLord')return sp&&sp.dragonSkill?k:null;return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const it of [...Object.values(r.eq||{}),...r.inv,...r.adv2Offer,r.dragonRingOffer])if(it)ensureItemPotentials(it);for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.title=cleanTitle(r.title);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.potScroll=Math.max(0,Math.floor(+r.potScroll||0));r.epotScroll=Math.max(0,Math.floor(+r.epotScroll||0));r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];const jc=adv2Choices(r.aff);r.adv2Pick=r.adv2Entered?(jc.includes(r.job)?r.job:null):(jc.includes(r.adv2Pick)?r.adv2Pick:null);r.hiddenJob=r.hiddenJob==='dragonLord'?'dragonLord':null;r.dragonTokens=[...new Set((Array.isArray(r.dragonTokens)?r.dragonTokens:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];r.dragonPending=[...new Set((Array.isArray(r.dragonPending)?r.dragonPending:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];for(const k of r.dragonPending)if(!r.dragonTokens.includes(k))r.dragonTokens.push(k);r.dragonPending=[];r.dragonOffer=[...new Set((Array.isArray(r.dragonOffer)?r.dragonOffer:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))].slice(0,3);r.dragonRingOffer=r.dragonRingOffer&&r.dragonRingOffer.my==='demonEye'?r.dragonRingOffer:null;r.dragonRage=clamp(+r.dragonRage||0,0,100);if(r.job)for(const sp of SPL)if(sp.o&&sp.o.job===r.job&&!r.grim[sp.id])r.grim[sp.id]=1;r.slots=(Array.isArray(r.slots)?r.slots:[]).map(k=>{const sp=k&&SP[k];if(r.hiddenJob==='dragonLord')return sp&&sp.dragonSkill?k:null;return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const it of [...Object.values(r.eq||{}),...r.inv,...r.adv2Offer,r.dragonRingOffer])if(it)ensureItemPotentials(it);for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
 const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
 const RM=[1,1.3,1.7,2.2,3,4.2];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
@@ -882,19 +882,23 @@ function rollRarity(f,minR){const x=Math.random()*100,b=Math.min(1.5,f/100);let 
 const POT_GRADES=['레어','에픽','유니크','레전드리'];
 const POT_COLORS=['#75c9ff','#b475ff','#ffd45c','#ff8f5e'];
 const POT_OPTIONS=[
-  {k:'pow',n:'마력',mode:'pct'},{k:'int',n:'지능',mode:'pct'},
-  {k:'vit',n:'체력',mode:'pct'},{k:'wis',n:'정신',mode:'pct'},
-  {k:'hp',n:'최대 HP',mode:'pct'},{k:'mp',n:'최대 MP',mode:'pct'},
-  {k:'def',n:'방어력',mode:'pct'},{k:'crit',n:'치명타 확률',mode:'flat'},
-  {k:'cdr',n:'쿨타임 감소',mode:'flat'}
+  {k:'pow',n:'마력',scale:1,range:[.75,1.25]},{k:'int',n:'지능',scale:1,range:[.7,1.3]},
+  {k:'vit',n:'체력',scale:1,range:[.7,1.3]},{k:'wis',n:'정신',scale:1,range:[.7,1.3]},
+  {k:'hp',n:'최대 HP',scale:1,range:[.75,1.25]},{k:'mp',n:'최대 MP',scale:1,range:[.7,1.3]},
+  {k:'def',n:'방어력',scale:1,range:[.65,1.35]},{k:'crit',n:'치명타 확률',scale:.65,range:[.8,1.2]},
+  {k:'cdr',n:'쿨타임 감소',scale:.32,range:[.7,1.3]}
 ];
 const POT_BASE=[2,3.5,5.5,8],POT_LINE_SCALE=[1,.65,.4];
 function potentialGrade(it,lower=false){return clamp(Math.floor(+it.r||0)-2-(lower?1:0),0,3)}
+function potentialBounds(op,grade,lower=false,lineIndex=0){
+  const base=POT_BASE[clamp(Math.floor(+grade||0),0,3)]*(lower?.6:1)*POT_LINE_SCALE[clamp(lineIndex|0,0,2)]*(op.scale||1);
+  return op.range.map(f=>Math.round(base*f*10)/10);
+}
 function rollPotential(it,lower=false,grade=potentialGrade(it,lower)){
-  grade=clamp(Math.floor(+grade||0),0,3);const pool=POT_OPTIONS.slice(),lines=[];
+  grade=clamp(Math.floor(+grade||0),0,3);const lines=[];
   for(let i=0;i<3;i++){
-    const op=pool.splice(Math.floor(Math.random()*pool.length),1)[0],base=POT_BASE[grade]*(lower?.6:1)*POT_LINE_SCALE[i]*(op.mode==='flat'?(op.k==='crit'?.65:.32):1);
-    lines.push({k:op.k,v:Math.round(base*10)/10});
+    const op=POT_OPTIONS[Math.floor(Math.random()*POT_OPTIONS.length)],[min,max]=potentialBounds(op,grade,lower,i);
+    lines.push({k:op.k,v:Math.round((min+Math.random()*(max-min))*10)/10});
   }
   return{g:grade,lines};
 }
@@ -905,18 +909,21 @@ function ensureItemPotentials(it){
   if(!valid(it.epot))it.epot=rollPotential(it,true);
 }
 function potentialCost(it,lower=false){const m=lower?2:1;return{gold:100000*m,ess:500*m}}
-function potentialLineText(line){const op=POT_OPTIONS.find(o=>o.k===line.k),v=Math.round((+line.v||0)*10)/10;return`${op?op.n:line.k} +${Number.isInteger(v)?v:v.toFixed(1)}%`}
-function potentialBox(it,lower=false){
-  const key=lower?'epot':'pot',name=lower?'아랫잠':'윗잠',data=it[key],cost=potentialCost(it,lower),grade=data?clamp(data.g|0,0,3):0;
-  return`<div style="margin:.5em 0;padding:.5em;border:1px solid ${POT_COLORS[grade]};border-radius:6px;background:rgba(25,30,55,.45)"><b style="color:${POT_COLORS[grade]}">${name} · ${POT_GRADES[grade]}</b><div class="ds" style="margin:.25em 0">${(data&&data.lines||[]).map(potentialLineText).join('<br>')}</div>${btn(`${name} 재설정 · ${cost.gold.toLocaleString('ko-KR')}골드 / 정수 ${cost.ess.toLocaleString('ko-KR')}`,`${lower?'epotRoll':'potRoll'}:${it.id}`,true,'go')}</div>`;
+function potentialLineText(line,index,grade,lower=false){
+  const op=POT_OPTIONS.find(o=>o.k===line.k),v=Math.round((+line.v||0)*10)/10,[min,max]=potentialBounds(op,grade,lower,index);
+  return`${op?op.n:line.k} +${Number.isInteger(v)?v:v.toFixed(1)}% <span class="dim">(범위 ${min.toFixed(1)}~${max.toFixed(1)}%)</span>`;
 }
-function potentialPanel(it){ensureItemPotentials(it);return`<div style="margin-top:.5em"><div class="sec">잠재능력</div>${potentialBox(it,false)}${potentialBox(it,true)}</div>`}
+function potentialBox(it,lower=false){
+  const key=lower?'epot':'pot',name=lower?'아랫잠':'윗잠',data=it[key],grade=data?clamp(data.g|0,0,3):0,scrolls=lower?(S.epotScroll||0):(S.potScroll||0);
+  return`<div style="margin:.5em 0;padding:.5em;border:1px solid ${POT_COLORS[grade]};border-radius:6px;background:rgba(25,30,55,.45)"><b style="color:${POT_COLORS[grade]}">${name} · ${POT_GRADES[grade]}</b><div class="ds" style="margin:.25em 0">${(data&&data.lines||[]).map((line,i)=>potentialLineText(line,i,grade,lower)).join('<br>')}</div>${btn(`${name} 스크롤 사용 · 보유 ${scrolls}`,`${lower?'usePotScrollBottom':'usePotScrollTop'}:${it.id}`,scrolls>0,'go')}</div>`;
+}
+function potentialPanel(it){ensureItemPotentials(it);return`<div style="margin-top:.5em"><div class="sec">잠재능력 · 같은 옵션 중복 가능</div>${potentialBox(it,false)}${potentialBox(it,true)}</div>`}
+function buyPotentialScroll(lower=false){const cost=potentialCost(null,lower);if(!pay(cost))return;const key=lower?'epotScroll':'potScroll';S[key]=(S[key]||0)+1;sfx.buy();toast(`${lower?'아랫잠':'윗잠'} 변경 스크롤을 구매했습니다 · 보유 ${S[key]}개`)}
 function rerollItemPotential(id,lower=false){
   const it=Object.values(S.eq).find(x=>x&&x.id===+id)||S.inv.find(x=>x&&x.id===+id);if(!it)return;
-  ensureItemPotentials(it);const key=lower?'epot':'pot',cost=potentialCost(it,lower);if(!pay(cost))return;
-  it[key]=rollPotential(it,lower,it[key].g);recalc();sfx.buy();toast(`${itemName(it)} ${lower?'아랫잠':'윗잠'}을 재설정했습니다`);
+  const countKey=lower?'epotScroll':'potScroll';if(!(S[countKey]>0)){toast(`대장간에서 ${lower?'아랫잠':'윗잠'} 변경 스크롤을 구매하세요`);sfx.err();return}
+  ensureItemPotentials(it);S[countKey]--;const key=lower?'epot':'pot';it[key]=rollPotential(it,lower,it[key].g);recalc();sfx.buy();toast(`${itemName(it)} ${lower?'아랫잠':'윗잠'} 변경 · 남은 스크롤 ${S[countKey]}개`);
 }
-
 function mkItem(il,minR=0,slot){
   const r=rollRarity(il,minR);
   const it={id:S.uid++,slot:slot||pick(['robe','staff','ring']),r,il:Math.max(1,il),up:0,v:rint(0,4),a:{}};
@@ -2371,6 +2378,7 @@ const PANELS={
   thorgan:{t:'대장장이 토르간',r(){
     const il=Math.max(1,S.maxFloor),cc={gold:80+il*25,ore:4+(il>>1)};
     let h=`<div class="say"><img src="${ICON.thorgan}" alt=""><p>"쇠는 거짓말을 안 해. 두드릴수록 단단해지지만, 욕심내면 금이 가지."</p></div><div class="li"><img src="${ICON.ore}" alt=""><div class="gr"><b>장비 제작</b> <span class="dim">아이템 레벨 ${il} · 고급 이상</span><div class="ds">${costHTML(cc)}</div></div><div class="bt">${btn('로브','forge:robe',can(cc))}${btn('지팡이','forge:staff',can(cc))}${btn('반지','forge:ring',can(cc))}</div></div>`;
+    const topCost=potentialCost(null,false),bottomCost=potentialCost(null,true);h+=`<div class="hd">잠재능력 스크롤 <span>같은 옵션이 여러 줄에 중복될 수 있으며, 각 옵션은 표시된 범위에서 무작위로 결정됩니다.</span></div><div class="li"><img src="${ICON.scroll}" alt=""><div class="gr"><b>윗잠 변경 스크롤</b> <span class="gold">보유 ${S.potScroll||0}개</span><div class="ds">장비 윗잠 3줄 재설정 · ${costHTML(topCost)}</div></div><div class="bt">${btn('1개 구매','buyPotScrollTop',can(topCost))}</div></div><div class="li"><img src="${ICON.scroll}" alt=""><div class="gr"><b>아랫잠 변경 스크롤</b> <span class="gold">보유 ${S.epotScroll||0}개</span><div class="ds">장비 아랫잠 3줄 재설정 · ${costHTML(bottomCost)}</div></div><div class="bt">${btn('1개 구매','buyPotScrollBottom',can(bottomCost))}</div></div>`;
     const pc=protCost();h+=`<div class="li"><img src="${ICON.prot}" alt=""><div class="gr"><b>파괴 방지권</b> <span class="gold">보유 ${S.prot}</span><div class="ds">+10부터 강화에 실패하면 장비가 부서질 수 있습니다. 방지권을 켜 두면 부서질 때 대신 방지권이 깨지고 장비는 한 단계만 내려갑니다. 황금 상자에서 확정, 강철 상자에서 12%로 나옵니다. · 구매 ${costHTML(pc)}</div></div><div class="bt">${btn(ui.useProt?'사용 중':'사용 안 함','prot',true,ui.useProt?'go':'')}${btn('구매','buyProt',can(pc))}</div></div>`;
     h+=`<div class="hd">강화 <span>최대 +${MAX_UP} · +6부터 실패하면 -1단계 · +10부터 파괴 위험</span></div>`;
     const list=[...['staff','robe','ring'].map(k=>S.eq[k]).filter(i=>i&&!i.my),...S.inv.filter(i=>i.r>=2&&!i.my).sort((a,b)=>b.r-a.r||b.up-a.up)];
@@ -2402,7 +2410,7 @@ const PANELS={
       h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')} ${btn('저장 코드 복사','exportCode',true,'go')} ${btn('코드 입력','devCode')}${DEV.on?' '+btn('개발자 모드','devOpen',true,'go'):''}</div></div>`;
       h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'이 캐릭터 삭제','reset')}</div>`}
     else if(ui.tab==='inv'){
-      const cur=[['gold','골드',Math.floor(S.gold)],['ore','광석',S.ore],['ess','정수',S.ess],['core','마력 코어',S.core||0],['prot','파괴 방지권',S.prot||0],['hpPot','체력 물약',S.hpPot],['mpPot','마나 물약',S.mpPot]];
+      const cur=[['gold','골드',Math.floor(S.gold)],['ore','광석',S.ore],['ess','정수',S.ess],['core','마력 코어',S.core||0],['prot','파괴 방지권',S.prot||0],['hpPot','체력 물약',S.hpPot],['mpPot','마나 물약',S.mpPot],['potScroll','윗잠 스크롤',S.potScroll||0],['epotScroll','아랫잠 스크롤',S.epotScroll||0]];
       h+='<div class="wallet"><div class="sec">재화</div>'+cur.map(([k,n,v])=>`<div class="wl"><img src="${ICON[k]||ICON.hpPot}" alt=""><span>${n}</span><b>${v}</b></div>`).join('')+'</div>';if(S.dragonTokens&&S.dragonTokens.length)h+='<div class="sec">??? 물건 · 등급 ???</div><div class="inv">'+S.dragonTokens.map(()=>'<div class="cell" title="???" style="border-color:#c94cff;color:#ffe27a;text-align:center;line-height:2.3">???</div>').join('')+'</div><div class="ds">이름 ??? · 설명 ??? · 등급 ???</div>';
       h+='<div class="two"><div><div class="sec">장착 장비</div><div class="eqs">';
       for(const k of['staff','robe','ring']){const it=S.eq[k];h+=it?`<div class="cell ${ui.sel===it.id?'sel':''}" style="border-color:${RAR[it.r].c}" data-a="sel:${it.id}"><img src="${itemIcon(it)}" alt="">${it.up?`<u>+${it.up}</u>`:''}</div>`:`<div class="cell" style="opacity:.35"><img src="${itemIcon({slot:k,r:0,v:0})}" alt=""></div>`}
@@ -2430,6 +2438,10 @@ const ACT={
     recalc();save();forgeAnim(it,before,ok,drop,broke,saved)},
   potRoll(id){rerollItemPotential(id,false)},
   epotRoll(id){rerollItemPotential(id,true)},
+  buyPotScrollTop(){buyPotentialScroll(false)},
+  buyPotScrollBottom(){buyPotentialScroll(true)},
+  usePotScrollTop(id){rerollItemPotential(id,false)},
+  usePotScrollBottom(id){rerollItemPotential(id,true)},
   prot(){ui.useProt=!ui.useProt;sfx.ui()},
   buyProt(){if(!pay(protCost()))return;S.prot++;sfx.buy();toast('파괴 방지권을 샀습니다')},
   aff(el){if(S.job){toast('2차 전직 후에는 다른 속성을 깨울 수 없습니다');return sfx.err()}if(!S.affPend||S.aff.includes(el))return;S.aff.push(el);S.affPend--;sfx.circle();toast(`${EL[el].n} 속성이 깨어났습니다`);const s0=START[el];if(!S.grim[s0]){S.grim[s0]=1;toast(`마법서 ${SP[s0].n}을(를) 받았습니다`)}},
@@ -2553,7 +2565,7 @@ function bindInput(){
 }
 /* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장은 그대로) */
 /* FORCE_ID를 올려서 배포하면 켜져 있는 모든 게임이 어디에 있든 저장 후 바로 새로고침한다 */
-const FORCE_ID=5;
+const FORCE_ID=6;
 function autoUpdate(){if(!/^https?:$/.test(location.protocol)||/claude/.test(location.host))return;const url=location.href.split('#')[0];
   const sig=t=>{let h=0;for(let i=0;i<t.length;i+=7)h=(h*31+t.charCodeAt(i))|0;return h+':'+t.length};let base=null,ready=false;
   const check=()=>fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(!t)return;const m=/const FORCE_ID=(\d+);/.exec(t);if(m&&+m[1]>FORCE_ID){banner('긴급 업데이트','저장하고 바로 새로고침합니다');try{save()}catch(e){}setTimeout(()=>location.reload(),1500);return}const s2=sig(t);if(base===null){base=s2;return}if(s2!==base&&!ready){ready=true;banner('새 버전이 나왔어요','마을에 돌아가면 자동으로 업데이트됩니다 (저장은 그대로)')}}).catch(()=>{});
