@@ -1047,8 +1047,8 @@ Object.assign(MON,{
   obsidianGuard:{n:'흑요석 파수꾼',hp:520,dmg:46,spd:26,xp:190,r:11,ai:'slam',slamR:48,spr:'obsidianGuard',weak:['water','earth'],res:['dark']},
   dreadMarshal:{n:'심연의 집행자',hp:1300,dmg:80,spd:42,xp:1800,r:15,boss:1,final:1,raidElite:1,sc:2.7,spr:'dreadMarshal',pat:['sweep','cross','charge','orbit','mines','lasers','ring'],bc:'#ff7ad9',weak:['holy','ice'],res:['dark']},
   voidTyrant:{n:'공허의 폭군',hp:1300,dmg:80,spd:36,xp:2200,r:16,boss:1,final:1,raidElite:1,sc:2.8,spr:'voidTyrant',pat:['grid','meteorBig','wall','flower','pincer','homing','rain'],bc:'#c94cff',weak:['holy','water'],res:['dark']},
-  underdeepGatekeeper:{n:'지하 봉인 수문장',hp:1450,dmg:88,spd:34,xp:4200,r:18,boss:1,final:1,raidBoss:1,raidHp:1.8,raidDmg:1.45,sc:3,spr:'underdeepGatekeeper',pat:['slam','grid','sweep','cross','mines','meteorBig','orbit','ring'],bc:'#c94cff',weak:['holy','ice'],res:['dark']},
-  underdeepCore:{n:'무저갱의 심장',hp:1900,dmg:105,spd:38,xp:12000,r:20,boss:1,final:1,raidBoss:1,raidHp:3,raidDmg:1.9,sc:3.4,spr:'underdeepCore',pat:['lasers','meteorBig','sweep','grid','cross','orbit','homing','flower','pincer','rain','mines','ring'],bc:'#ff3a6a',weak:['holy','ice'],res:['dark']}
+  underdeepGatekeeper:{n:'지하 봉인 수문장',hp:1450,dmg:88,spd:34,xp:4200,r:18,boss:1,final:1,raidBoss:1,raidHp:90,raidDmg:9.1,sc:3,spr:'underdeepGatekeeper',pat:['slam','grid','sweep','cross','mines','meteorBig','orbit','ring'],bc:'#c94cff',weak:['holy','ice'],res:['dark']},
+  underdeepCore:{n:'무저갱의 심장',hp:1900,dmg:105,spd:38,xp:12000,r:20,boss:1,final:1,raidBoss:1,raidHp:68.5,raidDmg:7.62,sc:3.4,spr:'underdeepCore',pat:['lasers','meteorBig','sweep','grid','cross','orbit','homing','flower','pincer','rain','mines','ring'],bc:'#ff3a6a',weak:['holy','ice'],res:['dark']}
 });
 const UNDERDEEP_ROOMS=[
   {n:'무광의 회랑',pool:['riftfang','riftfang','abyssalArcanist','obsidianGuard']},
@@ -2670,7 +2670,7 @@ function bindInput(){
 }
 /* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장은 그대로) */
 /* FORCE_ID를 올려서 배포하면 켜져 있는 모든 게임이 어디에 있든 저장 후 바로 새로고침한다 */
-const FORCE_ID=15;
+const FORCE_ID=16;
 function autoUpdate(){if(!/^https?:$/.test(location.protocol)||/claude/.test(location.host))return;const url=location.href.split('#')[0];
   const sig=t=>{let h=0;for(let i=0;i<t.length;i+=7)h=(h*31+t.charCodeAt(i))|0;return h+':'+t.length};let base=null,ready=false;
   const check=()=>fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(!t)return;const m=/const FORCE_ID=(\d+);/.exec(t);if(m&&+m[1]>FORCE_ID){banner('긴급 업데이트','저장하고 바로 새로고침합니다');try{save()}catch(e){}setTimeout(()=>location.reload(),1500);return}const s2=sig(t);if(base===null){base=s2;return}if(s2!==base&&!ready){ready=true;banner('새 버전이 나왔어요','마을에 돌아가면 자동으로 업데이트됩니다 (저장은 그대로)')}}).catch(()=>{});
