@@ -808,7 +808,7 @@ const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa
 const RM=[1,1.3,1.7,2.2,3,4.2];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
 const PRE=['낡은','견습생의','마도사의','대마법사의','심연의'];
-const STN={pow:'마력',hp:'생명력',def:'방어',mp:'마나',crit:'치명타%',cdr:'쿨감%',int:'지능',vit:'체력',wis:'정신'};
+const STN={pow:'마력',hp:'생명력',def:'방어',mp:'마나',crit:'치명타%',critD:'치명타 피해',boss:'보스 피해',basic:'기본 공격력',int:'지능',vit:'체력',wis:'정신'};
 /* ---- 성장 곡선: 레벨은 느리게, 서클은 레벨 + 수련치(마나를 쓴 만큼 쌓임) ---- */
 const MAX_LVL=200;
 const floorCount=f=>Math.min(42,9+Math.floor(f*.36));
@@ -854,22 +854,22 @@ const hasDragonSigils=(xs=S.dragonOffer||[])=>DRAGON_SIGIL_KEYS.every(k=>xs.incl
 const collectDragonPending=()=>{for(const k of S.dragonPending||[])if(!S.dragonTokens.includes(k))S.dragonTokens.push(k);S.dragonPending=[]};
 const MYTH={
   slimeRing:{boss:'kingslime',slot:'ring',n:'젤리왕의 왕관 반지',fx:'처치한 적이 터지며 주변에 마력 x3 폭발',a:{crit:8,hp:120,int:6}},
-  spiderRobe:{boss:'arachne',slot:'robe',n:'아라크네의 비단 로브',fx:'적중 시 15% 확률로 거미줄 속박(2초) · 받는 피해 -15%',a:{vit:10,wis:6,cdr:6}},
+  spiderRobe:{boss:'arachne',slot:'robe',n:'아라크네의 비단 로브',fx:'적중 시 15% 확률로 거미줄 속박(2초) · 받는 피해 -15%',a:{vit:10,wis:6}},
   golemStaff:{boss:'golemlord',slot:'staff',n:'대지심장 지팡이',fx:'전용 스킬 [R] 거신의 주먹: 거대한 바위 주먹 낙하',sk:'fist',a:{int:12,vit:8}},
   frostHeart:{boss:'ymir',slot:'ring',n:'서리거인의 심장',fx:'적중 시 10% 빙결 · 빙결된 적에게 피해 +40%',a:{int:10,crit:6}},
   lichTome:{boss:'lich',slot:'staff',n:'모르가스의 사령서',fx:'처치 시 30% 확률로 원혼이 튀어나와 적을 쫓아 터짐',a:{int:16,wis:10}},
   ifritRobe:{boss:'ifrit',slot:'robe',n:'업화군주의 로브',fx:'몸 주변에 불꽃 오라 (0.5초마다 화염 피해)',a:{int:10,vit:12}},
-  stormFeather:{boss:'harpyQ',slot:'ring',n:'폭풍여왕의 깃털',fx:'이동 속도 +30% · 블링크 쿨 -60% · 블링크 길에 벼락',a:{cdr:10,wis:10}},
+  stormFeather:{boss:'harpyQ',slot:'ring',n:'폭풍여왕의 깃털',fx:'이동 속도 +30% · 블링크 길에 벼락',a:{wis:10}},
   archonStaff:{boss:'archon',slot:'staff',n:'벨가르의 흑요 지팡이',fx:'전용 스킬 [R] 흑염의 심판: 사방으로 흑염 광선',sk:'judge',a:{int:20,crit:8}},
   dragonScale:{boss:'dragon',slot:'robe',n:'심연룡의 비늘 갑주',fx:'최대 생명력 +50% · 층마다 한 번 죽음을 버티고 화염 폭발',a:{vit:20,int:10}},
-  demonEye:{boss:'demonLord',slot:'ring',n:'마왕의 눈',fx:'쿨타임 -25% · 10% 확률로 마나 소모 없음 · 치명 피해 +100%',a:{int:20,crit:12,wis:12}},
+  demonEye:{boss:'demonLord',slot:'ring',n:'마왕의 눈',fx:'보스 피해 +25% · 10% 확률로 마나 소모 없음 · 치명 피해 +100%',a:{int:20,crit:12,wis:12}},
   ratRing:{boss:'ratKing',slot:'ring',n:'시궁쥐 왕의 이빨 반지',fx:'이동 속도 +15% · 골드 획득 +40%',a:{crit:5,hp:60}},
   sporeRobe:{boss:'shroomLord',slot:'robe',n:'포자 군주의 이끼 로브',fx:'적중 시 20% 확률로 맹독 (4초간 지속 피해)',a:{vit:8,int:6}},
   gargHeart:{boss:'gargLord',slot:'ring',n:'석상의 심장',fx:'받는 피해 -10% · 체력 30% 아래로 떨어지면 6초간 받는 피해 -40% (45초마다)',a:{vit:10,hp:100}},
   wispStaff:{boss:'wispLord',slot:'staff',n:'빙결 위습의 지팡이',fx:'마법 적중 시 12% 확률로 빙결 · 빙결된 적에게 피해 +25%',a:{int:10,wis:6}},
   pharaohRobe:{boss:'pharaoh',slot:'robe',n:'파라오의 황금 수의',fx:'적 처치 시 체력 3% 회복 · 저주에 걸리지 않음',a:{vit:12,wis:8}},
   cerbRing:{boss:'cerberus',slot:'ring',n:'지옥견의 목걸이 반지',fx:'치명 피해 +50% · 치명타 시 화상',a:{crit:10,int:8}},
-  stormScepter:{boss:'stormKing',slot:'staff',n:'뇌정의 홀',fx:'마법 적중 시 20% 확률로 주변 적 2명에게 연쇄 번개',a:{int:14,cdr:5}},
+  stormScepter:{boss:'stormKing',slot:'staff',n:'뇌정의 홀',fx:'마법 적중 시 20% 확률로 주변 적 2명에게 연쇄 번개',a:{int:14}},
   knightCloak:{boss:'deathLord',slot:'robe',n:'흑기사단장의 망토',fx:'준 피해의 3%만큼 체력 흡수 · 출혈에 걸리지 않음',a:{vit:14,int:8}},
   magmaCore:{boss:'magmaTitan',slot:'ring',n:'용암핵 반지',fx:'받는 피해 -10% · 화상에 걸리지 않음 · 맞으면 주변에 화염 반격',a:{vit:12,int:10}},
   shadowStaff:{boss:'shadowKing',slot:'staff',n:'그림자 군주의 지팡이',fx:'순간이동 후 3초간 마법 피해 +40% · 실명에 걸리지 않음',a:{int:18,crit:8}}
@@ -877,16 +877,18 @@ const MYTH={
 
 const MYTH_SK={fist:{n:'거신의 주먹',mp:60,cd:20},judge:{n:'흑염의 심판',mp:70,cd:18}};
 function mainStats(slot,il,r){if(slot==='staff')return{pow:(3+il*1.6)*RM[r]};if(slot==='robe')return{hp:(20+il*9)*RM[r],def:(2+il*.8)*RM[r]};return{mp:(10+il*3)*RM[r],crit:2+r*1.5}}
-function rollAffix(il,r){const k=pick(['int','vit','wis','crit','cdr','hp','pow']);const v={int:1+il/6,vit:1+il/6,wis:1+il/6,crit:1+r*.6,cdr:1.5+r*.7,hp:10+il*4,pow:1+il*.5}[k];return[k,Math.round(v*rnd(.8,1.2)*10)/10]}
+function rollAffix(il,r){const k=pick(['int','vit','wis','crit','hp','pow']);const v={int:1+il/6,vit:1+il/6,wis:1+il/6,crit:1+r*.6,hp:10+il*4,pow:1+il*.5}[k];return[k,Math.round(v*rnd(.8,1.2)*10)/10]}
 function rollRarity(f,minR){const x=Math.random()*100,b=Math.min(1.5,f/100);let r=x<.8+b?4:x<4+b*3?3:x<15+b*6?2:x<42?1:0;return Math.max(r,minR||0)}
 const POT_GRADES=['레어','에픽','유니크','레전드리'];
 const POT_COLORS=['#75c9ff','#b475ff','#ffd45c','#ff8f5e'];
 const POT_OPTIONS=[
-  {k:'pow',n:'마력',scale:1,range:[.75,1.25]},{k:'int',n:'지능',scale:1,range:[.7,1.3]},
-  {k:'vit',n:'체력',scale:1,range:[.7,1.3]},{k:'wis',n:'정신',scale:1,range:[.7,1.3]},
-  {k:'hp',n:'최대 HP',scale:1,range:[.75,1.25]},{k:'mp',n:'최대 MP',scale:1,range:[.7,1.3]},
-  {k:'def',n:'방어력',scale:1,range:[.65,1.35]},{k:'crit',n:'치명타 확률',scale:.65,range:[.8,1.2]},
-  {k:'cdr',n:'쿨타임 감소',scale:.32,range:[.7,1.3]}
+  {k:'pow',n:'마력',scale:1,range:[.75,1.25]},
+  {k:'crit',n:'치명타 확률',scale:.65,range:[.8,1.2]},
+  {k:'critD',n:'치명타 피해',scale:.75,range:[.75,1.25]},
+  {k:'boss',n:'보스 피해',scale:.65,range:[.75,1.25]},
+  {k:'basic',n:'기본 공격력',scale:.8,range:[.75,1.25]},
+  {k:'hp',n:'최대 HP',scale:1,range:[.75,1.25]},
+  {k:'def',n:'방어력',scale:1,range:[.65,1.35]}
 ];
 const POT_BASE=[2,3.5,5.5,8],POT_LINE_SCALE=[1,.65,.4];
 function potentialGrade(it,lower=false){return clamp(Math.floor(+it.r||0)-2,0,3)}
@@ -904,6 +906,7 @@ function rollPotential(it,lower=false,grade=potentialGrade(it,lower)){
 }
 function ensureItemPotentials(it){
   if(!it||typeof it!=='object')return;
+  if(it.a&&Object.prototype.hasOwnProperty.call(it.a,'cdr'))delete it.a.cdr;
   const valid=p=>p&&Number.isInteger(p.g)&&p.g>=0&&p.g<4&&Array.isArray(p.lines)&&p.lines.length===3&&p.lines.every(l=>l&&POT_OPTIONS.some(o=>o.k===l.k)&&Number.isFinite(+l.v));
   if(!valid(it.pot))it.pot=rollPotential(it,false);
   const upperGrade=potentialGrade(it,false);if(!valid(it.epot)||it.epot.v!==2||it.epot.g!==upperGrade)it.epot=rollPotential(it,true,upperGrade);
@@ -951,12 +954,12 @@ const statPointScale=lvl=>lvl<60?1:lvl<90?1+.2*(lvl-59)/30:lvl<120?1.2-.2*(lvl-9
 const ADV2_HP_BONUS=20000;
 function recalc(){
   const mythChanged=syncMythLevels();
-  const g={pow:0,hp:0,def:0,mp:0,crit:0,cdr:0,int:0,vit:0,wis:0},pot={pow:0,hp:0,def:0,mp:0,crit:0,cdr:0,int:0,vit:0,wis:0};D.my=new Set();D.sk=null;
+  const g={pow:0,hp:0,def:0,mp:0,crit:0,int:0,vit:0,wis:0},pot={pow:0,hp:0,def:0,crit:0,critD:0,boss:0,basic:0};D.my=new Set();D.sk=null;
   for(const k in S.eq){const it=S.eq[k];if(!it)continue;const s=itemStats(it);for(const j in s)g[j]+=s[j];for(const layer of [it.pot,it.epot])for(const line of layer.lines||[])if(pot[line.k]!==undefined)pot[line.k]+=+line.v||0;if(it.my){D.my.add(it.my);if(MYTH[it.my].sk)D.sk=MYTH[it.my].sk}}
-  const st=S.st,spm=statPointScale(S.lvl),I=(st.int*spm+g.int)*(1+pot.int/100),V=(st.vit*spm+g.vit)*(1+pot.vit/100),Wi=(st.wis*spm+g.wis)*(1+pot.wis/100),c=S.circle;
-  D.maxHp=Math.round((100+V*18+S.lvl*8+g.hp)*(c>=7?1.3:1)*lateGrow(.02)*(hasM('dragonScale')?1.5:1)*(S.hiddenJob==='dragonLord'?1.3:1)*(1+pot.hp/100))+((S.job||S.hiddenJob==='dragonLord')?ADV2_HP_BONUS:0);D.maxMp=Math.round((60+I*5+c*25+g.mp)*(1+pot.mp/100));
-  D.pow=(10+S.lvl*1.5+g.pow)*(1+I*.04)*(1+(c-1)*.12)*lateGrow(.01)*(1+pot.pow/100);D.crit=Math.min(75,5+st.crit*spm*1.5+g.crit+pot.crit);D.critM=1.6+st.crit*spm*.02+(hasM('demonEye')?1:0)+(hasM('cerbRing')?.5:0);
-  D.cdr=Math.min(hasM('demonEye')?.9:.8,Wi*.01+g.cdr/100+pot.cdr/100+(c>=9?.15:0)+(hasM('demonEye')?.25:0));D.mpR=(2+Wi*.35+c*.7)*(c>=8?2:1);D.hpR=.3+V*.08;D.def=(g.def+Math.max(0,S.lvl-60)*6)*(1+pot.def/100);D.slots=DEV.on?12:SLOTC[c];while(S.slots.length<D.slots)S.slots.push(null);
+  const st=S.st,spm=statPointScale(S.lvl),I=st.int*spm+g.int,V=st.vit*spm+g.vit,Wi=st.wis*spm+g.wis,c=S.circle;
+  D.maxHp=Math.round((100+V*18+S.lvl*8+g.hp)*(c>=7?1.3:1)*lateGrow(.02)*(hasM('dragonScale')?1.5:1)*(S.hiddenJob==='dragonLord'?1.3:1)*(1+pot.hp/100))+((S.job||S.hiddenJob==='dragonLord')?ADV2_HP_BONUS:0);D.maxMp=Math.round(60+I*5+c*25+g.mp);
+  D.pow=(10+S.lvl*1.5+g.pow)*(1+I*.04)*(1+(c-1)*.12)*lateGrow(.01)*(1+pot.pow/100);D.crit=Math.min(75,5+st.crit*spm*1.5+g.crit+pot.crit);D.critM=1.6+st.crit*spm*.02+pot.critD/100+(hasM('demonEye')?1:0)+(hasM('cerbRing')?.5:0);D.basicDmg=pot.basic;D.bossDmg=pot.boss+(hasM('demonEye')?25:0);
+  D.cdr=Math.min(.8,st.wis*spm*.01+(c>=9?.15:0));D.mpR=(2+Wi*.35+c*.7)*(c>=8?2:1);D.hpR=.3+V*.08;D.def=(g.def+Math.max(0,S.lvl-60)*6)*(1+pot.def/100);D.slots=DEV.on?12:SLOTC[c];while(S.slots.length<D.slots)S.slots.push(null);
   D.dr=(S.hiddenJob==='dragonLord'?.15:0)+(hasM('spiderRobe')?.15:0)+(hasM('gargHeart')?.1:0)+(hasM('magmaCore')?.1:0);D.spd=(hasM('stormFeather')?1.3:1)*(hasM('ratRing')?1.15:1);
   if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
   if(mythChanged)save();
@@ -976,7 +979,7 @@ function setDevForCurrentCharacter(enabled){
 const BAG=()=>DEV.on?64:32;
 const canUse=sp=>S.hiddenJob==='dragonLord'?!!sp.dragonSkill:sp.dragonSkill?false:(sp.o&&sp.o.job)?(S.job===sp.o.job||DEV.on):sp.el==='none'||(S.job?sp.el===S.job:S.circle>=9||S.aff.includes(sp.el)||DEV.on);
 const spellMp=sp=>Math.round(sp.mp*(S.circle>=4&&sp.c<S.circle?.85:1));
-const spellDmg=sp=>D.pow*sp.m*(1+.12*((S.grim[sp.id]||1)-1))*(sp.el===S.aff[0]?1.2:1)*(S.hiddenJob==='dragonLord'?1.3:1);
+const spellDmg=sp=>D.pow*sp.m*(sp.id==='arrow'?1+(D.basicDmg||0)/100:1)*(1+.12*((S.grim[sp.id]||1)-1))*(sp.el===S.aff[0]?1.2:1)*(S.hiddenJob==='dragonLord'?1.3:1);
 const craftCost=sp=>({gold:Math.round(50*Math.pow(sp.c,2.4)),ess:Math.round(2*Math.pow(sp.c,1.8))});
 const enhCost=sp=>{const lv=S.grim[sp.id]||1;return{gold:Math.round(40*Math.pow(lv,1.6)*(1+sp.c*.5)),ess:2*lv+sp.c*2}};
 /* ---- 몬스터. ai: hop fly chase dash shoot slam bomb turret blink brute ---- */
@@ -1412,10 +1415,10 @@ function status(e,st,t,dmg){
 function hurt(e,dmg,o={}){
   if(e.dead||e.hp<=0)return 0;const d0=MON[e.type];let mul=1,weak=false;
   if(o.el){if(d0.weak&&d0.weak.includes(o.el)){mul*=1.5;weak=true}if(d0.res&&d0.res.includes(o.el))mul*=.6;}
-  if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;
+  if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;if(e.boss&&!o.dot)mul*=1+(D.bossDmg||0)/100;
   const c=!o.dot&&Math.random()*100<D.crit+(jobIs('ice')&&(e.frozen>0||e.slow>0)?25:0);if(jobIs('ice')&&(e.frozen>0||e.slow>0))mul*=1.4;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
   let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
-  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*(o.dragonLordHit?0.06:0.05)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
+  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*(o.dragonLordHit?0.06:0.05)*(1+(D.bossDmg||0)/100)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
   const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));e.hp-=d;if(S.hiddenJob==='dragonLord')addDragonRage(3);if(!o.dot){e.flash=e.boss?.1:.14;if(!o.proc&&!e.boss){G.hitstop=Math.max(G.hitstop,c?0.055:0.03);hitFx(o.el||'none',e.x,e.y-e.r,c)}}
   if(o.kb&&!e.boss&&o.sx!==undefined){const a=Math.atan2(e.y-o.sy,e.x-o.sx);e.kx+=Math.cos(a)*o.kb;e.ky+=Math.sin(a)*o.kb}
   G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+shown+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
@@ -2291,7 +2294,7 @@ const lv=S.grim[sp.id]||0,ok=canUse(sp),circleOk=(sp.o&&sp.o.job)?S.job===sp.o.j
 }
 /* 순간이동 강화: 레벨마다 쿨타임 -3.5%, Lv.10에서 -35% */
 const BLINK_MAX=10;
-const blinkCD=()=>2.5*(1-D.cdr*.5)*(hasM('stormFeather')?.4:1)*(1-.035*(S.blinkLv||0))*(S.job==='wind'?.5:1);
+const blinkCD=()=>2.5*(1-D.cdr*.5)*(1-.035*(S.blinkLv||0))*(S.job==='wind'?.5:1);
 const blinkCost=()=>{const lv=(S.blinkLv||0)+1;return{gold:Math.round(150*Math.pow(lv,1.7)),ess:4*lv}};
 function blinkRow(){const lv=S.blinkLv||0;return `<div class="li"><img src="${ICON.blink}" alt=""><div class="gr"><b>순간이동</b> <span class="gold">Lv.${lv}</span><div class="ds">이동하는 방향으로 짧게 순간이동, 0.3초 무적 · 쿨타임 ${blinkCD().toFixed(2)}초 (강화로 -${Math.round(lv*3.5)}%, 최대 -35%)${lv<BLINK_MAX?`<br>강화 → Lv.${lv+1}: ${costHTML(blinkCost())}`:''}</div></div><div class="bt">${lv<BLINK_MAX?btn('강화','blinkUp',can(blinkCost())):'<span class="gold">최대</span>'}</div></div>`}
 function grimList(mode){
@@ -2408,7 +2411,7 @@ const PANELS={
     if(ui.tab==='stat'){
       const spm=statPointScale(S.lvl),row=(k,n,d,v)=>`<div class="li"><div class="gr"><b>${n}</b> <span class="gold">${v}</span><div class="ds">${d}</div></div><div class="bt">${btn('+1','stat:'+k,S.pts>0)}</div></div>`;
       h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>${S.title?`<b class="${S.titleColor==='rainbow'?'rainbowText':'gold'}">「${cleanTitle(S.title)}」</b><br>`:''}Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}${S.hiddenJob==='dragonLord'?` · 히든 직업 <b style="color:${DRAGON_CLASS.c}">${DRAGON_CLASS.n}</b>`:S.job?` · 2차 직업 <b style="color:${JOBS[S.job].c}">${JOBS[S.job].n}</b>`:''}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트 · 점당 효율 ${Math.round(spm*100)}%</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT',`마법 피해 +${(4*spm).toFixed(1)}%, 마나 +${(5*spm).toFixed(1)}`,S.st.int)+row('vit','체력 VIT',`기본 생명력 +${(18*spm).toFixed(1)}, 재생 +${(.08*spm).toFixed(2)}/초`,S.st.vit)+row('crit','치명 CRIT',`치명타율 +${(1.5*spm).toFixed(2)}%, 치명 피해 +${(2*spm).toFixed(2)}%`,S.st.crit)+row('wis','정신 WIS',`쿨타임 감소 +${(spm).toFixed(2)}%, 마나 재생 +${(.35*spm).toFixed(2)}/초`,S.st.wis);
-      h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 쿨타임 감소 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
+      h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 보스 피해 <b>+${D.bossDmg.toFixed(1)}%</b> · 기본 공격 <b>+${D.basicDmg.toFixed(1)}%</b> · 쿨감 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
       h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')} ${btn('저장 코드 복사','exportCode',true,'go')} ${btn('코드 입력','devCode')}${DEV.on?' '+btn('개발자 모드','devOpen',true,'go'):''}</div></div>`;
       h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'이 캐릭터 삭제','reset')}</div>`}
     else if(ui.tab==='inv'){
@@ -2567,7 +2570,7 @@ function bindInput(){
 }
 /* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장은 그대로) */
 /* FORCE_ID를 올려서 배포하면 켜져 있는 모든 게임이 어디에 있든 저장 후 바로 새로고침한다 */
-const FORCE_ID=10;
+const FORCE_ID=11;
 function autoUpdate(){if(!/^https?:$/.test(location.protocol)||/claude/.test(location.host))return;const url=location.href.split('#')[0];
   const sig=t=>{let h=0;for(let i=0;i<t.length;i+=7)h=(h*31+t.charCodeAt(i))|0;return h+':'+t.length};let base=null,ready=false;
   const check=()=>fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(!t)return;const m=/const FORCE_ID=(\d+);/.exec(t);if(m&&+m[1]>FORCE_ID){banner('긴급 업데이트','저장하고 바로 새로고침합니다');try{save()}catch(e){}setTimeout(()=>location.reload(),1500);return}const s2=sig(t);if(base===null){base=s2;return}if(s2!==base&&!ready){ready=true;banner('새 버전이 나왔어요','마을에 돌아가면 자동으로 업데이트됩니다 (저장은 그대로)')}}).catch(()=>{});
