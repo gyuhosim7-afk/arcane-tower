@@ -803,7 +803,7 @@ const SLOT_KEY='arcane-tower-slots';
 function getSlots(){try{return JSON.parse(localStorage.getItem(SLOT_KEY)||'{}')||{}}catch(e){return{}}}
 function putSlots(o){try{localStorage.setItem(SLOT_KEY,JSON.stringify(o))}catch(e){}}
 function save(){try{const j=JSON.stringify(S);localStorage.setItem(SAVE_KEY,j);if(S.pid){const sl=getSlots();sl[S.pid]=j;putSlots(sl)}}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.title=cleanTitle(r.title);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];const jc=adv2Choices(r.aff);r.adv2Pick=r.adv2Entered?(jc.includes(r.job)?r.job:null):(jc.includes(r.adv2Pick)?r.adv2Pick:null);r.hiddenJob=r.hiddenJob==='dragonLord'?'dragonLord':null;r.dragonTokens=[...new Set((Array.isArray(r.dragonTokens)?r.dragonTokens:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];r.dragonPending=[...new Set((Array.isArray(r.dragonPending)?r.dragonPending:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];for(const k of r.dragonPending)if(!r.dragonTokens.includes(k))r.dragonTokens.push(k);r.dragonPending=[];r.dragonOffer=[...new Set((Array.isArray(r.dragonOffer)?r.dragonOffer:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))].slice(0,3);r.dragonRingOffer=r.dragonRingOffer&&r.dragonRingOffer.my==='demonEye'?r.dragonRingOffer:null;r.dragonRage=clamp(+r.dragonRage||0,0,100);if(r.job)for(const sp of SPL)if(sp.o&&sp.o.job===r.job&&!r.grim[sp.id])r.grim[sp.id]=1;r.slots=(Array.isArray(r.slots)?r.slots:[]).map(k=>{const sp=k&&SP[k];if(r.hiddenJob==='dragonLord')return sp&&sp.dragonSkill?k:null;return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
+function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.title=cleanTitle(r.title);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];const jc=adv2Choices(r.aff);r.adv2Pick=r.adv2Entered?(jc.includes(r.job)?r.job:null):(jc.includes(r.adv2Pick)?r.adv2Pick:null);r.hiddenJob=r.hiddenJob==='dragonLord'?'dragonLord':null;r.dragonTokens=[...new Set((Array.isArray(r.dragonTokens)?r.dragonTokens:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];r.dragonPending=[...new Set((Array.isArray(r.dragonPending)?r.dragonPending:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];for(const k of r.dragonPending)if(!r.dragonTokens.includes(k))r.dragonTokens.push(k);r.dragonPending=[];r.dragonOffer=[...new Set((Array.isArray(r.dragonOffer)?r.dragonOffer:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))].slice(0,3);r.dragonRingOffer=r.dragonRingOffer&&r.dragonRingOffer.my==='demonEye'?r.dragonRingOffer:null;r.dragonRage=clamp(+r.dragonRage||0,0,100);if(r.job)for(const sp of SPL)if(sp.o&&sp.o.job===r.job&&!r.grim[sp.id])r.grim[sp.id]=1;r.slots=(Array.isArray(r.slots)?r.slots:[]).map(k=>{const sp=k&&SP[k];if(r.hiddenJob==='dragonLord')return sp&&sp.dragonSkill?k:null;return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const it of [...Object.values(r.eq||{}),...r.inv,...r.adv2Offer,r.dragonRingOffer])if(it)ensureItemPotentials(it);for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
 const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
 const RM=[1,1.3,1.7,2.2,3,4.2];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
@@ -879,23 +879,61 @@ const MYTH_SK={fist:{n:'거신의 주먹',mp:60,cd:20},judge:{n:'흑염의 심�
 function mainStats(slot,il,r){if(slot==='staff')return{pow:(3+il*1.6)*RM[r]};if(slot==='robe')return{hp:(20+il*9)*RM[r],def:(2+il*.8)*RM[r]};return{mp:(10+il*3)*RM[r],crit:2+r*1.5}}
 function rollAffix(il,r){const k=pick(['int','vit','wis','crit','cdr','hp','pow']);const v={int:1+il/6,vit:1+il/6,wis:1+il/6,crit:1+r*.6,cdr:1.5+r*.7,hp:10+il*4,pow:1+il*.5}[k];return[k,Math.round(v*rnd(.8,1.2)*10)/10]}
 function rollRarity(f,minR){const x=Math.random()*100,b=Math.min(1.5,f/100);let r=x<.8+b?4:x<4+b*3?3:x<15+b*6?2:x<42?1:0;return Math.max(r,minR||0)}
+const POT_GRADES=['레어','에픽','유니크','레전드리'];
+const POT_COLORS=['#75c9ff','#b475ff','#ffd45c','#ff8f5e'];
+const POT_OPTIONS=[
+  {k:'pow',n:'마력',mode:'pct'},{k:'int',n:'지능',mode:'pct'},
+  {k:'vit',n:'체력',mode:'pct'},{k:'wis',n:'정신',mode:'pct'},
+  {k:'hp',n:'최대 HP',mode:'pct'},{k:'mp',n:'최대 MP',mode:'pct'},
+  {k:'def',n:'방어력',mode:'pct'},{k:'crit',n:'치명타 확률',mode:'flat'},
+  {k:'cdr',n:'쿨타임 감소',mode:'flat'}
+];
+const POT_BASE=[2,3.5,5.5,8],POT_LINE_SCALE=[1,.65,.4];
+function potentialGrade(it,lower=false){return clamp(Math.floor(+it.r||0)-2-(lower?1:0),0,3)}
+function rollPotential(it,lower=false,grade=potentialGrade(it,lower)){
+  grade=clamp(Math.floor(+grade||0),0,3);const pool=POT_OPTIONS.slice(),lines=[];
+  for(let i=0;i<3;i++){
+    const op=pool.splice(Math.floor(Math.random()*pool.length),1)[0],base=POT_BASE[grade]*(lower?.6:1)*POT_LINE_SCALE[i]*(op.mode==='flat'?(op.k==='crit'?.65:.32):1);
+    lines.push({k:op.k,v:Math.round(base*10)/10});
+  }
+  return{g:grade,lines};
+}
+function ensureItemPotentials(it){
+  if(!it||typeof it!=='object')return;
+  const valid=p=>p&&Number.isInteger(p.g)&&p.g>=0&&p.g<4&&Array.isArray(p.lines)&&p.lines.length===3&&p.lines.every(l=>l&&POT_OPTIONS.some(o=>o.k===l.k)&&Number.isFinite(+l.v));
+  if(!valid(it.pot))it.pot=rollPotential(it,false);
+  if(!valid(it.epot))it.epot=rollPotential(it,true);
+}
+function potentialCost(it,lower=false){const il=Math.max(1,Math.floor(+it.il||1)),m=lower?2:1;return{gold:(50+il*10)*m,ess:Math.max(1,Math.ceil(il/30))*m}}
+function potentialLineText(line){const op=POT_OPTIONS.find(o=>o.k===line.k),v=Math.round((+line.v||0)*10)/10;return`${op?op.n:line.k} +${Number.isInteger(v)?v:v.toFixed(1)}%`}
+function potentialBox(it,lower=false){
+  const key=lower?'epot':'pot',name=lower?'아랫잠':'윗잠',data=it[key],cost=potentialCost(it,lower),grade=data?clamp(data.g|0,0,3):0;
+  return`<div style="margin:.5em 0;padding:.5em;border:1px solid ${POT_COLORS[grade]};border-radius:6px;background:rgba(25,30,55,.45)"><b style="color:${POT_COLORS[grade]}">${name} · ${POT_GRADES[grade]}</b><div class="ds" style="margin:.25em 0">${(data&&data.lines||[]).map(potentialLineText).join('<br>')}</div>${btn(`${name} 재설정 · ${cost.gold.toLocaleString('ko-KR')}골드 / 정수 ${cost.ess}`,`${lower?'epotRoll':'potRoll'}:${it.id}`,true,'go')}</div>`;
+}
+function potentialPanel(it){ensureItemPotentials(it);return`<div style="margin-top:.5em"><div class="sec">잠재능력</div>${potentialBox(it,false)}${potentialBox(it,true)}</div>`}
+function rerollItemPotential(id,lower=false){
+  const it=Object.values(S.eq).find(x=>x&&x.id===+id)||S.inv.find(x=>x&&x.id===+id);if(!it)return;
+  ensureItemPotentials(it);const key=lower?'epot':'pot',cost=potentialCost(it,lower);if(!pay(cost))return;
+  it[key]=rollPotential(it,lower,it[key].g);recalc();sfx.buy();toast(`${itemName(it)} ${lower?'아랫잠':'윗잠'}을 재설정했습니다`);
+}
+
 function mkItem(il,minR=0,slot){
   const r=rollRarity(il,minR);
   const it={id:S.uid++,slot:slot||pick(['robe','staff','ring']),r,il:Math.max(1,il),up:0,v:rint(0,4),a:{}};
   for(let i=0;i<Math.min(3,r);i++){const[k,v]=rollAffix(il,r);it.a[k]=Math.round(((it.a[k]||0)+v)*10)/10}
-  return it;
+  ensureItemPotentials(it);return it;
 }
 /* 신화 추가 옵션은 아이템 레벨과 보스 층 배수에 따라 성장(5층 ×1.15~100층 ×1.60). */
 const mythAff=(k,v,il)=>k==='int'||k==='vit'||k==='wis'?v/16*(1+il/6):k==='hp'?v/50*(10+il*4):k==='mp'?v/30*(10+il*3):v;
 function applyMythLevel(it,il){il=Math.max(1,Math.floor(il||1));const m=MYTH[it.my],mul=1.15+.45*(mythFloor(it.my)-5)/95;it.il=il;it.a={};for(const k in m.a)it.a[k]=Math.round(mythAff(k,m.a[k],il)*mul*10)/10}
-function mkMyth(key){const m=MYTH[key],it={id:S.uid++,slot:m.slot,r:5,il:1,up:0,my:key,a:{}};applyMythLevel(it,S.lvl);return it}
+function mkMyth(key){const m=MYTH[key],it={id:S.uid++,slot:m.slot,r:5,il:1,up:0,my:key,a:{}};applyMythLevel(it,S.lvl);ensureItemPotentials(it);return it}
 function syncMythLevels(){const il=Math.max(1,Math.floor(S.lvl||1));let changed=false;for(const it of (S.inv||[]).concat(Object.values(S.eq||{})))if(it&&it.my&&MYTH[it.my]&&it.il!==il){applyMythLevel(it,il);changed=true}return changed}
 /* 신화 기본 능력치: 같은 레벨 전설 +15강보다 10% 높게(×7.26 vs ×6.6). */
 const mythFloor=k=>{const b=MYTH[k].boss,i=MIDS.indexOf(b);return i>=0?i*10+5:BOSSES.indexOf(b)*10+10};
 /* 신화 주능력치 배수는 전설 +15의 계산식에 10% 보너스를 적용하며, 보스 층 차이는 고유 옵션에 반영 */
 const MYTH_FULL_UP=1+.08*15,MYTH_EDGE=1.1;
 const mythMain=()=>RM[4]*MYTH_FULL_UP*MYTH_EDGE;
-function itemStats(it){if(it.my)it.up=0;const m=it.my?mainStats(it.slot,it.il,4):mainStats(it.slot,it.il,it.r),o={};if(it.my)for(const k in m)if(k!=='crit')m[k]*=mythMain()/RM[4];else m[k]*=MYTH_FULL_UP*MYTH_EDGE;for(const k in m)o[k]=m[k]*(1+.08*it.up);for(const k in it.a)o[k]=(o[k]||0)+it.a[k];for(const k in o)o[k]=Math.round(o[k]*10)/10;return o}
+function itemStats(it){ensureItemPotentials(it);if(it.my)it.up=0;const m=it.my?mainStats(it.slot,it.il,4):mainStats(it.slot,it.il,it.r),o={};if(it.my)for(const k in m)if(k!=='crit')m[k]*=mythMain()/RM[4];else m[k]*=MYTH_FULL_UP*MYTH_EDGE;for(const k in m)o[k]=m[k]*(1+.08*it.up);for(const k in it.a)o[k]=(o[k]||0)+it.a[k];for(const k in o)o[k]=Math.round(o[k]*10)/10;return o}
 const itemName=it=>(it.my?MYTH[it.my].n:PRE[it.r]+' '+GEAR_N[it.slot][it.v||0])+(it.up?' +'+it.up:'');
 const sellPrice=it=>Math.round((6+it.il*3)*(it.r+1)*(it.r+1)*(1+it.up*.2));
 const D={my:new Set()};
@@ -906,12 +944,12 @@ const statPointScale=lvl=>lvl<60?1:lvl<90?1+.2*(lvl-59)/30:lvl<120?1.2-.2*(lvl-9
 const ADV2_HP_BONUS=20000;
 function recalc(){
   const mythChanged=syncMythLevels();
-  const g={pow:0,hp:0,def:0,mp:0,crit:0,cdr:0,int:0,vit:0,wis:0};D.my=new Set();D.sk=null;
-  for(const k in S.eq){const it=S.eq[k];if(!it)continue;const s=itemStats(it);for(const j in s)g[j]+=s[j];if(it.my){D.my.add(it.my);if(MYTH[it.my].sk)D.sk=MYTH[it.my].sk}}
-  const st=S.st,spm=statPointScale(S.lvl),I=st.int*spm+g.int,V=st.vit*spm+g.vit,Wi=st.wis*spm+g.wis,c=S.circle;
-  D.maxHp=Math.round((100+V*18+S.lvl*8+g.hp)*(c>=7?1.3:1)*lateGrow(.02)*(hasM('dragonScale')?1.5:1)*(S.hiddenJob==='dragonLord'?1.3:1))+((S.job||S.hiddenJob==='dragonLord')?ADV2_HP_BONUS:0);D.maxMp=Math.round(60+I*5+c*25+g.mp);
-  D.pow=(10+S.lvl*1.5+g.pow)*(1+I*.04)*(1+(c-1)*.12)*lateGrow(.01);D.crit=Math.min(75,5+st.crit*spm*1.5+g.crit);D.critM=1.6+st.crit*spm*.02+(hasM('demonEye')?1:0)+(hasM('cerbRing')?.5:0);
-  D.cdr=Math.min(hasM('demonEye')?.7:.6,Wi*.01+g.cdr/100+(c>=9?.15:0)+(hasM('demonEye')?.25:0));D.mpR=(2+Wi*.35+c*.7)*(c>=8?2:1);D.hpR=.3+V*.08;D.def=g.def+Math.max(0,S.lvl-60)*6;D.slots=DEV.on?12:SLOTC[c];while(S.slots.length<D.slots)S.slots.push(null);
+  const g={pow:0,hp:0,def:0,mp:0,crit:0,cdr:0,int:0,vit:0,wis:0},pot={pow:0,hp:0,def:0,mp:0,crit:0,cdr:0,int:0,vit:0,wis:0};D.my=new Set();D.sk=null;
+  for(const k in S.eq){const it=S.eq[k];if(!it)continue;const s=itemStats(it);for(const j in s)g[j]+=s[j];for(const layer of [it.pot,it.epot])for(const line of layer.lines||[])if(pot[line.k]!==undefined)pot[line.k]+=+line.v||0;if(it.my){D.my.add(it.my);if(MYTH[it.my].sk)D.sk=MYTH[it.my].sk}}
+  const st=S.st,spm=statPointScale(S.lvl),I=(st.int*spm+g.int)*(1+pot.int/100),V=(st.vit*spm+g.vit)*(1+pot.vit/100),Wi=(st.wis*spm+g.wis)*(1+pot.wis/100),c=S.circle;
+  D.maxHp=Math.round((100+V*18+S.lvl*8+g.hp)*(c>=7?1.3:1)*lateGrow(.02)*(hasM('dragonScale')?1.5:1)*(S.hiddenJob==='dragonLord'?1.3:1)*(1+pot.hp/100))+((S.job||S.hiddenJob==='dragonLord')?ADV2_HP_BONUS:0);D.maxMp=Math.round((60+I*5+c*25+g.mp)*(1+pot.mp/100));
+  D.pow=(10+S.lvl*1.5+g.pow)*(1+I*.04)*(1+(c-1)*.12)*lateGrow(.01)*(1+pot.pow/100);D.crit=Math.min(75,5+st.crit*spm*1.5+g.crit+pot.crit);D.critM=1.6+st.crit*spm*.02+(hasM('demonEye')?1:0)+(hasM('cerbRing')?.5:0);
+  D.cdr=Math.min(hasM('demonEye')?.7:.6,Wi*.01+g.cdr/100+pot.cdr/100+(c>=9?.15:0)+(hasM('demonEye')?.25:0));D.mpR=(2+Wi*.35+c*.7)*(c>=8?2:1);D.hpR=.3+V*.08;D.def=(g.def+Math.max(0,S.lvl-60)*6)*(1+pot.def/100);D.slots=DEV.on?12:SLOTC[c];while(S.slots.length<D.slots)S.slots.push(null);
   D.dr=(S.hiddenJob==='dragonLord'?.15:0)+(hasM('spiderRobe')?.15:0)+(hasM('gargHeart')?.1:0)+(hasM('magmaCore')?.1:0);D.spd=(hasM('stormFeather')?1.3:1)*(hasM('ratRing')?1.15:1);
   if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
   if(mythChanged)save();
@@ -2373,7 +2411,7 @@ const PANELS={
       for(let i=S.inv.length;i<BAG();i++)h+='<div class="cell" style="cursor:default"></div>';
       {const sr=S.sellR??1;h+=`</div><div class="sellbar"><span>일괄 판매:</span>${[0,1,2,3,4].map(r=>`<button class="sr ${r<=sr?'on':''}" style="--rc:${RAR[r].c}" data-a="sellR:${r}">${RAR[r].n}</button>`).join('')}${btn(`${RAR[sr].n} 이하 모두 판매`,'sellJunk',S.inv.some(i=>!i.my&&i.r<=sr),'go')}</div></div><div>`}
       const eqd=Object.values(S.eq).find(i=>i&&i.id===ui.sel),it=eqd||S.inv.find(i=>i.id===ui.sel);
-      if(it){const cur=S.eq[it.slot];h+=`<b style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</b><div class="ds">아이템 레벨 ${it.il}</div>${statLine(it).split(' · ').join('<br>')}${it.my?`<div style="color:${RAR[5].c}">${MYTH[it.my].fx}</div>`:''}`;
+      if(it){const cur=S.eq[it.slot];h+=`<b style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</b><div class="ds">아이템 레벨 ${it.il}</div>${statLine(it).split(' · ').join('<br>')}${it.my?`<div style="color:${RAR[5].c}">${MYTH[it.my].fx}</div>`:''}`;h+=potentialPanel(it);
         if(eqd)h+=`<div style="margin-top:.4em">${btn('해제','unequip:'+it.slot,S.inv.length<BAG())}</div>`;
         else{if(cur)h+=`<p>지금 장착: <span style="color:${RAR[cur.r].c}">${itemName(cur)}</span><br>${statLine(cur)}</p>`;h+=`<div style="margin-top:.4em">${btn('장착','equip:'+it.id,true,'go')} ${it.my?'<span class="gold">신화 장비는 판매할 수 없습니다</span>':btn(`판매 +${sellPrice(it)}`,'sell:'+it.id)}</div>`}}
       else h+='<p>아이템을 누르면 정보가 보입니다.<br>테두리 색이 등급입니다.<br><span style="color:#c9c9d6">일반</span> <span style="color:#5ed36b">고급</span> <span style="color:#4aa3ff">희귀</span> <span style="color:#c04cff">영웅</span> <span style="color:#ffb02e">전설</span> <span style="color:#ff4a6a">신화</span></p>';
@@ -2390,6 +2428,8 @@ const ACT={
     if(broke&&ui.useProt&&S.prot>0){S.prot--;broke=false;saved=true}
     if(ok)it.up++;else if(broke){if(S.eq[it.slot]===it)S.eq[it.slot]=null;S.inv=S.inv.filter(x=>x!==it)}else if(drop)it.up--;
     recalc();save();forgeAnim(it,before,ok,drop,broke,saved)},
+  potRoll(id){rerollItemPotential(id,false)},
+  epotRoll(id){rerollItemPotential(id,true)},
   prot(){ui.useProt=!ui.useProt;sfx.ui()},
   buyProt(){if(!pay(protCost()))return;S.prot++;sfx.buy();toast('파괴 방지권을 샀습니다')},
   aff(el){if(S.job){toast('2차 전직 후에는 다른 속성을 깨울 수 없습니다');return sfx.err()}if(!S.affPend||S.aff.includes(el))return;S.aff.push(el);S.affPend--;sfx.circle();toast(`${EL[el].n} 속성이 깨어났습니다`);const s0=START[el];if(!S.grim[s0]){S.grim[s0]=1;toast(`마법서 ${SP[s0].n}을(를) 받았습니다`)}},
@@ -2513,7 +2553,7 @@ function bindInput(){
 }
 /* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장 데이터는 그대로) */
 /* FORCE_ID를 올려서 배포하면 켜져 있는 모든 게임이 어디에 있든 저장 후 바로 새로고침한다 */
-const FORCE_ID=3;
+const FORCE_ID=4;
 function autoUpdate(){if(!/^https?:$/.test(location.protocol)||/claude/.test(location.host))return;const url=location.href.split('#')[0];
   const sig=t=>{let h=0;for(let i=0;i<t.length;i+=7)h=(h*31+t.charCodeAt(i))|0;return h+':'+t.length};let base=null,ready=false;
   const check=()=>fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(!t)return;const m=/const FORCE_ID=(\d+);/.exec(t);if(m&&+m[1]>FORCE_ID){banner('긴급 업데이트','저장하고 바로 새로고침합니다');try{save()}catch(e){}setTimeout(()=>location.reload(),1500);return}const s2=sig(t);if(base===null){base=s2;return}if(s2!==base&&!ready){ready=true;banner('새 버전이 나왔어요','마을에 돌아가면 자동으로 업데이트됩니다 (저장은 그대로)')}}).catch(()=>{});
