@@ -388,32 +388,32 @@ const ELS=['fire','water','ice','wind','earth','thunder','holy','dark'];
 const HERO={fire:['#e65a4a','#a82c30','#5e1620','#ffcf7a'],water:['#5aa6ff','#2c68cc','#173478','#bfe6ff'],ice:['#a2c6ff','#6888e6','#3648a2','#eef8ff'],wind:['#6ccf98','#2c9a68','#165438','#e2ffea'],earth:['#c89c62','#8a5c32','#462c16','#f4e2b0'],thunder:['#4e5ea2','#2c3672','#151a3e','#ffe45a'],holy:['#f2ecdc','#c9bf9f','#847a60','#ffd04a'],dark:['#6c4c8e','#44306c','#22163a','#d070ff']};
 const START={fire:'fire',water:'aqua',ice:'ice',wind:'wind',earth:'rock',thunder:'lightning',holy:'light',dark:'heavy'};
 // [id, 이름, 속성, 서클, 종류, 마나, 쿨, 배율, 옵션, 설명]
-/* 2차 전직 전용 마법 (c:10, o.job=속성) */
+/* 2차 전직 전용 마법 (c:10, 동일 적 단일 시전 총 피해량 = 대응 9서클의 3배) */
 const SPELL_DATA=[
-  ['jfNova','플레임 노바','fire',10,'nova',127,14,14,{R:120,pulses:2,st:'burn',job:'fire'},'불꽃 고리가 두 번 터지며 주변을 태운다.'],
-  ['jfMeteor','메테오 레인','fire',10,'rain',223,36,6.2,{dur:5,rate:.07,R:44,v:'meteor',job:'fire'},'거대한 운석이 비처럼 쏟아진다.'],
-  ['jfPhoenix','피닉스 스트라이크','fire',10,'bolt',147,18,26,{spd:360,pierce:99,size:4,st:'burn',kb:160,job:'fire'},'불사조가 일직선으로 모든 적을 꿰뚫는다.'],
-  ['jwVortex','소용돌이','water',10,'zone',147,18,2.2,{R:100,dur:6,tick:.35,v:'flood',job:'water'},'거대한 소용돌이로 적을 붙잡아 휩쓴다.'],
-  ['jwLance','아쿠아 랜스','water',10,'bolt',97,9,9,{spd:380,n:3,spread:.12,pierce:99,kb:200,size:3,st:'slow',job:'water'},'물의 창 세 자루가 적을 꿰뚫고 밀어낸다.'],
-  ['jwWrath','대해의 분노','water',10,'wave',231,38,60,{wd:340,dist:560,spd:280,big:1,job:'water'},'바다 전체가 일어나 앞을 쓸어버린다.'],
-  ['jiAge','아이스 에이지','ice',10,'nova',238,40,26,{R:220,pulses:2,st:'freeze',stT:3,job:'ice'},'주변 세상을 통째로 얼린다.'],
-  ['jiLance','프로스트 랜스','ice',10,'spikes',104,10,9,{n:10,gap:22,R:20,st:'freeze',stT:2,job:'ice'},'얼음 창이 길게 솟아 적을 얼린다.'],
-  ['jiStorm','빙결 폭풍','ice',10,'rain',184,26,3.2,{dur:6,rate:.08,R:34,v:'ice',job:'ice'},'얼음 결정이 폭풍처럼 내린다.'],
-  ['jaCyclone','하이퍼 사이클론','wind',10,'zone',192,28,1.6,{R:50,dur:7,tick:.2,v:'torn',n:4,job:'wind'},'회오리 네 개가 적을 쫓아다닌다.'],
-  ['jaVacuum','진공 참','wind',10,'bolt',84,7,4.2,{spd:420,n:7,spread:.2,pierce:99,size:2,kb:140,job:'wind'},'진공의 칼날 일곱 줄기가 모든 것을 벤다.'],
-  ['jaSky','천공의 칼날','wind',10,'wave',223,36,58,{wd:300,dist:600,spd:320,big:1,job:'wind'},'하늘을 가르는 거대한 칼바람.'],
-  ['jeGaia','가이아의 분노','earth',10,'strike',166,22,30,{R:110,delay:.7,st:'stun',stT:2,kb:200,big:1,job:'earth'},'대지가 들고일어나 적을 짓뭉갠다.'],
-  ['jeWave','대지 파동','earth',10,'spikes',97,9,8,{n:14,gap:20,R:22,st:'stun',stT:1,job:'earth'},'땅을 따라 바위 가시가 길게 솟는다.'],
-  ['jeCollapse','대지 붕괴','earth',10,'zone',238,40,6.8,{R:250,dur:5,tick:.4,v:'quake',stT:.5,self:1,job:'earth'},'주변 땅이 모두 무너져 내린다.'],
-  ['jtStorm','썬더 스톰','thunder',10,'rain',192,28,3.4,{dur:6,rate:.06,R:40,v:'thunder',job:'thunder'},'번개 폭풍이 화면을 뒤덮는다.'],
-  ['jtPlasma','플라즈마 체인','thunder',10,'chain',76,6,5.5,{jumps:10,range:180,job:'thunder'},'플라즈마가 적 열 명을 잇달아 꿰뚫는다.'],
-  ['jtJudge','천벌','thunder',10,'strike',157,20,34,{R:90,delay:.5,st:'stun',stT:1.5,big:1,job:'thunder'},'하늘의 벌이 한 곳에 떨어진다.'],
-  ['jhCross','세인트 크로스','holy',10,'nova',127,14,15,{R:140,pulses:2,st:'stun',stT:.6,healP:.1,job:'holy'},'빛의 십자가가 두 번 터지며 적을 태우고 몸을 회복한다.'],
-  ['jhLance','홀리 랜스','holy',10,'bolt',91,8,8,{spd:400,n:3,spread:.15,pierce:99,size:3,job:'holy'},'빛의 창 세 자루가 적을 꿰뚫는다.'],
-  ['jhHeaven','천상의 빛','holy',10,'rain',200,30,4,{dur:6,rate:.07,R:36,v:'holy',job:'holy'},'하늘에서 빛의 기둥이 쏟아진다.'],
-  ['jdHole','블랙홀','dark',10,'zone',184,26,1.2,{R:110,dur:4,tick:.25,v:'grav',crush:8,job:'dark'},'모든 것을 빨아들여 짓누르는 검은 구멍.'],
-  ['jdSoul','소울 이터','dark',10,'bolt',97,9,7,{spd:240,n:4,spread:.4,homing:1,drain:.2,size:2,job:'dark'},'영혼을 먹는 탄 네 발이 적을 쫓아 생명력을 빼앗는다.'],
-  ['jdScythe','종말의 낫','dark',10,'wave',223,36,56,{wd:280,dist:520,spd:320,big:1,st:'weak',job:'dark'},'종말의 낫이 공간째 베어 낸다.'],
+  ['jfNova','플레임 노바','fire',10,'nova',127,14,512.19,{R:120,pulses:2,st:'burn',job:'fire'},'불꽃 고리가 두 번 터지며 주변을 태운다.'],
+  ['jfMeteor','메테오 레인','fire',10,'rain',223,36,14.2275,{dur:5,rate:.07,R:44,v:'meteor',job:'fire'},'거대한 운석이 비처럼 쏟아진다.'],
+  ['jfPhoenix','피닉스 스트라이크','fire',10,'bolt',147,18,1024.38,{spd:360,pierce:99,size:4,st:'burn',kb:160,job:'fire'},'불사조가 일직선으로 모든 적을 꿰뚫는다.'],
+  ['jwVortex','소용돌이','water',10,'zone',147,18,5.0766667,{R:100,dur:6,tick:.35,v:'flood',job:'water'},'거대한 소용돌이로 적을 붙잡아 휩쓴다.'],
+  ['jwLance','아쿠아 랜스','water',10,'bolt',97,9,30.46,{spd:380,n:3,spread:.12,pierce:99,kb:200,size:3,st:'slow',job:'water'},'물의 창 세 자루가 적을 꿰뚫고 밀어낸다.'],
+  ['jwWrath','대해의 분노','water',10,'wave',231,38,91.38,{wd:340,dist:560,spd:280,big:1,job:'water'},'바다 전체가 일어나 앞을 쓸어버린다.'],
+  ['jiAge','아이스 에이지','ice',10,'nova',238,40,70.89,{R:220,pulses:2,st:'freeze',stT:3,job:'ice'},'주변 세상을 통째로 얼린다.'],
+  ['jiLance','프로스트 랜스','ice',10,'spikes',104,10,14.178,{n:10,gap:22,R:20,st:'freeze',stT:2,job:'ice'},'얼음 창이 길게 솟아 적을 얼린다.'],
+  ['jiStorm','빙결 폭풍','ice',10,'rain',184,26,1.8904,{dur:6,rate:.08,R:34,v:'ice',job:'ice'},'얼음 결정이 폭풍처럼 내린다.'],
+  ['jaCyclone','하이퍼 사이클론','wind',10,'zone',192,28,1.1794286,{R:50,dur:7,tick:.2,v:'torn',n:4,job:'wind'},'회오리 네 개가 적을 쫓아다닌다.'],
+  ['jaVacuum','진공 참','wind',10,'bolt',84,7,23.5885714,{spd:420,n:7,spread:.2,pierce:99,size:2,kb:140,job:'wind'},'진공의 칼날 일곱 줄기가 모든 것을 벤다.'],
+  ['jaSky','천공의 칼날','wind',10,'wave',223,36,165.12,{wd:300,dist:600,spd:320,big:1,job:'wind'},'하늘을 가르는 거대한 칼바람.'],
+  ['jeGaia','가이아의 분노','earth',10,'strike',166,22,231.27,{R:110,delay:.7,st:'stun',stT:2,kb:200,big:1,job:'earth'},'대지가 들고일어나 적을 짓뭉갠다.'],
+  ['jeWave','대지 파동','earth',10,'spikes',97,9,16.5192857,{n:14,gap:20,R:22,st:'stun',stT:1,job:'earth'},'땅을 따라 바위 가시가 길게 솟는다.'],
+  ['jeCollapse','대지 붕괴','earth',10,'zone',238,40,17.79,{R:250,dur:5,tick:.4,v:'quake',stT:.5,self:1,job:'earth'},'주변 땅이 모두 무너져 내린다.'],
+  ['jtStorm','썬더 스톰','thunder',10,'rain',192,28,7.38,{dur:6,rate:.06,R:40,v:'thunder',job:'thunder'},'번개 폭풍이 화면을 뒤덮는다.'],
+  ['jtPlasma','플라즈마 체인','thunder',10,'chain',76,6,738,{jumps:10,range:180,job:'thunder'},'플라즈마가 적 열 명을 잇달아 꿰뚫는다.'],
+  ['jtJudge','천벌','thunder',10,'strike',157,20,738,{R:90,delay:.5,st:'stun',stT:1.5,big:1,job:'thunder'},'하늘의 벌이 한 곳에 떨어진다.'],
+  ['jhCross','세인트 크로스','holy',10,'nova',127,14,79.5,{R:140,pulses:2,st:'stun',stT:.6,healP:.1,job:'holy'},'빛의 십자가가 두 번 터지며 적을 태우고 몸을 회복한다.'],
+  ['jhLance','홀리 랜스','holy',10,'bolt',91,8,53,{spd:400,n:3,spread:.15,pierce:99,size:3,job:'holy'},'빛의 창 세 자루가 적을 꿰뚫는다.'],
+  ['jhHeaven','천상의 빛','holy',10,'rain',200,30,1.8488372,{dur:6,rate:.07,R:36,v:'holy',job:'holy'},'하늘에서 빛의 기둥이 쏟아진다.'],
+  ['jdHole','블랙홀','dark',10,'zone',184,26,8.91375,{R:110,dur:4,tick:.25,v:'grav',crush:8,job:'dark'},'모든 것을 빨아들여 짓누르는 검은 구멍.'],
+  ['jdSoul','소울 이터','dark',10,'bolt',97,9,35.655,{spd:240,n:4,spread:.4,homing:1,drain:.2,size:2,job:'dark'},'영혼을 먹는 탄 네 발이 적을 쫓아 생명력을 빼앗는다.'],
+  ['jdScythe','종말의 낫','dark',10,'wave',223,36,142.62,{wd:280,dist:520,spd:320,big:1,st:'weak',job:'dark'},'종말의 낫이 공간째 베어 낸다.'],
   ['arrow','매직 애로우','none',1,'bolt',0,.3,1.0,{spd:300,kb:40},'마나 덩어리를 쏘는 기본 공격. 좌클릭으로 쓴다.'],
   ['shield','쉴드','none',2,'shield',18,40,0.2,{dur:5},'5초간 받는 피해의 절반을 대신 받는다. (최대 생명력 20%까지)'],
   ['meteorS','메테오 스트라이크','none',9,'meteor',150,45,75.8,{R:100},'우주에서 거대한 운석을 떨어뜨린다.'],
@@ -1985,7 +1985,12 @@ function update(dt){
       else if(k.kind==='gold'){if(hasM('ratRing'))k.val=Math.round(k.val*1.4);S.gold+=k.val;sfx.coin();G.texts.push({x:p.x,y:p.y-34,vy:-20,life:.6,str:'+'+k.val,col:'#ffe27a',sc:1})}
       else if(k.kind==='heart'){p.hp=Math.min(D.maxHp,p.hp+D.maxHp*.2);sfx.potion()}
       else if(k.kind==='dragonToken'){const key=k.val;S.dragonPending=(S.dragonPending||[]).filter(x=>x!==key);if(!S.dragonTokens.includes(key))S.dragonTokens.push(key);toast('획득: [???] ??? · 등급 ???');save();sfx.item()}
-      else if(k.kind==='item'){if(S.inv.length>=BAG()&&!k.item.my){const g=sellPrice(k.item);S.gold+=g;toast(`가방이 가득 차 ${itemName(k.item)} 자동 판매 (+${g})`)}else{S.inv.push(k.item);toast(`획득: <span style="color:${RAR[k.item.r].c}">[${RAR[k.item.r].n}] ${itemName(k.item)}</span>`)}sfx.item()}
+      else if(k.kind==='item'){
+        if(S.inv.length>=BAG()&&k.item.my){let dropI=-1,cheap=Infinity;for(let i=0;i<S.inv.length;i++)if(!S.inv[i].my){const price=sellPrice(S.inv[i]);if(price<cheap){cheap=price;dropI=i}}
+          if(dropI<0){if(!k.blockedFull){toast('가방이 신화 장비로 가득 차 신화를 주울 수 없습니다');k.blockedFull=true}k.vx=k.vy=0;return true}
+          const sold=S.inv.splice(dropI,1)[0],g=sellPrice(sold);S.gold+=g;S.inv.push(k.item);toast(`${itemName(sold)} 자동 판매 (+${g}) · 신화 장비 획득: ${itemName(k.item)}`)
+        }else if(S.inv.length>=BAG()){const g=sellPrice(k.item);S.gold+=g;toast(`가방이 가득 차 ${itemName(k.item)} 자동 판매 (+${g})`)}
+        else{S.inv.push(k.item);toast(`획득: <span style="color:${RAR[k.item.r].c}">[${RAR[k.item.r].n}] ${itemName(k.item)}</span>`)}sfx.item()}
       else{S[k.kind]+=k.val;if(k.kind==='hpPot'||k.kind==='mpPot')S[k.kind]=Math.min(9,S[k.kind]);if(k.kind==='prot')toast('파괴 방지권을 얻었습니다');sfx.coin()}
       return false}
     return true});
@@ -2368,7 +2373,7 @@ const PANELS={
       const eqd=Object.values(S.eq).find(i=>i&&i.id===ui.sel),it=eqd||S.inv.find(i=>i.id===ui.sel);
       if(it){const cur=S.eq[it.slot];h+=`<b style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</b><div class="ds">아이템 레벨 ${it.il}</div>${statLine(it).split(' · ').join('<br>')}${it.my?`<div style="color:${RAR[5].c}">${MYTH[it.my].fx}</div>`:''}`;
         if(eqd)h+=`<div style="margin-top:.4em">${btn('해제','unequip:'+it.slot,S.inv.length<BAG())}</div>`;
-        else{if(cur)h+=`<p>지금 장착: <span style="color:${RAR[cur.r].c}">${itemName(cur)}</span><br>${statLine(cur)}</p>`;h+=`<div style="margin-top:.4em">${btn('장착','equip:'+it.id,true,'go')} ${btn(`판매 +${sellPrice(it)}`,'sell:'+it.id)}</div>`}}
+        else{if(cur)h+=`<p>지금 장착: <span style="color:${RAR[cur.r].c}">${itemName(cur)}</span><br>${statLine(cur)}</p>`;h+=`<div style="margin-top:.4em">${btn('장착','equip:'+it.id,true,'go')} ${it.my?'<span class="gold">신화 장비는 판매할 수 없습니다</span>':btn(`판매 +${sellPrice(it)}`,'sell:'+it.id)}</div>`}}
       else h+='<p>아이템을 누르면 정보가 보입니다.<br>테두리 색이 등급입니다.<br><span style="color:#c9c9d6">일반</span> <span style="color:#5ed36b">고급</span> <span style="color:#4aa3ff">희귀</span> <span style="color:#c04cff">영웅</span> <span style="color:#ffb02e">전설</span> <span style="color:#ff4a6a">신화</span></p>';
       h+='</div></div>'}
     else h+=grimList('own');
@@ -2426,7 +2431,7 @@ const ACT={
   sel(id){ui.sel=+id;sfx.ui()},
   equip(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;const it=S.inv[i],old=S.eq[it.slot];S.inv.splice(i,1);if(old)S.inv.push(old);S.eq[it.slot]=it;recalc();sfx.buy()},
   unequip(k){const it=S.eq[k];if(!it||S.inv.length>=BAG())return;S.eq[k]=null;S.inv.push(it);recalc();sfx.ui()},
-  sell(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;S.gold+=sellPrice(S.inv[i]);S.inv.splice(i,1);ui.sel=null;sfx.coin()},
+  sell(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;if(S.inv[i].my){toast('신화 장비는 판매할 수 없습니다');return sfx.err()}S.gold+=sellPrice(S.inv[i]);S.inv.splice(i,1);ui.sel=null;sfx.coin()},
   sellR(r){S.sellR=+r},
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
   claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(questXpReward(q))},
