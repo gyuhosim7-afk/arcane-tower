@@ -1395,6 +1395,7 @@ function drop(kind,x,y,val,item){const a=rnd(TAU),s=rnd(20,70);G.picks.push({kin
 function kill(e){
   e.dead=true;const d=MON[e.type],f=G.floor;deathFx(e,e.type==='bat'?A.bat[0]:e.spr);
   if(e.clone){burst(e.x,e.y-e.r,16,e.cols,80,.5);return}
+  if(e.boss&&G.p&&!G.dead){G.p.hp=D.maxHp;toast('보스를 처치해 체력이 모두 회복되었습니다')}
   if(e.boss)for(const c of G.en)if(c.clone&&!c.dead){c.dead=true;burst(c.x,c.y-c.r,16,c.cols,80,.5)}
   S.codex[e.type]=(S.codex[e.type]||0)+1;
   burst(e.x,e.y-e.r,e.boss?70:16,e.cols,e.boss?160:80,e.boss?1:.5,{drag:2});
