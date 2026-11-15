@@ -1625,7 +1625,7 @@ const JOBS={
   dark:{n:'네크로맨서',c:'#c94cff',sk:'망자의 군세',d:'적이 죽으면 해골 하수인으로 되살린다 (최대 5마리, 20초)',sd:'해골 하수인 6마리를 바로 불러낸다 (15초)',ic:'gravWave',sk2:'영혼 포식',sd2:'주변 적의 생명력을 빼앗아 자신을 회복한다',ic2:'manaDrain'}};
 const JOB_CD=40,JOB_MP=90,JB={tide:0,armor:0,allies:0};
 const jobIs=k=>S.hiddenJob==='dragonLord'?false:S.job===k;
-function grantJobSpells(){if(!S.job)return;for(const sp of SPL)if(sp.o&&sp.o.job===S.job&&!S.grim[sp.id])S.grim[sp.id]=1}
+function grantJobSpells(){if(!S.job)return;const aff=Array.isArray(S.aff)?S.aff.filter(el=>ELS.includes(el)):[];S.aff=[S.job,...aff.filter(el=>el!==S.job)];for(const sp of SPL)if((sp.o&&sp.o.job===S.job)||(sp.el===S.job&&sp.c<=S.circle&&!(sp.o&&sp.o.job)))S.grim[sp.id]=S.grim[sp.id]||1;const starter=SP[START[S.job]];if(starter&&S.grim[starter.id]&&Array.isArray(S.slots)&&!S.slots.slice(0,D.slots).includes(starter.id)){const free=S.slots.slice(0,D.slots).indexOf(null);if(free>=0)S.slots[free]=starter.id}}
 const DRAGON_CLASS={n:'드래곤 로드',c:'#c94cff',d:'용왕의 권능: 모든 피해 +30%. 용의 피: 최대 체력 +30%, 화상·중독·출혈 면역. 용린: 받는 피해 -15%, 체력 50% 아래에서 3초간 피해 -50% (60초마다). 용의 분노: 주거나 받는 피해로 분노 게이지가 찬다.'};
 const DRAGON_SPS=[
   {id:'dragon_breath',n:'용의 숨결',d:'전방 부채꼴을 3초간 불태우는 반복 피해 · 분노 소모 없음',el:'fire',c:9,k:'dragon',mp:0,cd:15,m:12,o:{},dragonSkill:true,job:'dragonLord',icon:'fireStorm'},
@@ -2570,7 +2570,7 @@ function bindInput(){
 }
 /* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장은 그대로) */
 /* FORCE_ID를 올려서 배포하면 켜져 있는 모든 게임이 어디에 있든 저장 후 바로 새로고침한다 */
-const FORCE_ID=11;
+const FORCE_ID=12;
 function autoUpdate(){if(!/^https?:$/.test(location.protocol)||/claude/.test(location.host))return;const url=location.href.split('#')[0];
   const sig=t=>{let h=0;for(let i=0;i<t.length;i+=7)h=(h*31+t.charCodeAt(i))|0;return h+':'+t.length};let base=null,ready=false;
   const check=()=>fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(!t)return;const m=/const FORCE_ID=(\d+);/.exec(t);if(m&&+m[1]>FORCE_ID){banner('긴급 업데이트','저장하고 바로 새로고침합니다');try{save()}catch(e){}setTimeout(()=>location.reload(),1500);return}const s2=sig(t);if(base===null){base=s2;return}if(s2!==base&&!ready){ready=true;banner('새 버전이 나왔어요','마을에 돌아가면 자동으로 업데이트됩니다 (저장은 그대로)')}}).catch(()=>{});
