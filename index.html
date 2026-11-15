@@ -904,11 +904,11 @@ function ensureItemPotentials(it){
   if(!valid(it.pot))it.pot=rollPotential(it,false);
   if(!valid(it.epot))it.epot=rollPotential(it,true);
 }
-function potentialCost(it,lower=false){const il=Math.max(1,Math.floor(+it.il||1)),m=lower?2:1;return{gold:(50+il*10)*m,ess:Math.max(1,Math.ceil(il/30))*m}}
+function potentialCost(it,lower=false){const m=lower?2:1;return{gold:100000*m,ess:500*m}}
 function potentialLineText(line){const op=POT_OPTIONS.find(o=>o.k===line.k),v=Math.round((+line.v||0)*10)/10;return`${op?op.n:line.k} +${Number.isInteger(v)?v:v.toFixed(1)}%`}
 function potentialBox(it,lower=false){
   const key=lower?'epot':'pot',name=lower?'아랫잠':'윗잠',data=it[key],cost=potentialCost(it,lower),grade=data?clamp(data.g|0,0,3):0;
-  return`<div style="margin:.5em 0;padding:.5em;border:1px solid ${POT_COLORS[grade]};border-radius:6px;background:rgba(25,30,55,.45)"><b style="color:${POT_COLORS[grade]}">${name} · ${POT_GRADES[grade]}</b><div class="ds" style="margin:.25em 0">${(data&&data.lines||[]).map(potentialLineText).join('<br>')}</div>${btn(`${name} 재설정 · ${cost.gold.toLocaleString('ko-KR')}골드 / 정수 ${cost.ess}`,`${lower?'epotRoll':'potRoll'}:${it.id}`,true,'go')}</div>`;
+  return`<div style="margin:.5em 0;padding:.5em;border:1px solid ${POT_COLORS[grade]};border-radius:6px;background:rgba(25,30,55,.45)"><b style="color:${POT_COLORS[grade]}">${name} · ${POT_GRADES[grade]}</b><div class="ds" style="margin:.25em 0">${(data&&data.lines||[]).map(potentialLineText).join('<br>')}</div>${btn(`${name} 재설정 · ${cost.gold.toLocaleString('ko-KR')}골드 / 정수 ${cost.ess.toLocaleString('ko-KR')}`,`${lower?'epotRoll':'potRoll'}:${it.id}`,true,'go')}</div>`;
 }
 function potentialPanel(it){ensureItemPotentials(it);return`<div style="margin-top:.5em"><div class="sec">잠재능력</div>${potentialBox(it,false)}${potentialBox(it,true)}</div>`}
 function rerollItemPotential(id,lower=false){
@@ -2551,9 +2551,9 @@ function bindInput(){
   $('panelX').onclick=closePanel;$('panel').addEventListener('mousedown',e=>{if(e.target===$('panel'))closePanel()});
   $('bBag').onclick=()=>{ui.tab='stat';openPanel('char')};$('bInv').onclick=()=>{ui.tab='inv';openPanel('char')};$('bScan').onclick=toggleScan;$('bSnd').onclick=toggleMute;$('bAuto').onclick=toggleAuto;$('bFull').onclick=toggleFull;document.addEventListener('fullscreenchange',()=>{$('bFull').textContent=document.fullscreenElement?'창 모드':'전체화면';setTimeout(resize,50)});
 }
-/* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장 데이터는 그대로) */
+/* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장은 그대로) */
 /* FORCE_ID를 올려서 배포하면 켜져 있는 모든 게임이 어디에 있든 저장 후 바로 새로고침한다 */
-const FORCE_ID=4;
+const FORCE_ID=5;
 function autoUpdate(){if(!/^https?:$/.test(location.protocol)||/claude/.test(location.host))return;const url=location.href.split('#')[0];
   const sig=t=>{let h=0;for(let i=0;i<t.length;i+=7)h=(h*31+t.charCodeAt(i))|0;return h+':'+t.length};let base=null,ready=false;
   const check=()=>fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(!t)return;const m=/const FORCE_ID=(\d+);/.exec(t);if(m&&+m[1]>FORCE_ID){banner('긴급 업데이트','저장하고 바로 새로고침합니다');try{save()}catch(e){}setTimeout(()=>location.reload(),1500);return}const s2=sig(t);if(base===null){base=s2;return}if(s2!==base&&!ready){ready=true;banner('새 버전이 나왔어요','마을에 돌아가면 자동으로 업데이트됩니다 (저장은 그대로)')}}).catch(()=>{});
