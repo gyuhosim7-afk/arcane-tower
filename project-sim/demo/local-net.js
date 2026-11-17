@@ -2,6 +2,7 @@
 import { World } from "../server/game/world.js";
 
 let world = null;
+export const getWorld = () => world;
 export class LocalNet {
   constructor(onMsg, onClose) { this.onMsg = onMsg; this.onClose = onClose; this.rtt = 0; }
   async connect() {

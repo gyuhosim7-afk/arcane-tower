@@ -12,6 +12,7 @@
     "dev": "node --disable-warning=ExperimentalWarning --watch server/main.js",
     "test": "node --disable-warning=ExperimentalWarning tools/bot-test.js",
     "build:demo": "node demo/build.mjs",
+    "build:artifact": "node demo/build-artifact.mjs",
     "new-admin-key": "node tools/new-admin-key.js",
     "build:cf": "node tools/build-cf.mjs",
     "dev:cf": "node tools/build-cf.mjs && wrangler dev",

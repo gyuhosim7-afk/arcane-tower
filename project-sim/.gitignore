@@ -8,3 +8,4 @@ demo/dist/
 cf-dist/
 .wrangler/
 .dev.vars
+demo/artifact/
