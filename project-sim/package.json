@@ -1,0 +1,27 @@
+{
+  "name": "abyss-run",
+  "version": "0.1.0",
+  "description": "2D 픽셀 던전 RPG — 서버 판정형 멀티플레이 웹 게임",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/main.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server/main.js",
+    "test": "node --disable-warning=ExperimentalWarning tools/bot-test.js",
+    "build:demo": "node demo/build.mjs",
+    "new-admin-key": "node tools/new-admin-key.js",
+    "build:cf": "node tools/build-cf.mjs",
+    "dev:cf": "node tools/build-cf.mjs && wrangler dev",
+    "deploy": "node tools/build-cf.mjs && wrangler deploy"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12",
+    "wrangler": "^4.163.0"
+  }
+}
