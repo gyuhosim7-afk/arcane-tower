@@ -2741,7 +2741,7 @@ buildAssets();
   requestAnimationFrame(frame);
 })();
 /* 마을 멀티플레이: 마을에 있는 친구들이 서로 보이고 채팅할 수 있다 (Cloudflare 서버) */
-const MP_URL='';
+const MP_URL='wss://arcane-tower-town.arcanetower.workers.dev';
 const NET={ws:null,on:false,pl:{},last:0,lx:-1,ly:-1,retry:0,ch:'1',log:[]};
 function netWant(){return !!MP_URL&&G.started&&G.zone==='town'&&!G.title&&!!G.p}
 function netHi(){const p=G.p;return{t:'hi',nick:S.nick,title:cleanTitle(S.title||''),el:S.aff[0],job:S.job||'',lv:S.lvl,rb:S.eq.robe?S.eq.robe.r:-1,x:Math.round(p.x),y:Math.round(p.y),f:p.face}}

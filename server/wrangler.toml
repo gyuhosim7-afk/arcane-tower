@@ -1,6 +1,8 @@
 name = "arcane-tower-town"
 main = "src/worker.js"
 compatibility_date = "2025-01-01"
+workers_dev = true
+preview_urls = false
 
 [[durable_objects.bindings]]
 name = "TOWN"
