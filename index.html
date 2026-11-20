@@ -2345,7 +2345,7 @@ function render(){flushK();
   for(const it of m.inter)if(it.arena)drawArenaSign(it.x,it.y);
   for(const f of G.fx)if(f.layer==='g')f.draw();
   for(const k of G.picks)if(k.x>=cx-28&&k.x<=cx+W+28&&k.y>=cy-28&&k.y<=cy+H+28)drawPick(k);
-  const dl=[];for(const e of G.en)dl.push(e);for(const it of m.inter)if(it.npc||it.chest)dl.push(it);if(G.zone==='town')for(const id in NET.pl)if(NET.pl[id].zone==='town')dl.push(NET.pl[id]);if(DU.on&&DU.o&&G.zone==='arena')dl.push(DU.o);if(!G.title)dl.push(p);dl.sort((a,b)=>a.y-b.y);
+  const dl=[];for(const e of G.en)dl.push(e);for(const it of m.inter)if(it.npc||it.chest)dl.push(it);if(G.zone==='town')for(const id in NET.pl)if(NET.pl[id].zone==='town')dl.push(NET.pl[id]);else{};if((G.zone==='tower'||G.zone==='underdeep')&&(CO.on||coLead()))for(const id in NET.pl){const o=NET.pl[id];if(NET.party.includes(id)&&o.zone===netZone()&&o.fl===netFl())dl.push(o)}if(DU.on&&DU.o&&G.zone==='arena')dl.push(DU.o);if(!G.title)dl.push(p);dl.sort((a,b)=>a.y-b.y);
   for(const o of dl){if(o!==p&&(o.x<cx-56||o.x>cx+W+56||o.y<cy-56||o.y>cy+H+56))continue;if(o===p)drawPlayer(p);else if(o.other)drawOther(o);else if(o.chest){const im=A.chest[o.chest][o.open?1:0];shadow(o.x,o.y,20);ctx.drawImage(im,Math.round(o.x-im.width/2),Math.round(o.y-im.height+2));if(!o.open){if((G.time*2|0)%3===0&&Math.random()<.2)part(o.x+rnd(-9,9),o.y-rnd(4,14),0,-10,.6,o.chest==='gold'?'#ffd84a':'#ffffff',1);light(o.x,o.y-8,o.chest==='gold'?50:26)}}else if(o.npc){shadow(o.x,o.y,12);drawSpr(A[o.npc],o.x,o.y+1-((G.time*2+o.x|0)%2),p.x<o.x,'')}else drawEnemy(o)}
   for(const b of G.pr)if(b.x>=cx-24&&b.x<=cx+W+24&&b.y>=cy-24&&b.y<=cy+H+24)drawBolt(b);
   for(const b of G.ep){if(b.x<cx-24||b.x>cx+W+24||b.y<cy-24||b.y>cy+H+24)continue;
@@ -2812,7 +2812,7 @@ function tradeSend(){const T=NET.tr;if(!T)return;T.mine=T.mine.filter(id=>S.inv.
 function netUpdate(dt){const want=netWant();$('bChat').hidden=!want||!NET.on;$('bSoc').hidden=!MP_URL||!G.started;$('chatBox').hidden=!want;
   if(!want){if(NET.ws)netDrop();return}netConnect();$('netInfo').textContent=NET.on?`온라인 · ${Object.keys(NET.pl).length+1}명`:'서버 연결 중...';
   if(NET.on){const p=G.p,now=performance.now();
-    if(G.zone==='town'){const moved=Math.abs(p.x-NET.lx)+Math.abs(p.y-NET.ly)>.5;if(now-NET.last>(moved?100:2500)){NET.last=now;NET.lx=p.x;NET.ly=p.y;netSend({t:'mv',x:Math.round(p.x),y:Math.round(p.y),f:p.face,w:p.walk>0?1:0})}}
+    if(G.zone==='town'||G.zone==='tower'||G.zone==='underdeep'){const moved=Math.abs(p.x-NET.lx)+Math.abs(p.y-NET.ly)>.5;if(now-NET.last>(moved?100:2500)){NET.last=now;NET.lx=p.x;NET.ly=p.y;netSend({t:'mv',x:Math.round(p.x),y:Math.round(p.y),f:p.face,w:p.walk>0?1:0})}}
     const k=netZone()+netFl()+'|'+S.lvl+'|'+S.nick+'|'+S.title;if(k!==NET.lk||now-NET.lst>1500){if(k!==NET.lk||Math.abs(p.hp-(NET.lhp||0))>1||now-NET.lst>8000){NET.lk=k;NET.lst=now;NET.lhp=p.hp;netSend(Object.assign({t:'st'},netInfo()))}}}
   for(const id in NET.pl){const o=NET.pl[id],k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;if(Math.hypot(dx,dy)>120){o.x=o.tx;o.y=o.ty}else{o.x+=dx*k;o.y+=dy*k}o.walk=(o.w||Math.hypot(dx,dy)>1.5)?o.walk+dt*9:0}}
 function netParty(){const box=$('partyBox');const mem=NET.party.filter(id=>id!==NET.me).map(id=>NET.pl[id]).filter(Boolean);box.hidden=!mem.length||!netWant();if(box.hidden)return;
