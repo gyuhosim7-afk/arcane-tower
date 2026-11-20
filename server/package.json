@@ -1,0 +1,13 @@
+{
+  "name": "arcane-tower-town",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "deploy": "node build.mjs && wrangler deploy"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^4.2.2",
+    "wrangler": "^4.0.0"
+  }
+}
