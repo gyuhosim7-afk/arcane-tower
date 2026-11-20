@@ -9,7 +9,7 @@ const num = (v, lo, hi) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v))
 const ELS = ["fire", "water", "ice", "wind", "earth", "thunder", "holy", "dark"];
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type" };
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "content-type": "application/json" } });
-const ZONES = ["town", "tower", "underdeep", "udtown", "other"];
+const ZONES = ["town", "tower", "underdeep", "udtown", "arena", "other"];
 
 export default {
   async fetch(req, env) {
@@ -77,9 +77,15 @@ export class Town extends DurableObject {
     return pid ? this.all().filter((x) => x.a.party === pid) : [];
   }
   partySync(pid) {
-    const mem = this.partyList(pid);
+    let mem = this.partyList(pid);
     if (mem.length === 1) { mem[0].a.party = null; this.save(mem[0]); this.send(mem[0].w, { t: "party", members: [] }); return; }
-    this.sendTo(mem, { t: "party", members: mem.map((x) => x.a.id) });
+    if (mem.length && !mem.some((x) => x.a.id === pid)) {
+      // 파티장이 나가면 남은 사람 중 한 명이 파티장
+      const np = mem[0].a.id;
+      for (const x of mem) { x.a.party = np; this.save(x); }
+      pid = np; mem = this.partyList(pid);
+    }
+    this.sendTo(mem, { t: "party", members: mem.map((x) => x.a.id), lead: pid });
   }
   async tradeClose(x, why) {
     const tr = x.a.trade;
@@ -99,7 +105,7 @@ export class Town extends DurableObject {
     const x = { w: ws, a };
     const now = Date.now();
     if (now - a.win > 1000) { a.win = now; a.n = 0; }
-    if (++a.n > 40 || typeof raw !== "string" || raw.length > 20000) return;
+    if (++a.n > 70 || typeof raw !== "string" || raw.length > 20000) return;
     let m;
     try { m = JSON.parse(raw); } catch { return; }
     const others = () => this.all().filter((y) => y.a.id !== a.id);
@@ -163,7 +169,7 @@ export class Town extends DurableObject {
       const y = this.find(a.pinv);
       a.pinv = null;
       if (!y || a.party) { this.save(x); return this.send(ws, { t: "sys", m: "초대가 사라졌습니다" }); }
-      if (!y.a.party) { y.a.party = crypto.randomUUID().slice(0, 8); this.save(y); }
+      if (!y.a.party) { y.a.party = y.a.id; this.save(y); }
       if (this.partyList(y.a.party).length >= PARTY_MAX) { this.save(x); return this.send(ws, { t: "sys", m: "파티가 가득 찼습니다" }); }
       a.party = y.a.party; this.save(x);
       this.partySync(a.party);
@@ -177,6 +183,37 @@ export class Town extends DurableObject {
       a.party = null; this.save(x);
       this.send(ws, { t: "party", members: [] });
       this.partySync(pid);
+    }
+    // 파티 전투: 파티장 화면의 몬스터 정보와 파티원의 공격을 서로 전달
+    else if (m.t === "prel") {
+      if (!a.party || raw.length > 19000) return;
+      const o = JSON.stringify({ t: "prel", from: a.id, d: m.d });
+      for (const y of this.partyList(a.party)) if (y.a.id !== a.id) try { y.w.send(o); } catch {}
+    }
+    // 결투 (PvP)
+    else if (m.t === "dreq") {
+      const y = this.find(m.to);
+      if (!y || y.a.id === a.id || y.a.duel || a.duel || y.a.trade || a.trade) return this.send(ws, { t: "sys", m: "지금은 결투할 수 없습니다" });
+      if (y.a.p.zone !== "town" || a.p.zone !== "town") return this.send(ws, { t: "sys", m: "결투는 둘 다 마을에 있을 때만 됩니다" });
+      y.a.dreq = a.id; this.save(y);
+      this.send(y.w, { t: "dreq", from: a.id, nick: a.p.nick });
+      this.send(ws, { t: "sys", m: y.a.p.nick + " 님에게 결투를 신청했습니다" });
+    } else if (m.t === "dacc" || m.t === "dno") {
+      const y = this.find(a.dreq);
+      a.dreq = null; this.save(x);
+      if (!y) return this.send(ws, { t: "sys", m: "결투 신청이 사라졌습니다" });
+      if (m.t === "dno") return this.send(y.w, { t: "sys", m: a.p.nick + " 님이 결투를 거절했습니다" });
+      if (y.a.duel || a.duel) return this.send(ws, { t: "sys", m: "상대가 다른 결투 중입니다" });
+      a.duel = y.a.id; y.a.duel = a.id; this.save(x); this.save(y);
+      this.send(y.w, { t: "dstart", with: a.id, nick: a.p.nick, el: a.p.el, rb: a.p.rb, side: 0 });
+      this.send(ws, { t: "dstart", with: y.a.id, nick: y.a.p.nick, el: y.a.p.el, rb: y.a.p.rb, side: 1 });
+    } else if (m.t === "drel") {
+      const y = a.duel && this.find(a.duel);
+      if (y && y.a.duel === a.id) this.send(y.w, { t: "drel", d: m.d });
+    } else if (m.t === "dend") {
+      const y = a.duel && this.find(a.duel);
+      a.duel = null; this.save(x);
+      if (y && y.a.duel === a.id) { y.a.duel = null; this.save(y); this.send(y.w, { t: "dend", res: ["lose", "time"].includes(m.res) ? m.res : "quit" }); }
     }
     // 거래
     else if (m.t === "treq") {
@@ -237,6 +274,7 @@ export class Town extends DurableObject {
       if (o) { o.a.trade = null; this.save(o); this.send(o.w, { t: "tclose", why: "상대가 나갔습니다" }); await this.ctx.storage.delete("off:" + o.a.id); }
       await this.ctx.storage.delete("off:" + a.id);
     }
+    if (a.duel) { const o = this.find(a.duel); if (o && o.a.duel === a.id) { o.a.duel = null; this.save(o); this.send(o.w, { t: "dend", res: "quit" }); } }
     this.sendTo(this.all(), { t: "bye", id: a.id });
     if (a.party) this.partySync(a.party);
   }
