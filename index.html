@@ -2663,7 +2663,7 @@ function bindInput(){
 }
 /* 자동 업데이트: 웹사이트에서 새 버전이 올라오면 저장하고 마을에서 새로고침 (저장은 그대로) */
 /* FORCE_ID를 올려서 배포하면 켜져 있는 모든 게임이 어디에 있든 저장 후 바로 새로고침한다 */
-const FORCE_ID=17;
+const FORCE_ID=18;
 function autoUpdate(){if(!/^https?:$/.test(location.protocol)||/claude/.test(location.host))return;const url=location.href.split('#')[0];
   const sig=t=>{let h=0;for(let i=0;i<t.length;i+=7)h=(h*31+t.charCodeAt(i))|0;return h+':'+t.length};let base=null,ready=false;
   const check=()=>fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(t=>{if(!t)return;const m=/const FORCE_ID=(\d+);/.exec(t);if(m&&+m[1]>FORCE_ID){banner('긴급 업데이트','저장하고 바로 새로고침합니다');try{save()}catch(e){}setTimeout(()=>location.reload(),1500);return}const s2=sig(t);if(base===null){base=s2;return}if(s2!==base&&!ready){ready=true;banner('새 버전이 나왔어요','마을에 돌아가면 자동으로 업데이트됩니다 (저장은 그대로)')}}).catch(()=>{});
@@ -2716,6 +2716,9 @@ const API_URL='https://arcane-tower-town.arcanetower.workers.dev/api/',AUTH_KEY=
 let AUTH=null;try{AUTH=JSON.parse(localStorage.getItem(AUTH_KEY)||'null')}catch(e){AUTH=null}
 const CLOUD={dirty:false,busy:false,dead:false,fail:0};
 function api(path,body){return fetch(API_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.assign({token:AUTH&&AUTH.token},body)),keepalive:path==='save'&&JSON.stringify(body).length<60000}).then(r=>r.json()).catch(()=>({err:'net'}))}
+function loginNotice(){const box=$('codeBox'),rows=legacyChars(),l=$('charList');if(l)l.style.display='none';box.hidden=false;$('codeTa').style.display='none';$('codeGo').style.display='none';$('codeTitle').textContent='이제 로그인이 필요해요!';
+  $('codeHelp').innerHTML=rows.length?`캐릭터를 서버에 저장하도록 바뀌었어요.<br><b class="gold">[회원가입]</b>을 하면 이 기기의 캐릭터 <b class="gold">${String(rows[0][1].nick||'마법사').replace(/[<>&"']/g,'')} Lv.${rows[0][1].lvl}</b>${rows.length>1?` 외 ${rows.length-1}개`:''}를 그대로 가져올 수 있어요.<br>가입 후 다른 기기에서도 같은 닉네임·비밀번호로 이어서 할 수 있어요.`:'닉네임과 비밀번호로 [회원가입]한 뒤 시작해 주세요.<br>다른 기기에서도 같은 계정으로 이어서 할 수 있어요.';
+  $('codeX').textContent='확인';$('codeX').onclick=()=>{box.hidden=true;$('codeX').textContent='닫기';$('auU').focus()}}
 function authMsg(t){$('auMsg').textContent=t||''}
 function authUI(){const on=!!(AUTH&&AUTH.token),nm=on?(AUTH.name||AUTH.u):'';$('auHint').hidden=!on;$('bOut').hidden=!on;$('bCont').hidden=!on||!AUTH.has;$('bNew').hidden=!on||!!AUTH.has;if(on&&AUTH.has)$('bCont').textContent=`${nm}(으)로 계속하기 · Lv.${S.lvl}`;if(on&&!AUTH.has)$('bNew').textContent=`${nm} · 캐릭터 만들기`;authMsg(on&&AUTH.dev?'개발자 계정':'')}
 function authGo(kind){const u=$('auU').value.trim().normalize('NFC'),p=$('auP').value;initAudio();
@@ -2737,6 +2740,7 @@ buildAssets();
   $('bCont').onclick=()=>start();$('bNew').onclick=()=>{initAudio();if(legacyChars().length)charBox();else showPick()};
   $('bOut').onclick=()=>{api('logout',{});AUTH=null;try{localStorage.removeItem(AUTH_KEY);localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()};
   $('pickGrid').addEventListener('click',e=>{const b=e.target.closest('.pk');if(b)start(b.dataset.el)});
+  if(!(AUTH&&AUTH.token))loginNotice();
   if(AUTH&&AUTH.token){authMsg('서버에서 불러오는 중...');api('load',{}).then(r=>{if(r.ok){AUTH.dev=!!r.dev;afterAuth(r.save,r.name)}else if(r.err==='session'){AUTH=null;try{localStorage.removeItem(AUTH_KEY)}catch(e){}authUI();authMsg('다시 로그인해 주세요')}else{authUI();authMsg('서버에 연결할 수 없어요. 새로고침해 주세요')}})}else authUI();
   setInterval(()=>{if(G.started)save()},20000);setInterval(cloudPush,15000);
   addEventListener('visibilitychange',()=>{if(document.hidden&&G.started){save();cloudPush(true)}});
