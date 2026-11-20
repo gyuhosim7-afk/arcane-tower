@@ -57,6 +57,14 @@ export class Town extends DurableObject {
     server.serializeAttachment({ u: null, id: crypto.randomUUID().slice(0, 8), p: null, lastChat: 0, n: 0, win: 0, party: null, pinv: null, treq: null, trade: null });
     return new Response(null, { status: 101, webSocket: client });
   }
+  async pvpRecord(wu, lu) {
+    if (!wu || !lu || wu === lu) return;
+    // 같은 두 사람끼리는 하루 10판까지만 기록 (점수 몰아주기 방지)
+    const day = new Date().toISOString().slice(0, 10), key = [wu, lu].sort().join("|");
+    this.pairs = this.pairs && this.pairs.day === day ? this.pairs : { day, n: {} };
+    if ((this.pairs.n[key] = (this.pairs.n[key] || 0) + 1) > 10) return;
+    await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/pvp", { method: "POST", body: JSON.stringify({ w: wu, l: lu }) }).catch(() => {});
+  }
   all() {
     return this.ctx.getWebSockets().map((w) => ({ w, a: w.deserializeAttachment() })).filter((x) => x.a && x.a.p);
   }
@@ -204,16 +212,24 @@ export class Town extends DurableObject {
       if (!y) return this.send(ws, { t: "sys", m: "결투 신청이 사라졌습니다" });
       if (m.t === "dno") return this.send(y.w, { t: "sys", m: a.p.nick + " 님이 결투를 거절했습니다" });
       if (y.a.duel || a.duel) return this.send(ws, { t: "sys", m: "상대가 다른 결투 중입니다" });
-      a.duel = y.a.id; y.a.duel = a.id; this.save(x); this.save(y);
+      a.duel = y.a.id; y.a.duel = a.id; a.dt0 = y.a.dt0 = Date.now(); a.dhp = y.a.dhp = 1000; this.save(x); this.save(y);
       this.send(y.w, { t: "dstart", with: a.id, nick: a.p.nick, el: a.p.el, rb: a.p.rb, side: 0 });
       this.send(ws, { t: "dstart", with: y.a.id, nick: y.a.p.nick, el: y.a.p.el, rb: y.a.p.rb, side: 1 });
     } else if (m.t === "drel") {
       const y = a.duel && this.find(a.duel);
+      if (m.d && m.d.k === "hp") { a.dhp = num(m.d.hp, 0, 1000); this.save(x); }
       if (y && y.a.duel === a.id) this.send(y.w, { t: "drel", d: m.d });
     } else if (m.t === "dend") {
       const y = a.duel && this.find(a.duel);
       a.duel = null; this.save(x);
-      if (y && y.a.duel === a.id) { y.a.duel = null; this.save(y); this.send(y.w, { t: "dend", res: ["lose", "time"].includes(m.res) ? m.res : "quit" }); }
+      if (y && y.a.duel === a.id) {
+        y.a.duel = null; this.save(y); this.send(y.w, { t: "dend", res: ["lose", "time"].includes(m.res) ? m.res : "quit" });
+        // 결과 기록: 진 쪽이 보낸 lose, 시간 종료면 서버가 본 체력으로 판정, 그 밖에는 나간 쪽이 패배
+        let win = null, lose = null;
+        if (m.res === "time") { if (a.dhp > y.a.dhp) { win = a; lose = y.a; } else if (y.a.dhp > a.dhp) { win = y.a; lose = a; } }
+        else { win = y.a; lose = a; }
+        if (win && Date.now() - (a.dt0 || 0) > 5000) await this.pvpRecord(win.u, lose.u);
+      }
     }
     // 거래
     else if (m.t === "treq") {
@@ -274,7 +290,7 @@ export class Town extends DurableObject {
       if (o) { o.a.trade = null; this.save(o); this.send(o.w, { t: "tclose", why: "상대가 나갔습니다" }); await this.ctx.storage.delete("off:" + o.a.id); }
       await this.ctx.storage.delete("off:" + a.id);
     }
-    if (a.duel) { const o = this.find(a.duel); if (o && o.a.duel === a.id) { o.a.duel = null; this.save(o); this.send(o.w, { t: "dend", res: "quit" }); } }
+    if (a.duel) { const o = this.find(a.duel); if (o && o.a.duel === a.id) { o.a.duel = null; this.save(o); this.send(o.w, { t: "dend", res: "quit" }); if (Date.now() - (a.dt0 || 0) > 5000) await this.pvpRecord(o.a.u, a.u); } }
     this.sendTo(this.all(), { t: "bye", id: a.id });
     if (a.party) this.partySync(a.party);
   }
@@ -376,6 +392,21 @@ export class Accounts extends DurableObject {
       }
       const token = await this.newToken(acc);
       return json({ ok: 1, u, name: acc.name || u, token, dev: dev(u), save: acc.save || null });
+    }
+    if (path === "/internal/pvp") {
+      const pv = (await this.ctx.storage.get("pvp")) || {};
+      const W = pv[b.w] || { r: 1000, w: 0, l: 0 }, L = pv[b.l] || { r: 1000, w: 0, l: 0 };
+      const ew = 1 / (1 + Math.pow(10, (L.r - W.r) / 400)), k = 32;
+      W.r = Math.round(W.r + k * (1 - ew)); L.r = Math.max(0, Math.round(L.r - k * (1 - ew))); W.w++; L.l++;
+      const wa = await this.ctx.storage.get("u:" + b.w), la = await this.ctx.storage.get("u:" + b.l);
+      W.n = (wa && wa.name) || b.w; L.n = (la && la.name) || b.l;
+      pv[b.w] = W; pv[b.l] = L;
+      await this.ctx.storage.put("pvp", pv);
+      return json({ ok: 1 });
+    }
+    if (path === "/api/pvprank") {
+      const pv = (await this.ctx.storage.get("pvp")) || {};
+      return json({ ok: 1, list: Object.values(pv).sort((a, b) => b.r - a.r || b.w - a.w).slice(0, 50) });
     }
     if (path === "/api/rank") {
       const rk = (await this.ctx.storage.get("rank")) || {};
