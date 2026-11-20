@@ -31,6 +31,7 @@ button.muted{opacity:.5}
 #zone{position:absolute;left:50%;top:.35em;transform:translateX(-50%);font-size:1.15em;white-space:nowrap}
 #bossName{position:absolute;left:50%;top:1.55em;transform:translateX(-50%);font-size:.95em;color:#f0b8ff;white-space:nowrap}
 #menuBtns{position:absolute;right:.6em;top:11.8em;display:flex;gap:.3em;pointer-events:auto;font-size:.8em}
+.otherTag{position:absolute;transform:translate(-50%,-100%);font-size:.75em;color:#bfe9ff;white-space:nowrap;pointer-events:none}.chatBub{position:absolute;transform:translate(-50%,-100%);max-width:14em;background:#0c0a18e6;border:.08em solid #6a5aa0;color:#fff;font-size:.78em;padding:.15em .45em;border-radius:.3em;pointer-events:none;white-space:normal;word-break:break-all;text-align:center}#chatBox{position:absolute;left:.6em;top:19%;width:38%;font-size:.8em;pointer-events:none}#chatLog div{color:#e8e4ff;opacity:.9}#chatLog b{color:#ffe27a}#chatIn{pointer-events:auto;width:100%;font:inherit;background:#0c0a18ee;color:#fff;border:.1em solid #6a5aa0;padding:.3em;margin-top:.2em}#netInfo{color:#7ee8a0}
 #toasts{position:absolute;left:.6em;bottom:4.4em;display:flex;flex-direction:column-reverse;gap:.25em;font-size:.95em;max-width:46%}
 #toasts div{background:rgba(6,8,26,.85);padding:.15em .6em;border-left:.2em solid var(--gold);animation:tin .18s steps(3)}
 @keyframes tin{from{transform:translateX(-1.5em);opacity:0}}
@@ -115,7 +116,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
     <div id="hud" hidden>
       <div id="zone"></div>
       <div id="bossName" hidden></div>
-      <div id="menuBtns"><button id="bInv">가방</button><button id="bBag">메뉴</button><button id="bScan">CRT</button><button id="bSnd">소리</button><button id="bAuto">수동</button><button id="bFull">전체화면</button></div>
+      <div id="menuBtns"><button id="bInv">가방</button><button id="bBag">메뉴</button><button id="bScan">CRT</button><button id="bSnd">소리</button><button id="bAuto">수동</button><button id="bFull">전체화면</button><button id="bChat" hidden>채팅</button></div><div id="chatBox" hidden><div id="netInfo"></div><div id="chatLog"></div><input id="chatIn" maxlength="80" placeholder="채팅 입력 후 Enter" hidden autocomplete="off"></div>
       <div id="toasts"></div>
       <div id="banner"></div>
       <div id="touch"><div id="joy"><i id="joyK"></i></div><button id="tF">F</button><button id="tB">순간<br>이동</button></div><div id="joy2"><i id="joy2K"></i></div>
@@ -796,7 +797,7 @@ function itemSpr(it){const v=gearV(it),k=(it.my||it.slot+v)+'_'+it.r;if(!GEAR_CA
 function itemIcon(it){itemSpr(it);return GEAR_CACHE[(it.my||it.slot+gearV(it))+'_'+it.r].u}
 /* 영웅 망토 테두리는 입은 로브 등급 색, 지팡이 머리는 든 지팡이 모양 */
 const HERO_CACHE={};
-function heroSet(el,fr){const rb=S.eq.robe,k=el+(rb?rb.r:'x')+fr;if(!HERO_CACHE[k]){const pal=hoodPal(HERO[el],EL[el].c[1]);if(rb)pal.D=RPAL[Math.min(rb.r,5)].y;HERO_CACHE[k]=sprSet(fr?HOOD2:HOOD,{map:pal})}return HERO_CACHE[k]}
+function heroSet(el,fr,rr){const rb=S.eq.robe,r=rr!==undefined?rr:(rb?rb.r:'x'),k=el+r+fr;if(!HERO_CACHE[k]){const pal=hoodPal(HERO[el],EL[el].c[1]);if(r!=='x')pal.D=RPAL[Math.min(r,5)].y;HERO_CACHE[k]=sprSet(fr?HOOD2:HOOD,{map:pal})}return HERO_CACHE[k]}
 /* ---- 몬스터: 기울기·출렁임·맞으면 움찔, 죽으면 찌그러지며 흩어짐 ---- */
 function drawSprFx(s,x,y,flip,mode,sc,sqx,sqy,lean){
   const im=mode==='w'?(flip?s.wf:s.w):mode==='i'?(flip?s.if:s.i):(flip?s.f:s.n),w=Math.round(s.W*sc*sqx),h=Math.round(s.H*sc*sqy),x0=Math.round(x-w/2),y0=Math.round(y-h);
@@ -2098,6 +2099,7 @@ function updPlayer(dt){
 function updParts(dt){let n=0;const ps=G.parts;for(let i=0;i<ps.length;i++){const q=ps[i];q.life-=dt;if(q.life<=0){if(PART_POOL.length<480)PART_POOL.push(q);continue}if(q.drag){const f=Math.max(0,1-q.drag*dt);q.vx*=f;q.vy*=f}q.vy+=q.g*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;ps[n++]=q}ps.length=n}
 function update(dt){
   G.time+=dt;const p=G.p;
+  try{netUpdate(dt)}catch(e){}
   if(G.dead>0){G.dead-=dt;if(G.dead<=0){G.dead=0;fadeTo(enterTown)}}else updPlayer(dt);
   if(G.zone==='tower')updWave(dt);else if(G.zone==='underdeep')updUnderdeep(dt);
   for(const e of G.en){e.ox=e.x;e.oy=e.y}
@@ -2341,8 +2343,8 @@ function render(){flushK();
   for(const it of m.inter)if(it.portal){pxRing(ctx,it.x,it.y,15,8,it.portal[0]);pxRing(ctx,it.x,it.y,12,6,it.portal[1]);drawSwirl(it.x,it.y-12,11,it.portal,G.time,36);if(Math.random()<.3)part(it.x+rnd(-10,10),it.y,0,-rnd(20,50),.7,pick(it.portal),1);light(it.x,it.y-8,54)}
   for(const f of G.fx)if(f.layer==='g')f.draw();
   for(const k of G.picks)if(k.x>=cx-28&&k.x<=cx+W+28&&k.y>=cy-28&&k.y<=cy+H+28)drawPick(k);
-  const dl=[];for(const e of G.en)dl.push(e);for(const it of m.inter)if(it.npc||it.chest)dl.push(it);if(!G.title)dl.push(p);dl.sort((a,b)=>a.y-b.y);
-  for(const o of dl){if(o!==p&&(o.x<cx-56||o.x>cx+W+56||o.y<cy-56||o.y>cy+H+56))continue;if(o===p)drawPlayer(p);else if(o.chest){const im=A.chest[o.chest][o.open?1:0];shadow(o.x,o.y,20);ctx.drawImage(im,Math.round(o.x-im.width/2),Math.round(o.y-im.height+2));if(!o.open){if((G.time*2|0)%3===0&&Math.random()<.2)part(o.x+rnd(-9,9),o.y-rnd(4,14),0,-10,.6,o.chest==='gold'?'#ffd84a':'#ffffff',1);light(o.x,o.y-8,o.chest==='gold'?50:26)}}else if(o.npc){shadow(o.x,o.y,12);drawSpr(A[o.npc],o.x,o.y+1-((G.time*2+o.x|0)%2),p.x<o.x,'')}else drawEnemy(o)}
+  const dl=[];for(const e of G.en)dl.push(e);for(const it of m.inter)if(it.npc||it.chest)dl.push(it);if(G.zone==='town')for(const id in NET.pl)dl.push(NET.pl[id]);if(!G.title)dl.push(p);dl.sort((a,b)=>a.y-b.y);
+  for(const o of dl){if(o!==p&&(o.x<cx-56||o.x>cx+W+56||o.y<cy-56||o.y>cy+H+56))continue;if(o===p)drawPlayer(p);else if(o.other)drawOther(o);else if(o.chest){const im=A.chest[o.chest][o.open?1:0];shadow(o.x,o.y,20);ctx.drawImage(im,Math.round(o.x-im.width/2),Math.round(o.y-im.height+2));if(!o.open){if((G.time*2|0)%3===0&&Math.random()<.2)part(o.x+rnd(-9,9),o.y-rnd(4,14),0,-10,.6,o.chest==='gold'?'#ffd84a':'#ffffff',1);light(o.x,o.y-8,o.chest==='gold'?50:26)}}else if(o.npc){shadow(o.x,o.y,12);drawSpr(A[o.npc],o.x,o.y+1-((G.time*2+o.x|0)%2),p.x<o.x,'')}else drawEnemy(o)}
   for(const b of G.pr)if(b.x>=cx-24&&b.x<=cx+W+24&&b.y>=cy-24&&b.y<=cy+H+24)drawBolt(b);
   for(const b of G.ep){if(b.x<cx-24||b.x>cx+W+24||b.y<cy-24||b.y>cy+H+24)continue;
     const el=b.fxEl||fxElementFromColor(b.col);
@@ -2364,6 +2366,7 @@ function render(){flushK();
   if(G.title)return;
   if(p.hp<D.maxHp*.3&&!G.dead&&isCombatZone()){ctx.globalAlpha=.1+.08*Math.sin(G.time*6);ctx.fillStyle='#e5484d';ctx.fillRect(0,0,W,6);ctx.fillRect(0,H-6,W,6);ctx.fillRect(0,0,6,H);ctx.fillRect(W-6,0,6,H);ctx.globalAlpha=1}
   drawHUD();
+  netTags();
   {const nt=$('nickTag');if(nt){const show=G.started&&!G.dead&&S.nick;nt.style.display=show?'':'none';if(show){const title=cleanTitle(S.title),label=title?`「${title}」 ${S.nick}`:S.nick,rainbow=S.titleColor==='rainbow';if(nt.textContent!==label||nt.dataset.rainbow!==(rainbow?'1':'0')){nt.replaceChildren();if(title){const span=document.createElement('span');span.className=rainbow?'rainbowText':'';span.textContent=`「${title}」`;nt.append(span,document.createTextNode(' '))}nt.appendChild(document.createTextNode(S.nick));nt.dataset.rainbow=rainbow?'1':'0'}nt.style.left=((p.x-G.cam.x)/W*100)+'%';nt.style.top=((p.y-G.cam.y-40)/H*100)+'%'}}}
   for(const it of m.inter){if(!it.el)continue;if(it.hidden){it.el.style.display='none';continue}const sx=it.x-G.cam.x,sy=it.y-G.cam.y+(it.ly||-26);if(sx<-20||sx>W+20||sy<0||sy>H+10){it.el.style.display='none';continue}it.el.style.display='';it.el.style.left=(sx/W*100)+'%';it.el.style.top=(sy/H*100)+'%';it.el.className=Math.hypot(it.x-p.x,it.y-p.y)<it.r+12?'near':''}
 }
@@ -2637,6 +2640,7 @@ function forgeAnim(it,before,ok,drop,broke,saved){
 function hudHit(gx,gy){for(const r of HUDR){if(r.act&&gx>=r.x&&gx<r.x+r.w&&gy>=r.y&&gy<r.y+r.h){const a=r.act;if(a.startsWith('s:'))cast(a.slice(2));else if(a==='p:hp')usePot('hp');else if(a==='p:mp')usePot('mp');else if(a==='b')blink();else if(a==='m')castMyth();return true}}return false}
 function bindInput(){
   addEventListener('keydown',e=>{
+    if(e.target&&e.target.id==='chatIn')return;if(e.code==='Enter'&&G.started&&!ui.open&&netWant()){e.preventDefault();chatOpen();return}
     if(!G.started)return;if(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat&&!/^Digit/.test(e.code))return;IN.keys[e.code]=true;
     if(ui.open){if(e.code==='Escape'||e.code==='Tab'||e.code==='KeyF')closePanel();return}
     const m=/^Digit([1-8])$/.exec(e.code),xi={Digit9:8,Digit0:9,Minus:10,Equal:11}[e.code];if(m){const i=+m[1]-1,id=S.slots[i];if(id&&i<D.slots)cast(id)}else if(xi!==undefined&&xi<D.slots){const id=S.slots[xi];if(id)cast(id)}
@@ -2736,7 +2740,41 @@ buildAssets();
   setInterval(()=>{if(G.started)save()},20000);
   requestAnimationFrame(frame);
 })();
-window.__game={save:()=>save(),saveCode,parseCode,questXpReward,statPointScale,bossPattern,bossSig,bossSig2,applyDb,itemSprForTest:itemSpr,A,update,IN,MON,THEMES,BOSSES,MYTH,mkMyth,mkItem,xpNeed,hpScale,dmgScale,openChest,spawnChest,forgeAnim,G,get S(){return S},set S(v){S=v},D,SP,SPL,hurtPlayer,canUse,recalc,enterFloor,enterTown,enterDungeonRoom,enterUnderdeepTown,updUnderdeep,cast,openPanel,closePanel,start,ACT};
+/* 마을 멀티플레이: 마을에 있는 친구들이 서로 보이고 채팅할 수 있다 (Cloudflare 서버) */
+const MP_URL='';
+const NET={ws:null,on:false,pl:{},last:0,lx:-1,ly:-1,retry:0,ch:'1',log:[]};
+function netWant(){return !!MP_URL&&G.started&&G.zone==='town'&&!G.title&&!!G.p}
+function netHi(){const p=G.p;return{t:'hi',nick:S.nick,title:cleanTitle(S.title||''),el:S.aff[0],job:S.job||'',lv:S.lvl,rb:S.eq.robe?S.eq.robe.r:-1,x:Math.round(p.x),y:Math.round(p.y),f:p.face}}
+function netSend(o){if(NET.ws&&NET.on)try{NET.ws.send(JSON.stringify(o))}catch(e){}}
+function netConnect(){if(NET.ws||Date.now()<NET.retry)return;let ws;try{ws=new WebSocket(MP_URL+'/town?ch='+NET.ch)}catch(e){NET.retry=Date.now()+10000;return}NET.ws=ws;
+  ws.onopen=()=>{if(NET.ws!==ws)return;NET.on=true;netSend(netHi());NET.ping=setInterval(()=>netSend({t:'ping'}),25000)};
+  ws.onmessage=ev=>{if(NET.ws!==ws)return;let m;try{m=JSON.parse(ev.data)}catch(e){return}netMsg(m)};
+  ws.onclose=()=>{if(NET.ws===ws){netDrop();NET.retry=Date.now()+5000}};ws.onerror=()=>{}}
+function netDrop(){clearInterval(NET.ping);if(NET.ws){const w=NET.ws;NET.ws=null;try{w.close()}catch(e){}}NET.on=false;for(const id in NET.pl)netRemove(id);NET.lx=-1}
+function netRemove(id){const o=NET.pl[id];if(!o)return;o.tag&&o.tag.remove();o.bub&&o.bub.remove();delete NET.pl[id]}
+function netAdd(q){if(!q||!q.id)return;let o=NET.pl[q.id];if(!o)o=NET.pl[q.id]={other:1,id:q.id,x:q.x,y:q.y,tx:q.x,ty:q.y,walk:0,w:0};Object.assign(o,{nick:String(q.nick||'마법사'),title:String(q.title||''),el:EL[q.el]&&q.el!=='none'?q.el:'fire',lv:q.lv|0,rb:q.rb>=0&&q.rb<=6?q.rb|0:'x',f:q.f<0?-1:1});
+  if(!o.tag){o.tag=document.createElement('div');o.tag.className='otherTag';$('ui').appendChild(o.tag)}o.tag.textContent=(o.title?`「${o.title}」 `:'')+o.nick+' · Lv.'+o.lv}
+function chatLine(nick,msg){NET.log.push([nick,msg]);if(NET.log.length>6)NET.log.shift();const L=$('chatLog');L.replaceChildren(...NET.log.map(([n,m])=>{const d=document.createElement('div'),b=document.createElement('b');b.textContent=n+': ';d.append(b,document.createTextNode(m));return d}))}
+function netMsg(m){
+  if(m.t==='all'){NET.me=m.me;for(const q of m.list||[])netAdd(q);toast(`마을 접속 · 친구 ${(m.list||[]).length}명`)}
+  else if(m.t==='join'){const isNew=!NET.pl[m.p&&m.p.id];netAdd(m.p);if(isNew&&m.p)chatLine('알림',m.p.nick+' 님이 마을에 왔습니다')}
+  else if(m.t==='mv'){const o=NET.pl[m.id];if(o){o.tx=m.x;o.ty=m.y;o.f=m.f;o.w=m.w}}
+  else if(m.t==='bye'){const o=NET.pl[m.id];if(o)chatLine('알림',o.nick+' 님이 떠났습니다');netRemove(m.id)}
+  else if(m.t==='chat'){chatLine(m.nick,m.m);const o=m.id===NET.me?G.p:NET.pl[m.id];if(o){if(!o.bub){o.bub=document.createElement('div');o.bub.className='chatBub';$('ui').appendChild(o.bub)}o.bub.textContent=m.m;o.bubT=G.time+5}}}
+function netUpdate(dt){const want=netWant();$('bChat').hidden=!MP_URL||G.zone!=='town';$('chatBox').hidden=!want;
+  if(!want){if(NET.ws)netDrop();return}netConnect();$('netInfo').textContent=NET.on?`마을 접속 중 · ${Object.keys(NET.pl).length+1}명`:'마을 서버 연결 중...';
+  if(NET.on){const p=G.p,now=performance.now(),moved=Math.abs(p.x-NET.lx)+Math.abs(p.y-NET.ly)>.5;if(now-NET.last>(moved?100:2000)){NET.last=now;NET.lx=p.x;NET.ly=p.y;netSend({t:'mv',x:Math.round(p.x),y:Math.round(p.y),f:p.face,w:p.walk>0?1:0})}}
+  for(const id in NET.pl){const o=NET.pl[id],k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;if(Math.hypot(dx,dy)>120){o.x=o.tx;o.y=o.ty}else{o.x+=dx*k;o.y+=dy*k}o.walk=(o.w||Math.hypot(dx,dy)>1.5)?o.walk+dt*9:0}}
+function drawOther(o){shadow(o.x,o.y,14);const fr=o.walk?((o.walk|0)%2):0,bob=o.walk?((o.walk*2|0)%2):0;drawSpr(heroSet(o.el,fr,o.rb),o.x,o.y+1-bob,o.f<0,'');drawStaff(o.x,o.y-bob,o.f,o.el,false,G.time)}
+function netTags(){const town=G.zone==='town'&&G.started;const place=(el,x,y,off)=>{const sx=x-G.cam.x,sy=y-G.cam.y+off;if(!town||sx<-30||sx>W+30||sy<0||sy>H+20){el.style.display='none';return}el.style.display='';el.style.left=(sx/W*100)+'%';el.style.top=(sy/H*100)+'%'};
+  for(const id in NET.pl){const o=NET.pl[id];o.tag&&place(o.tag,o.x,o.y,-34);if(o.bub){if(G.time>o.bubT){o.bub.remove();o.bub=null}else place(o.bub,o.x,o.y,-46)}}
+  const p=G.p;if(p&&p.bub){if(G.time>p.bubT||!town){p.bub.remove();p.bub=null}else place(p.bub,p.x,p.y,-50)}}
+function chatOpen(){const i=$('chatIn');i.hidden=false;i.value='';i.focus();IN.keys={}}
+function chatClose(){const i=$('chatIn');i.blur();i.hidden=true}
+$('chatIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){const v=$('chatIn').value.trim();if(v)netSend({t:'chat',m:v.slice(0,80)});chatClose()}else if(e.key==='Escape')chatClose()});
+$('chatIn').addEventListener('blur',()=>setTimeout(chatClose,50));
+$('bChat').onclick=()=>chatOpen();
+window.__game={NET,netMsg,save:()=>save(),saveCode,parseCode,questXpReward,statPointScale,bossPattern,bossSig,bossSig2,applyDb,itemSprForTest:itemSpr,A,update,IN,MON,THEMES,BOSSES,MYTH,mkMyth,mkItem,xpNeed,hpScale,dmgScale,openChest,spawnChest,forgeAnim,G,get S(){return S},set S(v){S=v},D,SP,SPL,hurtPlayer,canUse,recalc,enterFloor,enterTown,enterDungeonRoom,enterUnderdeepTown,updUnderdeep,cast,openPanel,closePanel,start,ACT};
 </script>
 </body>
 </html>

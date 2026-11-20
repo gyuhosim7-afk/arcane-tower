@@ -1,0 +1,11 @@
+name = "arcane-tower-town"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+
+[[durable_objects.bindings]]
+name = "TOWN"
+class_name = "Town"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Town"]
