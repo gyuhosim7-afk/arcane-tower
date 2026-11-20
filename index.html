@@ -1527,6 +1527,9 @@ function kill(e){
   if(e.boss){shake(10);G.hitstop=.12;sfx.bigboom();boom(e.x,e.y-e.r,50,['#ffffff','#ffe27a','#c04cff','#4a2fa0'],true);qEvent('boss')}
   qEvent('kill',e.type);
 }
+/* 지하 레이드 보스·정예: 맞으면 보스마다 다른 디버프 (패턴이 안 겹치는 대신) */
+const RAID_DB={dreadMarshal:[['bleed',4,.4]],voidTyrant:[['blind',2,.25],['curse',4,.3]],underdeepGatekeeper:[['freeze',.6,.25],['bleed',3,.3]],underdeepCore:[['burn',4,.4],['curse',5,.3]],underdeepLord:[['silence',1.5,.2],['poison',5,.4],['blind',2,.15]],underdeepOrigin:[['curse',5,.35],['bleed',4,.35],['silence',1.2,.15],['blind',2,.15]]};
+function raidDebuff(){if(G.zone!=='underdeep'||G.dead)return;const e=G.en.find(x=>!x.dead&&RAID_DB[x.type]);if(!e)return;for(const[k,t,ch]of RAID_DB[e.type])if(Math.random()<ch)applyDb(k,t)}
 function hurtPlayer(d,source={}){
   const p=G.p;if(p.ifr>0||G.dead||(DEV.on&&DEV.god))return;
   if(source.ground&&S.hiddenJob==='dragonLord'&&p.dragonFormUntil>G.time)return;
@@ -1540,7 +1543,7 @@ function hurtPlayer(d,source={}){
   if(hasM('magmaCore')&&!(p.magT>G.time)){p.magT=G.time+1;aoe(p.x,p.y-6,50,D.pow*2,{el:'fire',st:'burn',proc:1});boom(p.x,p.y-6,30,['#ffffff','#ffd24a','#ff7a2a','#c0301a'],false)}
   if(p.shield>0){const a=Math.min(p.shield,Math.floor(d*.5));p.shield-=a;d=Math.max(1,d-a);flashFx(p.x,p.y-12,6,EL.none.c[1],.15);if(p.shield<=0){burst(p.x,p.y-12,20,EL.none.c,90,.4);sfx.frost()}}
   if(hasM('uqAbyss')&&d<1e8){if(p.mp>=D.maxMp*.99&&!(p.nullCd>G.time)){p.nullCd=G.time+30;p.ifr=.5;G.texts.push({x:p.x,y:p.y-40,vy:-18,life:1,str:'무효!',col:'#3ff0e0',sc:1.2});ringFx(p.x,p.y-10,26,['#ffffff','#3ff0e0','#3ff0e0','#000'],.4,{top:1});return}const mv=Math.min(p.mp,d*.25);p.mp-=mv;d=Math.max(1,Math.round(d-mv))}
-  p.hp-=d;p.ifr=.7;p.hurtT=.25;if(fromBoss)p.hitFlashUntil=0;else{p.hitFlashUntil=G.time+.14;G.hitstop=Math.max(G.hitstop||0,source.projectile?0.045:0.035)}shake(5);G.flash=.18;G.flashCol='#e5484d';sfx.hurt();if(S.hiddenJob==='dragonLord')addDragonRage(8);
+  raidDebuff();p.hp-=d;p.ifr=.7;p.hurtT=.25;if(fromBoss)p.hitFlashUntil=0;else{p.hitFlashUntil=G.time+.14;G.hitstop=Math.max(G.hitstop||0,source.projectile?0.045:0.035)}shake(5);G.flash=.18;G.flashCol='#e5484d';sfx.hurt();if(S.hiddenJob==='dragonLord')addDragonRage(8);
   G.texts.push({x:p.x,y:p.y-30,vy:-24,life:.8,str:'-'+d,col:'#ff6b6b',sc:1});if(fromBoss)burst(p.x,p.y-8,10,['#e5484d','#ff9a3c'],70,.4,{add:false});else{const hitPalette=(EL[hitEl]||EL.dark).c;burst(p.x,p.y-8,10,['#ffffff',hitPalette[1],hitPalette[2]],78,.42,{add:false});if(source.impactFx!==false)bossImpactFx(hitCol,p.x,p.y-8,16,false,'fx')}
   if(p.hp<=0&&hasM('dragonScale')&&!p.revived){p.revived=true;p.hp=D.maxHp*.4;p.ifr=2;banner('심연룡의 가호','죽음을 버텨 냈습니다');boom(p.x,p.y-8,70,['#ffffff','#ffd24a','#c94cff','#3a1258'],true);aoe(p.x,p.y-8,90,D.pow*12,{el:'fire',st:'burn',proc:1,kb:200});shake(12);sfx.bigboom();return}
   if(p.hp<=0){p.hp=0;G.dead=2.4;sfx.die();burst(p.x,p.y-8,60,EL[S.aff[0]].c,140,1,{drag:1.5});const lost=Math.floor(S.gold*.1);S.gold-=lost;banner('쓰러졌습니다',`골드 ${lost}을(를) 잃고 마을로 돌아갑니다`)}
@@ -1908,12 +1911,14 @@ function bossSig(e,p){
 }
 /* 보스 패턴 엔진. T = 층/100: 높을수록 탄 수·속도↑, 예고 시간↓, 체력 30% 아래에선 패턴을 이어서 쓴다 */
 const bossT=()=>G.zone==='underdeep'?clamp((G.room||1)/10,0,1):clamp(G.floor/100,0,1);
+/* 패턴이 화면에 남아 있는 대략적인 시간 (지하 레이드에서 겹치지 않게 다음 패턴을 늦춘다) */
+const PDUR={ring:.8,fan:.6,spiral:2.8,slam:1.6,rain:1.6,summon:.6,blink:.6,charge:1.3,combo:2.2,lasers:1.3,cross:2.1,wall:2.2,homing:1.4,spores:1.4,web:.5,breath:1.2,sweep:1.9,grid:2.2,flower:1.6,pincer:2.6,mines:2.2,meteorBig:2.1,orbit:1.5};
 function bossPattern(e,p,pat,ph2){
   if(e.roarUntil>G.time)return;
-  const RB=false,d0=MON[e.type],T=bossT(),col=d0.bc||e.cols[1]||'#ff3a3a',oy=e.y-e.hh*.55,m=(1+T*1.2)*(RB?1.7:1),sv=1+T*.5,td=1-T*.3,a0=Math.atan2(p.y-10-oy,p.x-e.x);
+  const RB=G.zone==='underdeep',d0=MON[e.type],T=bossT(),col=d0.bc||e.cols[1]||'#ff3a3a',oy=e.y-e.hh*.55,m=(1+T*1.2)*(RB?1.3:1),sv=1+T*.5,td=1-T*.3,a0=Math.atan2(p.y-10-oy,p.x-e.x);
   switch(pat){
     case'ring':{const n=Math.round((ph2?20:14)*m),o=rnd(TAU),ring=off=>{for(let i=0;i<n;i++)ebullet(e.x,e.y-e.hh*.55,o+off+i/n*TAU,80*sv,e.dmg,col,3)};ring(0);if(T>.45)later(.3,()=>{if(!e.dead)ring(Math.PI/n)});ringFx(e.x,e.y,40,['#ffffff',col,col,'#000'],.4,{top:1});sfx.roar();break}
-    case'fan':{const n=Math.round(((ph2?9:6)+Math.floor(T*6))*(RB?1.6:1));for(let i=0;i<n;i++)ebullet(e.x,oy,a0+(i-(n-1)/2)*.15,130*sv,e.dmg,col,3);tone('square',400,200,.2,.05);break}
+    case'fan':{const n=Math.round(((ph2?9:6)+Math.floor(T*6))*(RB?1.3:1));for(let i=0;i<n;i++)ebullet(e.x,oy,a0+(i-(n-1)/2)*.15,130*sv,e.dmg,col,3);tone('square',400,200,.2,.05);break}
     case'spiral':e.st='spiral';e.stT=1.8+T;e.atk=0;e.arms=(ph2?3:2)+(T>.6?1:0);tone('square',300,900,.5,.04);break;
     case'slam':for(let i=0;i<(ph2?4:3)+Math.floor(T*3);i++)later(i*.34*td,()=>{if(!e.dead)telegraph(G.p.x,G.p.y-2,40,.75*td,e.dmg*1.3,col)});break;
     case'rain':for(let i=0;i<(ph2?12:8)+Math.floor(T*10);i++){const tx=clamp(p.x+rnd(-150,150),30,G.map.pw-30),ty=clamp(p.y+rnd(-85,85),56,G.map.ph-30);later(i*.07,()=>{if(!e.dead)telegraph(tx,ty,28,.9*td,e.dmg*.6,col)})}sfx.roar();break;
@@ -1923,21 +1928,21 @@ function bossPattern(e,p,pat,ph2){
     case'combo':e.st='wind';e.stT=.55*td;e.dx=Math.cos(a0);e.dy=Math.sin(a0);e.combo=2+(T>.6?1:0);tlLine(e.x,e.y-6,a0,220,e.r,.55*td,e.dmg*1.3,col);tone('sawtooth',120,400,.5,.05);break;
     case'lasers':{const k=(ph2?6:4)+Math.floor(T*4);for(let i=0;i<k;i++)tlLine(e.x,oy,a0+(i-(k-1)/2)*.36,440,9,.9*td,e.dmg*1.4,col);tone('square',200,800,.6,.04);break}
     case'cross':{const o=rnd(TAU),k=ph2||T>.5?8:4;for(let i=0;i<k;i++)tlLine(e.x,oy,o+i/k*TAU,460,10,1*td,e.dmg*1.5,col);if(T>.55)later(1.1*td,()=>{if(!e.dead)for(let i=0;i<k;i++)tlLine(e.x,e.y-e.hh*.55,o+(i+.5)/k*TAU,460,10,.8*td,e.dmg*1.5,col)});tone('square',150,900,.7,.05);break}
-    case'wall':{const walls=RB?3:T>.6?2:1;for(let w=0;w<walls;w++)later(w*.9,()=>{if(e.dead)return;const a=Math.atan2(G.p.y-oy,G.p.x-e.x),nx=-Math.sin(a),ny=Math.cos(a),N=22,gap=rint(4,N-7);for(let i=0;i<N;i++){if(i>=gap&&i<gap+4)continue;const o=(i-N/2)*14;ebullet(e.x+nx*o-Math.cos(a)*30,oy+ny*o-Math.sin(a)*30,a,(70+T*30),e.dmg,col,3)}tone('square',90,60,.4,.08)});break}
-    case'homing':{const k=Math.round((3+Math.floor(T*4))*(RB?1.6:1));for(let i=0;i<k;i++){const b=ebullet(e.x,oy,i/k*TAU,70,e.dmg*1.2,col,4);b.hm=2.6+T*1.5;b.life=6}sfx.dark();break}
+    case'wall':{const walls=RB?2:T>.6?2:1;for(let w=0;w<walls;w++)later(w*.9,()=>{if(e.dead)return;const a=Math.atan2(G.p.y-oy,G.p.x-e.x),nx=-Math.sin(a),ny=Math.cos(a),N=22,gap=rint(4,N-7);for(let i=0;i<N;i++){if(i>=gap&&i<gap+4)continue;const o=(i-N/2)*14;ebullet(e.x+nx*o-Math.cos(a)*30,oy+ny*o-Math.sin(a)*30,a,(70+T*30),e.dmg,col,3)}tone('square',90,60,.4,.08)});break}
+    case'homing':{const k=Math.round((3+Math.floor(T*4))*(RB?1.3:1));for(let i=0;i<k;i++){const b=ebullet(e.x,oy,i/k*TAU,70,e.dmg*1.2,col,4);b.hm=2.6+T*1.5;b.life=6}sfx.dark();break}
     case'spores':{for(let i=0;i<4+Math.floor(T*5);i++){const tx=clamp(p.x+rnd(-110,110),30,G.map.pw-30),ty=clamp(p.y+rnd(-60,60),56,G.map.ph-30);later(i*.1,()=>{if(!e.dead)ezone(tx,ty,30,4,e.dmg*.5,'#3a8a2a','#7ae05a')})}tone('sine',200,120,.3,.06);break}
     case'web':{const k=1+Math.floor(T*2);for(let i=-k;i<=k;i++){const b=ebullet(e.x,oy,a0+i*.28,120*sv,e.dmg*.6,'#eaeaf0',4);b.slow=1}tone('sine',800,300,.2,.05);break}
 
     /* ---- 고층용 복합 패턴 ---- */
     case'sweep':{const k=10+Math.floor(T*8),dir=Math.random()<.5?1:-1,span=1.6+T*.8,st=a0-dir*span/2;tone('square',120,700,.9,.05);for(let i=0;i<k;i++)later(i*.07,()=>{if(!e.dead)tlLine(e.x,e.y-e.hh*.55,st+dir*span*i/(k-1),460,9,.75*td,e.dmg*1.3,col)});break}
     case'grid':{const S=46,ox=p.x,oy2=p.y,par=rint(0,1);for(let w=0;w<2;w++)later(w*(.85*td),()=>{if(e.dead)return;for(let gx=-3;gx<=3;gx++)for(let gy=-2;gy<=2;gy++){if(((gx+gy)&1)!==((par+w)&1))continue;const tx=clamp(ox+gx*S,30,G.map.pw-30),ty=clamp(oy2+gy*S*.62,56,G.map.ph-30);telegraph(tx,ty,24,.8*td,e.dmg*.6,col)}});sfx.roar();break}
-    case'flower':{const n=Math.round((10+T*8)*(RB?1.5:1)),waves=3+(T>.6?1:0)+(RB?2:0);for(let w=0;w<waves;w++)later(w*.22,()=>{if(e.dead)return;const tw=(w%2?1:-1)*(.9+T*.6);for(let i=0;i<n;i++){const b=ebullet(e.x,e.y-e.hh*.55,i/n*TAU+w*.2,60*sv,e.dmg*.8,w%2?'#ffffff':col,3);b.turn=tw;b.life=6}});tone('triangle',300,900,.5,.05);break}
-    case'pincer':{const gapY=clamp(p.y+rnd(-30,30),70,G.map.ph-60),N=RB?22:14,H=G.map.ph;for(const sd of[-1,1]){const x0=sd<0?28:G.map.pw-28;for(let i=0;i<N;i++){const y=56+i*(H-90)/(N-1);if(Math.abs(y-gapY)<26||blockAt(x0,y))continue;const b=ebullet(x0,y,sd<0?0:Math.PI,(60+T*40),e.dmg,col,3);b.life=9}}tone('square',90,60,.5,.08);ringFx(e.x,e.y,30,['#ffffff',col,col,'#000'],.3,{top:1});break}
+    case'flower':{const n=Math.round((10+T*8)*(RB?1.25:1)),waves=3+(T>.6?1:0)+(RB?1:0);for(let w=0;w<waves;w++)later(w*.22,()=>{if(e.dead)return;const tw=(w%2?1:-1)*(.9+T*.6);for(let i=0;i<n;i++){const b=ebullet(e.x,e.y-e.hh*.55,i/n*TAU+w*.2,60*sv,e.dmg*.8,w%2?'#ffffff':col,3);b.turn=tw;b.life=6}});tone('triangle',300,900,.5,.05);break}
+    case'pincer':{const gapY=clamp(p.y+rnd(-30,30),70,G.map.ph-60),N=RB?18:14,H=G.map.ph;for(const sd of[-1,1]){const x0=sd<0?28:G.map.pw-28;for(let i=0;i<N;i++){const y=56+i*(H-90)/(N-1);if(Math.abs(y-gapY)<26||blockAt(x0,y))continue;const b=ebullet(x0,y,sd<0?0:Math.PI,(60+T*40),e.dmg,col,3);b.life=9}}tone('square',90,60,.5,.08);ringFx(e.x,e.y,30,['#ffffff',col,col,'#000'],.3,{top:1});break}
     case'mines':{const k=4+Math.floor(T*5);for(let i=0;i<k;i++){const tx=clamp(p.x+rnd(-120,120),30,G.map.pw-30),ty=clamp(p.y+rnd(-70,70),56,G.map.ph-30);later(i*.12,()=>{if(e.dead)return;telegraph(tx,ty,20,1.0*td,e.dmg*.6,col,()=>{const n=6+Math.floor(T*4),o=rnd(TAU);for(let j=0;j<n;j++)ebullet(tx,ty-4,o+j/n*TAU,75*sv,e.dmg*.7,col,3)})})}tone('sine',300,90,.4,.06);break}
     case'meteorBig':{const R=60+T*30;let tx=p.x,ty=p.y;addFx({layer:'g',t:0,upd(dt){this.t+=dt;if(this.t<.9){tx+=(G.p.x-tx)*Math.min(1,dt*3);ty+=(G.p.y-ty)*Math.min(1,dt*3)}return this.t<1.6*td+.1},draw(){pxRing(ctx,tx,ty,R,R*.62,col);ctx.globalAlpha=.12+.2*Math.min(1,this.t/(1.6*td));pxEll(ctx,tx,ty,R*Math.min(1,this.t/(1.6*td)),R*.62*Math.min(1,this.t/(1.6*td)),col);ctx.globalAlpha=1}});
       later(1.6*td,()=>{if(e.dead)return;const P=G.p;if(Math.hypot(P.x-tx,(P.y-ty)*1.4)<R)hurtPlayer(e.dmg*1.2,{ground:true,boss:true});boom(tx,ty,R*.9,['#ffffff','#ffd24a',col,'#3a1a1a'],true);shake(10);sfx.bigboom();const n=12+Math.floor(T*12);for(let j=0;j<n;j++)ebullet(tx,ty-4,j/n*TAU,90*sv,e.dmg*.7,col,3)});sfx.roar();break}
-    case'orbit':{const n=Math.round((8+Math.floor(T*8))*(RB?1.7:1)),R0=34;for(let i=0;i<n;i++){const a=i/n*TAU,b=ebullet(e.x+Math.cos(a)*R0,e.y-e.hh*.55+Math.sin(a)*R0*.7,a,95*sv,e.dmg*.9,col,3);b.wait=.9;b.go=Math.atan2(G.p.y-10-b.y,G.p.x-b.x)+(i%2?.12:-.12);b.life=6}ringFx(e.x,e.y,40,['#ffffff',col,col,'#000'],.6,{top:1});tone('square',500,200,.5,.05);break}
-    case'breath':{for(let i=0;i<((ph2?24:16)+Math.floor(T*16))*(RB?1.6:1);i++)later(i*.04,()=>{if(!e.dead){const b=Math.atan2(G.p.y-10-oy,G.p.x-e.x)+rnd(-.35,.35);ebullet(e.x+e.face*e.r,oy,b,rnd(110,170)*sv,e.dmg*.6,pick([col,'#ff3a3a','#ffd84a']),3)}});sfx.fire();break}
+    case'orbit':{const n=Math.round((8+Math.floor(T*8))*(RB?1.3:1)),R0=34;for(let i=0;i<n;i++){const a=i/n*TAU,b=ebullet(e.x+Math.cos(a)*R0,e.y-e.hh*.55+Math.sin(a)*R0*.7,a,95*sv,e.dmg*.9,col,3);b.wait=.9;b.go=Math.atan2(G.p.y-10-b.y,G.p.x-b.x)+(i%2?.12:-.12);b.life=6}ringFx(e.x,e.y,40,['#ffffff',col,col,'#000'],.6,{top:1});tone('square',500,200,.5,.05);break}
+    case'breath':{for(let i=0;i<((ph2?24:16)+Math.floor(T*16))*(RB?1.3:1);i++)later(i*.04,()=>{if(!e.dead){const b=Math.atan2(G.p.y-10-oy,G.p.x-e.x)+rnd(-.35,.35);ebullet(e.x+e.face*e.r,oy,b,rnd(110,170)*sv,e.dmg*.6,pick([col,'#ff3a3a','#ffd84a']),3)}});sfx.fire();break}
   }
 }
 function bossGeneric(e,dt,p,d,ux,uy,sp){
@@ -1952,8 +1957,9 @@ function bossGeneric(e,dt,p,d,ux,uy,sp){
   const m=d>140?1:d<90?-1:0;chase(e,(ux*m-uy*.5)*sp*dt,(uy*m+ux*.5)*sp*dt,e.r-2);
   e.cd-=dt;if(e.cd>0||G.dead)return;
   e.cd=(ph2?1.5:2.3)*(1-T*.35)*(rage?.7:1);const pat=d0.pat[e.ph%d0.pat.length];e.ph++;bossPattern(e,p,pat,ph2);
+  if(G.zone==='underdeep'){const dur=(PDUR[pat]||1)*(1-T*.3);e.busyUntil=G.time+dur;e.cd=Math.max(e.cd*.75,dur+.3)}
   if(T>=.3&&e.ph%(ph2?2:3)===0){const zs=['grid','mines','rain','slam','meteorBig','sweep','pincer'].filter(z=>z!==pat),z=d0.pat.find(q=>zs.includes(q)&&q!==pat)||'rain';later(.35,()=>{if(!e.dead&&e.st==='idle')bossPattern(e,G.p,z,ph2)})}
-  if(rage&&T>.2){const nx=d0.pat[(e.ph+1)%d0.pat.length];if(nx!=='charge'&&nx!=='combo'&&nx!=='spiral'&&nx!=='blink')later(.55,()=>{if(!e.dead&&e.st==='idle')bossPattern(e,G.p,nx,ph2)})}
+  if(rage&&T>.2&&G.zone!=='underdeep'){const nx=d0.pat[(e.ph+1)%d0.pat.length];if(nx!=='charge'&&nx!=='combo'&&nx!=='spiral'&&nx!=='blink')later(.55,()=>{if(!e.dead&&e.st==='idle')bossPattern(e,G.p,nx,ph2)})}
 }
 /* 100층 마왕 바알: 75%부터 패턴 두 줄, 40%부터 심연 개방(끊임없는 4갈래 탄막), 15%부터 광폭화 */
 function finalBoss(e,dt,p){
