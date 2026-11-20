@@ -2795,7 +2795,7 @@ function netMsg(m){
   else if(m.t==='dreq'){NET.req=NET.req.filter(r=>r.k!=='d');NET.req.push({k:'d',from:m.from,nick:m.nick});toast(`${m.nick} 님의 결투 신청 · [친구] 메뉴에서 수락`);chatLine('알림',m.nick+' 님이 결투를 신청했습니다 ([친구] 메뉴)','#ffe27a');sfx.ui()}
   else if(m.t==='dstart'){NET.req=NET.req.filter(r=>r.k!=='d');duelStart(m)}
   else if(m.t==='dend'){if(DU.on&&!DU.done&&m.res!=='time')duelFinish('win')}
-  else if(m.t==='party'){const had=NET.party.length;NET.party=m.members||[];NET.lead=m.lead||null;if(!had&&NET.party.length)toast('파티 결성!');else if(had&&!NET.party.length)toast('파티가 해산되었습니다')}
+  else if(m.t==='party'){const had=NET.party.length;NET.party=m.members||[];NET.lead=m.lead||null;if(!had&&NET.party.length)toast('파티 결성!');else if(had&&!NET.party.length)toast('파티가 해산되었습니다');if(NET.lead===NET.me&&NET.party.length>1&&(G.zone==='tower'||G.zone==='underdeep'))coGo()}
   else if(m.t==='treq'){NET.req=NET.req.filter(r=>r.k!=='t');NET.req.push({k:'t',from:m.from,nick:m.nick});toast(`${m.nick} 님의 거래 신청 · [친구] 메뉴에서 수락`);chatLine('알림',m.nick+' 님이 거래를 신청했습니다 ([친구] 메뉴)','#ffe27a');sfx.ui()}
   else if(m.t==='topen'){NET.req=NET.req.filter(r=>r.k!=='t');NET.tr={with:m.with,nick:m.nick,mine:[],gold:0,their:{items:[],gold:0},okMe:false,okThem:false,sel:null};openPanel('trade');sfx.ui()}
   else if(m.t==='toff'){if(NET.tr)NET.tr.their={items:(m.items||[]).slice(0,8),gold:Math.max(0,m.gold|0)}}
