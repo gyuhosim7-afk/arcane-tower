@@ -884,7 +884,7 @@ const MYTH={
   pharaohRobe:{boss:'pharaoh',slot:'robe',n:'파라오의 황금 수의',fx:'적 처치 시 체력 3% 회복 · 저주에 걸리지 않음',a:{vit:12,wis:8}},
   cerbRing:{boss:'cerberus',slot:'ring',n:'지옥견의 목걸이 반지',fx:'치명 피해 +50% · 치명타 시 화상',a:{crit:10,int:8}},
   stormScepter:{boss:'stormKing',slot:'staff',n:'뇌정의 홀',fx:'마법 적중 시 20% 확률로 주변 적 2명에게 연쇄 번개',a:{int:14}},
-  knightCloak:{boss:'deathLord',slot:'robe',n:'흑기사단장의 망토',fx:'준 피해의 3%만큼 체력 흡수 · 출혈에 걸리지 않음',a:{vit:14,int:8}},
+  knightCloak:{boss:'deathLord',slot:'robe',n:'흑기사단장의 망토',fx:'준 피해의 1.5%만큼 체력 흡수 · 출혈에 걸리지 않음',a:{vit:14,int:8}},
   magmaCore:{boss:'magmaTitan',slot:'ring',n:'용암핵 반지',fx:'받는 피해 -10% · 화상에 걸리지 않음 · 맞으면 주변에 화염 반격',a:{vit:12,int:10}},
   shadowStaff:{boss:'shadowKing',slot:'staff',n:'그림자 군주의 지팡이',fx:'순간이동 후 3초간 마법 피해 +40% · 실명에 걸리지 않음',a:{int:18,crit:8}}
 };
@@ -1473,7 +1473,7 @@ function hurt(e,dmg,o={}){
   if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;if(e.boss&&!o.dot)mul*=1+(D.bossDmg||0)/100;
   const c=!o.dot&&Math.random()*100<D.crit+(jobIs('ice')&&(e.frozen>0||e.slow>0)?25:0);if(jobIs('ice')&&(e.frozen>0||e.slow>0))mul*=1.4;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
   let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
-  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*0.05*(1+(D.bossDmg||0)/100)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;if(hasM('uqOrigin')&&!o.dot&&e.hp>0&&e.hp<=e.max*.15){d=Math.ceil(e.hp)+1;if(G.p){G.p.cd={};G.texts.push({x:e.x,y:e.y-e.hh-20,vy:-16,life:1.2,str:'처형!',col:'#3ff0e0',sc:1.3})}}/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
+  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*0.05*(1+(D.bossDmg||0)/100)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;if(hasM('uqOrigin')&&!o.dot&&!e.boss&&e.hp>0&&e.hp<=e.max*.10&&G.p&&(G.p.uqOriginAt||0)<=G.time){G.p.uqOriginAt=G.time+15;d=Math.ceil(e.hp)+1;G.texts.push({x:e.x,y:e.y-e.hh-20,vy:-16,life:1.2,str:'처형!',col:'#3ff0e0',sc:1.3})}/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
   const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));if(e.ghost)coHit(e,d);else e.hp-=d;if(!o.dot){e.flash=e.boss?.1:.14;if(!o.proc&&!e.boss){G.hitstop=Math.max(G.hitstop,c?0.055:0.03);hitFx(o.el||'none',e.x,e.y-e.r,c)}}
   if(o.kb&&!e.boss&&o.sx!==undefined){const a=Math.atan2(e.y-o.sy,e.x-o.sx);e.kx+=Math.cos(a)*o.kb;e.ky+=Math.sin(a)*o.kb}
   G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+shown+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
@@ -1531,7 +1531,7 @@ function hurtPlayer(d,source={}){
   if(hasM('gargHeart')&&p.hp-d<D.maxHp*.3&&!(p.stoneCd>G.time)){p.stoneT=G.time+6;p.stoneCd=G.time+45;G.texts.push({x:p.x,y:p.y-42,vy:-18,life:1.2,str:'석상의 심장!',col:'#c8c0b0',sc:1});burst(p.x,p.y-10,20,['#8b93a7','#d8dee9'],60,.5)}
   if(hasM('magmaCore')&&!(p.magT>G.time)){p.magT=G.time+1;aoe(p.x,p.y-6,50,D.pow*2,{el:'fire',st:'burn',proc:1});boom(p.x,p.y-6,30,['#ffffff','#ffd24a','#ff7a2a','#c0301a'],false)}
   if(p.shield>0){const a=Math.min(p.shield,Math.floor(d*.5));p.shield-=a;d=Math.max(1,d-a);flashFx(p.x,p.y-12,6,EL.none.c[1],.15);if(p.shield<=0){burst(p.x,p.y-12,20,EL.none.c,90,.4);sfx.frost()}}
-  if(hasM('uqAbyss')&&d<1e8){if(p.mp>=D.maxMp*.99&&!(p.nullCd>G.time)){p.nullCd=G.time+30;p.ifr=.5;G.texts.push({x:p.x,y:p.y-40,vy:-18,life:1,str:'무효!',col:'#3ff0e0',sc:1.2});ringFx(p.x,p.y-10,26,['#ffffff','#3ff0e0','#3ff0e0','#000'],.4,{top:1});return}const mv=Math.min(p.mp,d*.25);p.mp-=mv;d=Math.max(1,Math.round(d-mv))}
+  if(hasM('uqAbyss')&&d<1e8){if(p.mp>=D.maxMp*.99&&!(p.nullCd>G.time)){p.nullCd=G.time+60;p.ifr=.5;G.texts.push({x:p.x,y:p.y-40,vy:-18,life:1,str:'무효!',col:'#3ff0e0',sc:1.2});ringFx(p.x,p.y-10,20,['#3ff0e0','#3ff0e0','#0a6a64'],.4,{top:1});return}const mv=Math.min(p.mp,d*.15);p.mp-=mv;d=Math.max(1,Math.round(d-mv))}
   raidDebuff();p.hp-=d;p.ifr=.7;p.hurtT=.25;if(fromBoss)p.hitFlashUntil=0;else{p.hitFlashUntil=G.time+.14;G.hitstop=Math.max(G.hitstop||0,source.projectile?0.045:0.035)}shake(5);G.flash=.18;G.flashCol='#e5484d';sfx.hurt();
   G.texts.push({x:p.x,y:p.y-30,vy:-24,life:.8,str:'-'+d,col:'#ff6b6b',sc:1});if(fromBoss)burst(p.x,p.y-8,10,['#e5484d','#ff9a3c'],70,.4,{add:false});else{const hitPalette=(EL[hitEl]||EL.dark).c;burst(p.x,p.y-8,10,['#ffffff',hitPalette[1],hitPalette[2]],78,.42,{add:false});if(source.impactFx!==false)bossImpactFx(hitCol,p.x,p.y-8,16,false,'fx')}
   if(p.hp<=0&&hasM('dragonScale')&&!p.revived){p.revived=true;p.hp=D.maxHp*.4;p.ifr=2;banner('심연룡의 가호','죽음을 버텨 냈습니다');boom(p.x,p.y-8,70,['#ffffff','#ffd24a','#c94cff','#3a1258'],true);aoe(p.x,p.y-8,90,D.pow*12,{el:'fire',st:'burn',proc:1,kb:200});shake(12);sfx.bigboom();return}
@@ -1673,8 +1673,8 @@ function summonAlly(x,y,life){if(JB.allies>=8)return;JB.allies++;const a={x,y,t:
     draw(){pxEll(ctx,a.x,a.y+1,6,2,'rgba(0,0,0,.3)');ctx.globalAlpha=.85;drawSpr(A.skel,a.x,a.y,a.face<0,'');ctx.globalAlpha=1;pxRing(ctx,a.x,a.y,7,3,'#c94cff',16)}})}
 function holySpears(ex){if(ex<=0)return;const p=G.p,L=G.en.filter(e=>!e.dead).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y)).slice(0,3);for(const e of L){const a=Math.atan2(e.y-e.r-(p.y-14),e.x-p.x);G.pr.push(mkBolt('holy',p.x,p.y-14,a,340,ex*1.5+D.pow*2,{homing:1,size:2,pierce:0,kb:60}))}}
 function uniqueOnCast(sp,dmg){const p=G.p;
-  if(hasM('uqSeal')){p.uqN=(p.uqN||0)+1;if(p.uqN>=10){p.uqN=0;G.stopUntil=G.time+2;G.flash=.3;G.flashCol='#3ff0e0';G.texts.push({x:p.x,y:p.y-46,vy:-16,life:1.4,str:'시간 정지!',col:'#3ff0e0',sc:1.2});sfx.frost()}}
-  if(hasM('uqEcho')&&!sp.echoing&&Math.random()<.35){later(.4,()=>{if(G.dead||!isCombatZone())return;const e2=Object.assign({},sp,{echoing:1});KIND[sp.k](e2,G.p,aimPoint(),dmg);G.texts.push({x:G.p.x,y:G.p.y-40,vy:-18,life:.7,str:'메아리!',col:'#c94cff',sc:1})})}}
+  if(hasM('uqSeal')){p.uqN=(p.uqN||0)+1;if(p.uqN>=15){p.uqN=0;G.stopUntil=G.time+1;G.flash=.15;G.flashCol='#3ff0e0';G.texts.push({x:p.x,y:p.y-46,vy:-16,life:1,str:'시간 정지!',col:'#3ff0e0',sc:1});sfx.frost()}}
+  if(hasM('uqEcho')&&!sp.echoing&&Math.random()<.20){later(.4,()=>{if(G.dead||!isCombatZone())return;const e2=Object.assign({},sp,{echoing:1});KIND[sp.k](e2,G.p,aimPoint(),dmg*.65);G.texts.push({x:G.p.x,y:G.p.y-40,vy:-18,life:.7,str:'메아리!',col:'#c94cff',sc:1})})}}
 const timeStopped=()=>G.stopUntil>G.time;
 function castMyth(){
   const p=G.p,k=D.sk;if(!k||G.dead||ui.open||!G.started)return;const s=MYTH_SK[k];if((p.cd.myth||0)>0)return;
