@@ -784,11 +784,19 @@ Object.assign(MYTH_DRAW,{
   magmaCore:g=>{drawRing(g,4,-1,['#ffd04a','#c04a1a','#3a0a0a'],GEM[4]);pxDisc(g,16,6,5,'#3a1a10');pxDisc(g,15.6,5.6,4,'#c0301a');pxDisc(g,15.4,5.2,2.6,'#ff7a2a');pxDisc(g,15,5,1.3,'#ffe27a');pxLine(g,12,4,14,7,'#14080a');pxLine(g,18,3,17,6,'#14080a');px1(g,20,1,'#ff9a3c');px1(g,11,1,'#ffd24a')},
   shadowStaff:g=>{staffShaft(g,{sh:['#0a0810','#1a1424','#3a2e4a'],fr:['#e0c8ff','#7a26c8','#2a0a4a']},3,21,13,11);for(let i=0;i<4;i++)pxArc(g,16,7,3+i*1.3,3+i*1.3,i*1.4,i*1.4+2.2,i%2?'#7a26c8':'#2a0a4a');pxDisc(g,16,7,2.4,'#05040a');px1(g,15,6,'#c94cff');px1(g,17,7,'#c94cff');for(const[x,y]of[[20,1],[9,3],[22,11]])px1(g,x,y,'#c94cff')}
 });
+
+/* ===== 유니크: 지하 레이드 보스 전용, 신화보다 위 등급. 처음 보는 사기 특성 ===== */
+Object.assign(MYTH_DRAW,{
+  uqSeal:g=>{staffShaft(g,{sh:['#0a2a2a','#1f6f6a','#5ff0e0'],fr:['#ffffff','#3ff0e0','#0a6a64']},3,21,13,11);pxRing(g,16,7,6,6,'#3ff0e0',30);pxRing(g,16,7,4.5,4.5,'#0a6a64',24);pxDisc(g,16,7,2.6,'#ffffff');for(let i=0;i<4;i++){const a=i/4*TAU+.4;px1(g,16+Math.cos(a)*6,7+Math.sin(a)*6,'#ffffff')}pxLine(g,16,7,16,3,'#0a2a2a');pxLine(g,16,7,19,7,'#0a2a2a')},
+  uqAbyss:g=>{drawRobe(g,5,4,['#0a1a2a','#020810','#3ff0e0','#c94cff']);for(let y=13;y<21;y+=3)for(let x=7;x<18;x+=3)px1(g,x,y,'#3ff0e0');pxEll(g,12.5,5.8,2,2.6,'#3ff0e0');px1(g,12,5,'#ffffff');px1(g,13,5,'#ffffff')},
+  uqEcho:g=>{drawRing(g,2,-1,['#e0fffc','#3ff0e0','#0a6a64'],GEM[3]);pxRing(g,16,6,5,4,'#c94cff',24);pxRing(g,16,6,3.2,2.6,'#3ff0e0',18);pxDisc(g,16,6,1.8,'#ffffff');pxRing(g,16,6,6.8,5.4,'#ffffff',12)},
+  uqOrigin:g=>{staffShaft(g,{sh:['#14081e','#3a1a5a','#c94cff'],fr:['#ffffff','#3ff0e0','#5a1a8a']},3,21,13,11);pxPoly(g,[[16,-1],[21,6],[16,13],[11,6]],'#14081e');pxPoly(g,[[16,1],[19.5,6],[16,11],[12.5,6]],'#3a1a5a');pxDisc(g,16,6,2.4,'#3ff0e0');px1(g,15,5,'#ffffff');pxLine(g,10,2,13,5,'#c94cff');pxLine(g,22,2,19,5,'#c94cff')}
+});
 function itemSpr(it){const v=gearV(it),k=(it.my||it.slot+v)+'_'+it.r;if(!GEAR_CACHE[k]){const c=mkC(GS,GS),g=g2(c);if(it.my&&MYTH_DRAW[it.my])MYTH_DRAW[it.my](g);else if(it.slot==='ring')drawRing(g,it.r,v);else if(it.slot==='robe')drawRobe(g,it.r,v);else drawStaffIcon(g,it.r);gOutline(c);GEAR_CACHE[k]={s:c,u:iconURL(c)}}return GEAR_CACHE[k].s}
 function itemIcon(it){itemSpr(it);return GEAR_CACHE[(it.my||it.slot+gearV(it))+'_'+it.r].u}
 /* 영웅 망토 테두리는 입은 로브 등급 색, 지팡이 머리는 든 지팡이 모양 */
 const HERO_CACHE={};
-function heroSet(el,fr){const rb=S.eq.robe,k=el+(rb?rb.r:'x')+fr;if(!HERO_CACHE[k]){const pal=hoodPal(HERO[el],EL[el].c[1]);if(rb)pal.D=RPAL[rb.r].y;HERO_CACHE[k]=sprSet(fr?HOOD2:HOOD,{map:pal})}return HERO_CACHE[k]}
+function heroSet(el,fr){const rb=S.eq.robe,k=el+(rb?rb.r:'x')+fr;if(!HERO_CACHE[k]){const pal=hoodPal(HERO[el],EL[el].c[1]);if(rb)pal.D=RPAL[Math.min(rb.r,5)].y;HERO_CACHE[k]=sprSet(fr?HOOD2:HOOD,{map:pal})}return HERO_CACHE[k]}
 /* ---- 몬스터: 기울기·출렁임·맞으면 움찔, 죽으면 찌그러지며 흩어짐 ---- */
 function drawSprFx(s,x,y,flip,mode,sc,sqx,sqy,lean){
   const im=mode==='w'?(flip?s.wf:s.w):mode==='i'?(flip?s.if:s.i):(flip?s.f:s.n),w=Math.round(s.W*sc*sqx),h=Math.round(s.H*sc*sqy),x0=Math.round(x-w/2),y0=Math.round(y-h);
@@ -811,8 +819,8 @@ function getSlots(){try{return JSON.parse(localStorage.getItem(SLOT_KEY)||'{}')|
 function putSlots(o){try{localStorage.setItem(SLOT_KEY,JSON.stringify(o))}catch(e){}}
 function save(){try{const j=JSON.stringify(S);localStorage.setItem(SAVE_KEY,j);if(S.pid){const sl=getSlots();sl[S.pid]=j;putSlots(sl)}}catch(e){}}
 function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);if(s){const o=JSON.parse(s);if(o&&o.lvl&&o.aff){const r=Object.assign(newSave(o.aff[0]),o);r.title=cleanTitle(r.title);r.lvl=clamp(Math.floor(+r.lvl||1),1,MAX_LVL);r.xp=Math.max(0,+r.xp||0);r.underdeepBestRoom=clamp(Math.floor(+r.underdeepBestRoom||0),0,10);r.potScroll=Math.max(0,Math.floor(+r.potScroll||0));r.epotScroll=Math.max(0,Math.floor(+r.epotScroll||0));r.adv2Offer=(Array.isArray(r.adv2Offer)?r.adv2Offer:[]).filter(it=>it&&it.my&&MYTH[it.my]).slice(0,3);r.adv2Entered=!!r.adv2Entered;if(r.adv2Entered&&!r.job)r.job=r.aff[0];const jc=adv2Choices(r.aff);r.adv2Pick=r.adv2Entered?(jc.includes(r.job)?r.job:null):(jc.includes(r.adv2Pick)?r.adv2Pick:null);r.hiddenJob=r.hiddenJob==='dragonLord'?'dragonLord':null;r.dragonTokens=[...new Set((Array.isArray(r.dragonTokens)?r.dragonTokens:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];r.dragonPending=[...new Set((Array.isArray(r.dragonPending)?r.dragonPending:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))];for(const k of r.dragonPending)if(!r.dragonTokens.includes(k))r.dragonTokens.push(k);r.dragonPending=[];r.dragonOffer=[...new Set((Array.isArray(r.dragonOffer)?r.dragonOffer:[]).filter(k=>DRAGON_SIGIL_KEYS.includes(k)))].slice(0,3);r.dragonRingOffer=r.dragonRingOffer&&r.dragonRingOffer.my==='demonEye'?r.dragonRingOffer:null;r.dragonRage=clamp(+r.dragonRage||0,0,100);if(r.job)for(const sp of SPL)if(sp.o&&sp.o.job===r.job&&!r.grim[sp.id])r.grim[sp.id]=1;r.slots=(Array.isArray(r.slots)?r.slots:[]).map(k=>{const sp=k&&SP[k];if(r.hiddenJob==='dragonLord')return sp&&sp.dragonSkill?k:null;return sp&&(!r.job||sp.el==='none'||sp.el===r.job)?k:null});r.inv=(r.inv||[]).filter(it=>!it.my||MYTH[it.my]);for(const q in r.eq)if(r.eq[q]&&r.eq[q].my&&!MYTH[r.eq[q].my])r.eq[q]=null;for(const it of [...Object.values(r.eq||{}),...r.inv,...r.adv2Offer,r.dragonRingOffer])if(it)ensureItemPotentials(it);for(const k in r.grim)if(!SP[k])delete r.grim[k];return r}}}catch(e){}return null}
-const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'}];
-const RM=[1,1.3,1.7,2.2,3,4.2];
+const RAR=[{n:'일반',c:'#c9c9d6'},{n:'고급',c:'#5ed36b'},{n:'희귀',c:'#4aa3ff'},{n:'영웅',c:'#c04cff'},{n:'전설',c:'#ffb02e'},{n:'신화',c:'#ff4a6a'},{n:'유니크',c:'#3ff0e0'}];
+const RM=[1,1.3,1.7,2.2,3,4.2,5];
 const SLOTN={robe:'로브',staff:'지팡이',ring:'아케인 반지'};
 const PRE=['낡은','견습생의','마도사의','대마법사의','심연의'];
 const STN={pow:'마력',hp:'생명력',def:'방어',mp:'마나',crit:'치명타%',critD:'치명타 피해',boss:'보스 피해',basic:'기본 공격력',int:'지능',vit:'체력',wis:'정신'};
@@ -882,6 +890,13 @@ const MYTH={
   shadowStaff:{boss:'shadowKing',slot:'staff',n:'그림자 군주의 지팡이',fx:'순간이동 후 3초간 마법 피해 +40% · 실명에 걸리지 않음',a:{int:18,crit:8}}
 };
 
+Object.assign(MYTH,{
+  uqSeal:{boss:'underdeepGatekeeper',uq:1,slot:'staff',n:'봉인 파괴자의 홀',fx:'[시간 정지] 마법을 10번 쓸 때마다 2초 동안 모든 적과 탄막이 멈춘다 (나는 자유롭게 움직이고 공격)',a:{int:24,cdr:8,crit:8}},
+  uqAbyss:{boss:'underdeepCore',uq:1,slot:'robe',n:'무저갱의 외피',fx:'[심연 장막] 받는 피해의 25%를 마나가 대신 받는다 · 마나가 가득할 때 받는 공격 1번은 완전히 무효 (30초마다)',a:{vit:26,wis:20,hp:300}},
+  uqEcho:{boss:'underdeepLord',uq:1,slot:'ring',n:'망각의 메아리 고리',fx:'[메아리 시전] 마법을 쓰면 35% 확률로 0.4초 뒤 같은 마법이 공짜로 한 번 더 나간다',a:{int:20,wis:20,crit:10}},
+  uqOrigin:{boss:'underdeepOrigin',uq:1,slot:'staff',n:'심연 근원의 지팡이',fx:'[처형] 체력 15% 이하인 적을 맞히면 즉시 처치 (보스 포함) · 처형하면 모든 마법 쿨타임 초기화',a:{int:30,crit:12,cdr:6}}
+});
+const UNIQUE_RATE=.02;
 const MYTH_SK={fist:{n:'거신의 주먹',mp:60,cd:20},judge:{n:'흑염의 심판',mp:70,cd:18}};
 function mainStats(slot,il,r){if(slot==='staff')return{pow:(3+il*1.6)*RM[r]};if(slot==='robe')return{hp:(20+il*9)*RM[r],def:(2+il*.8)*RM[r]};return{mp:(10+il*3)*RM[r],crit:2+r*1.5}}
 function rollAffix(il,r){const k=pick(['int','vit','wis','crit','hp','pow']);const v={int:1+il/6,vit:1+il/6,wis:1+il/6,crit:1+r*.6,hp:10+il*4,pow:1+il*.5}[k];return[k,Math.round(v*rnd(.8,1.2)*10)/10]}
@@ -944,14 +959,14 @@ function mkItem(il,minR=0,slot){
 /* 신화 추가 옵션은 아이템 레벨과 보스 층 배수에 따라 성장(5층 ×1.15~100층 ×1.60). */
 const mythAff=(k,v,il)=>k==='int'||k==='vit'||k==='wis'?v/16*(1+il/6):k==='hp'?v/50*(10+il*4):k==='mp'?v/30*(10+il*3):v;
 function applyMythLevel(it,il){il=Math.max(1,Math.floor(il||1));const m=MYTH[it.my],mul=1.15+.45*(mythFloor(it.my)-5)/95;it.il=il;it.a={};for(const k in m.a)it.a[k]=Math.round(mythAff(k,m.a[k],il)*mul*10)/10}
-function mkMyth(key){const m=MYTH[key],it={id:S.uid++,slot:m.slot,r:5,il:1,up:0,my:key,a:{}};applyMythLevel(it,S.lvl);ensureItemPotentials(it);return it}
+function mkMyth(key){const m=MYTH[key],it={id:S.uid++,slot:m.slot,r:m.uq?6:5,il:1,up:0,my:key,a:{}};applyMythLevel(it,S.lvl);ensureItemPotentials(it);return it}
 function syncMythLevels(){const il=Math.max(1,Math.floor(S.lvl||1));let changed=false;for(const it of (S.inv||[]).concat(Object.values(S.eq||{})))if(it&&it.my&&MYTH[it.my]&&it.il!==il){applyMythLevel(it,il);changed=true}return changed}
 /* 신화 기본 능력치: 같은 레벨 전설 +15강보다 10% 높게(×7.26 vs ×6.6). */
-const mythFloor=k=>{const b=MYTH[k].boss,i=MIDS.indexOf(b);return i>=0?i*10+5:BOSSES.indexOf(b)*10+10};
+const mythFloor=k=>{if(MYTH[k].uq)return 110;const b=MYTH[k].boss,i=MIDS.indexOf(b);return i>=0?i*10+5:BOSSES.indexOf(b)*10+10};
 /* 신화 주능력치 배수는 전설 +15의 계산식에 10% 보너스를 적용하며, 보스 층 차이는 고유 옵션에 반영 */
 const MYTH_FULL_UP=1+.08*15,MYTH_EDGE=1.1;
 const mythMain=()=>RM[4]*MYTH_FULL_UP*MYTH_EDGE;
-function itemStats(it){ensureItemPotentials(it);if(it.my)it.up=0;const m=it.my?mainStats(it.slot,it.il,4):mainStats(it.slot,it.il,it.r),o={};if(it.my)for(const k in m)if(k!=='crit')m[k]*=mythMain()/RM[4];else m[k]*=MYTH_FULL_UP*MYTH_EDGE;for(const k in m)o[k]=m[k]*(1+.08*it.up);for(const k in it.a)o[k]=(o[k]||0)+it.a[k];for(const k in o)o[k]=Math.round(o[k]*10)/10;return o}
+function itemStats(it){ensureItemPotentials(it);if(it.my)it.up=0;const m=it.my?mainStats(it.slot,it.il,4):mainStats(it.slot,it.il,it.r),o={};if(it.my)for(const k in m)if(k!=='crit')m[k]*=mythMain()/RM[4]*(MYTH[it.my].uq?1.25:1);else m[k]*=MYTH_FULL_UP*MYTH_EDGE;for(const k in m)o[k]=m[k]*(1+.08*it.up);for(const k in it.a)o[k]=(o[k]||0)+it.a[k];for(const k in o)o[k]=Math.round(o[k]*10)/10;return o}
 const itemName=it=>(it.my?MYTH[it.my].n:PRE[it.r]+' '+GEAR_N[it.slot][it.v||0])+(it.up?' +'+it.up:'');
 const sellPrice=it=>Math.round((6+it.il*3)*(it.r+1)*(it.r+1)*(1+it.up*.2));
 const D={my:new Set()};
@@ -1048,6 +1063,8 @@ Object.assign(MON,{
   dreadMarshal:{n:'심연의 집행자',hp:1300,dmg:80,spd:42,xp:1800,r:15,boss:1,final:1,raidElite:1,sc:2.7,spr:'dreadMarshal',pat:['sweep','cross','charge','orbit','mines','lasers','ring'],bc:'#ff7ad9',weak:['holy','ice'],res:['dark']},
   voidTyrant:{n:'공허의 폭군',hp:1300,dmg:80,spd:36,xp:2200,r:16,boss:1,final:1,raidElite:1,sc:2.8,spr:'voidTyrant',pat:['grid','meteorBig','wall','flower','pincer','homing','rain'],bc:'#c94cff',weak:['holy','water'],res:['dark']},
   underdeepGatekeeper:{n:'지하 봉인 수문장',hp:1450,dmg:88,spd:34,xp:4200,r:18,boss:1,final:1,raidBoss:1,raidHp:90,raidDmg:9.1,sc:3,spr:'underdeepGatekeeper',pat:['slam','grid','sweep','cross','mines','meteorBig','orbit','ring'],bc:'#c94cff',weak:['holy','ice'],res:['dark']},
+  underdeepLord:{n:'망각의 군주',hp:2100,dmg:112,spd:36,xp:20000,r:16,boss:1,final:1,raidBoss:1,raidHp:69.4,raidDmg:7.5,sc:2.9,spr:'shadowKing',pat:['blink','cross','orbit','homing','flower','sweep','grid','pincer','mines','spiral','lasers'],bc:'#3ff0e0',weak:['holy','fire'],res:['dark']},
+  underdeepOrigin:{n:'심연의 근원',hp:2600,dmg:122,spd:40,xp:40000,r:20,boss:1,final:1,raidBoss:1,raidHp:63.4,raidDmg:7,sc:3.3,spr:'demonLord',pat:['lasers','sweep','grid','cross','orbit','homing','meteorBig','flower','pincer','rain','mines','breath','spiral','ring'],bc:'#3ff0e0',weak:['holy'],res:['dark','fire']},
   underdeepCore:{n:'무저갱의 심장',hp:1900,dmg:105,spd:38,xp:12000,r:20,boss:1,final:1,raidBoss:1,raidHp:68.5,raidDmg:7.62,sc:3.4,spr:'underdeepCore',pat:['lasers','meteorBig','sweep','grid','cross','orbit','homing','flower','pincer','rain','mines','ring'],bc:'#ff3a6a',weak:['holy','ice'],res:['dark']}
 });
 const UNDERDEEP_ROOMS=[
@@ -1060,7 +1077,17 @@ const UNDERDEEP_ROOMS=[
   {n:'공허의 사냥터',pool:['riftfang','obsidianGuard','abyssalArcanist'],elite:'voidTyrant'},
   {n:'마력 저장고',pool:['abyssalArcanist','obsidianGuard','riftfang','abyssalArcanist']},
   {n:'균열의 심연',pool:['obsidianGuard','riftfang','abyssalArcanist','obsidianGuard']},
-  {n:'무저갱 핵심부',pool:[],boss:'underdeepCore'}
+  {n:'무저갱 핵심부',pool:[],boss:'underdeepCore'},
+  {n:'뒤틀린 심층',pool:['riftfang','abyssalArcanist','obsidianGuard','riftfang']},
+  {n:'메아리 동굴',pool:['abyssalArcanist','obsidianGuard','abyssalArcanist','riftfang']},
+  {n:'집행자의 처소',pool:['obsidianGuard','riftfang','abyssalArcanist'],elite:'dreadMarshal'},
+  {n:'잊힌 제단',pool:['riftfang','obsidianGuard','abyssalArcanist','obsidianGuard']},
+  {n:'망각의 왕좌',pool:[],boss:'underdeepLord'},
+  {n:'부서진 차원',pool:['abyssalArcanist','riftfang','obsidianGuard','abyssalArcanist']},
+  {n:'폭군의 영역',pool:['riftfang','obsidianGuard','abyssalArcanist'],elite:'voidTyrant'},
+  {n:'근원의 통로',pool:['obsidianGuard','abyssalArcanist','riftfang','obsidianGuard']},
+  {n:'끝없는 낙하',pool:['riftfang','abyssalArcanist','obsidianGuard','riftfang']},
+  {n:'심연의 근원',pool:[],boss:'underdeepOrigin'}
 ];
 const MIDS=['ratKing','shroomLord','gargLord','wispLord','pharaoh','cerberus','stormKing','deathLord','magmaTitan','shadowKing'];
 const BOSSES=['kingslime','arachne','golemlord','ymir','lich','ifrit','harpyQ','archon','dragon','demonLord'];
@@ -1452,7 +1479,7 @@ function hurt(e,dmg,o={}){
   if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;if(e.boss&&!o.dot)mul*=1+(D.bossDmg||0)/100;
   const c=!o.dot&&Math.random()*100<D.crit+(jobIs('ice')&&(e.frozen>0||e.slow>0)?25:0);if(jobIs('ice')&&(e.frozen>0||e.slow>0))mul*=1.4;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
   let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
-  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*(o.dragonLordHit?0.06:0.05)*(1+(D.bossDmg||0)/100)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
+  if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*(o.dragonLordHit?0.06:0.05)*(1+(D.bossDmg||0)/100)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;if(hasM('uqOrigin')&&!o.dot&&e.hp>0&&e.hp<=e.max*.15){d=Math.ceil(e.hp)+1;if(G.p){G.p.cd={};G.texts.push({x:e.x,y:e.y-e.hh-20,vy:-16,life:1.2,str:'처형!',col:'#3ff0e0',sc:1.3})}}/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
   const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));e.hp-=d;if(S.hiddenJob==='dragonLord')addDragonRage(3);if(!o.dot){e.flash=e.boss?.1:.14;if(!o.proc&&!e.boss){G.hitstop=Math.max(G.hitstop,c?0.055:0.03);hitFx(o.el||'none',e.x,e.y-e.r,c)}}
   if(o.kb&&!e.boss&&o.sx!==undefined){const a=Math.atan2(e.y-o.sy,e.x-o.sx);e.kx+=Math.cos(a)*o.kb;e.ky+=Math.sin(a)*o.kb}
   G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+shown+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
@@ -1512,6 +1539,7 @@ function hurtPlayer(d,source={}){
   if(hasM('gargHeart')&&p.hp-d<D.maxHp*.3&&!(p.stoneCd>G.time)){p.stoneT=G.time+6;p.stoneCd=G.time+45;G.texts.push({x:p.x,y:p.y-42,vy:-18,life:1.2,str:'석상의 심장!',col:'#c8c0b0',sc:1});burst(p.x,p.y-10,20,['#8b93a7','#d8dee9'],60,.5)}
   if(hasM('magmaCore')&&!(p.magT>G.time)){p.magT=G.time+1;aoe(p.x,p.y-6,50,D.pow*2,{el:'fire',st:'burn',proc:1});boom(p.x,p.y-6,30,['#ffffff','#ffd24a','#ff7a2a','#c0301a'],false)}
   if(p.shield>0){const a=Math.min(p.shield,Math.floor(d*.5));p.shield-=a;d=Math.max(1,d-a);flashFx(p.x,p.y-12,6,EL.none.c[1],.15);if(p.shield<=0){burst(p.x,p.y-12,20,EL.none.c,90,.4);sfx.frost()}}
+  if(hasM('uqAbyss')&&d<1e8){if(p.mp>=D.maxMp*.99&&!(p.nullCd>G.time)){p.nullCd=G.time+30;p.ifr=.5;G.texts.push({x:p.x,y:p.y-40,vy:-18,life:1,str:'무효!',col:'#3ff0e0',sc:1.2});ringFx(p.x,p.y-10,26,['#ffffff','#3ff0e0','#3ff0e0','#000'],.4,{top:1});return}const mv=Math.min(p.mp,d*.25);p.mp-=mv;d=Math.max(1,Math.round(d-mv))}
   p.hp-=d;p.ifr=.7;p.hurtT=.25;if(fromBoss)p.hitFlashUntil=0;else{p.hitFlashUntil=G.time+.14;G.hitstop=Math.max(G.hitstop||0,source.projectile?0.045:0.035)}shake(5);G.flash=.18;G.flashCol='#e5484d';sfx.hurt();if(S.hiddenJob==='dragonLord')addDragonRage(8);
   G.texts.push({x:p.x,y:p.y-30,vy:-24,life:.8,str:'-'+d,col:'#ff6b6b',sc:1});if(fromBoss)burst(p.x,p.y-8,10,['#e5484d','#ff9a3c'],70,.4,{add:false});else{const hitPalette=(EL[hitEl]||EL.dark).c;burst(p.x,p.y-8,10,['#ffffff',hitPalette[1],hitPalette[2]],78,.42,{add:false});if(source.impactFx!==false)bossImpactFx(hitCol,p.x,p.y-8,16,false,'fx')}
   if(p.hp<=0&&hasM('dragonScale')&&!p.revived){p.revived=true;p.hp=D.maxHp*.4;p.ifr=2;banner('심연룡의 가호','죽음을 버텨 냈습니다');boom(p.x,p.y-8,70,['#ffffff','#ffd24a','#c94cff','#3a1258'],true);aoe(p.x,p.y-8,90,D.pow*12,{el:'fire',st:'burn',proc:1,kb:200});shake(12);sfx.bigboom();return}
@@ -1628,7 +1656,7 @@ function cast(id){
   if(['strike','zone','meteor','rain'].includes(sp.k)){const dx=tg.x-p.x,dy=tg.y-p.y,d=Math.hypot(dx,dy);if(d>190){tg.x=p.x+dx/d*190;tg.y=p.y+dy/d*190}}
   if(Math.abs(tg.x-p.x)>2)p.face=tg.x<p.x?-1:1;p.castT=.3;p.castEl=sp.el;
   const C=EL[sp.el].c;magicCircle(p.x,p.y,16,C,.4);
-  if(sp.dragonSkill)castDragonSpell(sp,dmg);else KIND[sp.k](sp,p,tg,dmg);if(sp.o.inv&&sp.k!=='heal'&&sp.k!=='shield')p.ifr=Math.max(p.ifr,sp.o.inv);sfx[CAST_SFX[sp.el]]();
+  if(sp.dragonSkill)castDragonSpell(sp,dmg);else KIND[sp.k](sp,p,tg,dmg);uniqueOnCast(sp,dmg);if(sp.o.inv&&sp.k!=='heal'&&sp.k!=='shield')p.ifr=Math.max(p.ifr,sp.o.inv);sfx[CAST_SFX[sp.el]]();
 }
 function addDragonRage(v){if(S.hiddenJob!=='dragonLord')return;const before=S.dragonRage||0;S.dragonRage=Math.min(100,before+v);if(before<100&&S.dragonRage>=100){toast('용의 분노가 가득 찼습니다 · G로 용화');save()}}
 function dragonKey(){const p=G.p;if(S.hiddenJob!=='dragonLord'||!G.started||G.dead||ui.open)return;if((S.dragonRage||0)>=100){S.dragonRage=0;p.dragonFormUntil=G.time+15;p.dragonRoarUsed=false;p.ifr=Math.max(p.ifr,.45);banner('용화 · 심연룡','15초 동안 비행 · 지면 장판 무시 · G 용의 숨결 · F 심연의 포효');ringFx(p.x,p.y,88,['#ffffff','#c94cff','#ff7a2a','#16051f'],1,{top:1});burst(p.x,p.y-10,34,['#c94cff','#ff7a2a','#ffffff'],100,.7);shake(10);sfx.roar();save();return}cast('dragon_breath')}
@@ -1674,6 +1702,10 @@ function summonAlly(x,y,life){if(JB.allies>=8)return;JB.allies++;const a={x,y,t:
     if(a.t>=life||!isCombatZone()){JB.allies=Math.max(0,JB.allies-1);burst(a.x,a.y-8,10,['#c94cff','#565c73'],50,.4);return false}return true},
     draw(){pxEll(ctx,a.x,a.y+1,6,2,'rgba(0,0,0,.3)');ctx.globalAlpha=.85;drawSpr(A.skel,a.x,a.y,a.face<0,'');ctx.globalAlpha=1;pxRing(ctx,a.x,a.y,7,3,'#c94cff',16)}})}
 function holySpears(ex){if(ex<=0)return;const p=G.p,L=G.en.filter(e=>!e.dead).sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y)).slice(0,3);for(const e of L){const a=Math.atan2(e.y-e.r-(p.y-14),e.x-p.x);G.pr.push(mkBolt('holy',p.x,p.y-14,a,340,ex*1.5+D.pow*2,{homing:1,size:2,pierce:0,kb:60}))}}
+function uniqueOnCast(sp,dmg){const p=G.p;
+  if(hasM('uqSeal')){p.uqN=(p.uqN||0)+1;if(p.uqN>=10){p.uqN=0;G.stopUntil=G.time+2;G.flash=.3;G.flashCol='#3ff0e0';G.texts.push({x:p.x,y:p.y-46,vy:-16,life:1.4,str:'시간 정지!',col:'#3ff0e0',sc:1.2});sfx.frost()}}
+  if(hasM('uqEcho')&&!sp.echoing&&Math.random()<.35){later(.4,()=>{if(G.dead||!isCombatZone())return;const e2=Object.assign({},sp,{echoing:1});KIND[sp.k](e2,G.p,aimPoint(),dmg);G.texts.push({x:G.p.x,y:G.p.y-40,vy:-18,life:.7,str:'메아리!',col:'#c94cff',sc:1})})}}
+const timeStopped=()=>G.stopUntil>G.time;
 function castMyth(){
   const p=G.p,k=D.sk;if(!k||G.dead||ui.open||!G.started)return;const s=MYTH_SK[k];if((p.cd.myth||0)>0)return;
   if(p.mp<s.mp){toast('마나가 부족합니다');sfx.err();return}p.mp-=s.mp;gainMast(s.mp);p.cd.myth=s.cd*(1-D.cdr*.5);p.castT=.4;
@@ -1704,7 +1736,7 @@ const ECOL={ratKing:['#b08a6a','#ff3a3a'],shroomLord:['#3a8a2a','#7ae05a'],gargL
 Object.assign(ECOL,{riftfang:['#4a2948','#ff7ad9'],abyssalArcanist:['#382844','#ff7ad9'],obsidianGuard:['#3a3045','#ff5a7a'],dreadMarshal:['#362044','#ff7ad9'],voidTyrant:['#301426','#c94cff'],underdeepGatekeeper:['#302437','#c94cff'],underdeepCore:['#24102c','#ff3a6a']});
 const FLYERS=new Set(['wispLord','stormKing','shadowKing','bat','iwisp','fwisp','swisp','imp','harpy','wraith','harpyQ']);
 function mkEnemy(type,x,y,elite){
-  const d=MON[type],raid=G.zone==='underdeep'&&(d.raidElite||d.raidBoss),f=G.zone==='underdeep'?(raid?100:Math.min(100,90+(G.room||1))):G.floor,nm=d.boss?[...D.my].reduce((t,k)=>t+.5+mythFloor(k)/100,0):0,sc=(d.sc||1)*(elite?1.4:1),raidElite=G.zone==='underdeep'&&d.raidElite,hm=hpScale(f)*(elite&&!raidElite?6:1)*levelThreat()*(d.boss?bossHp(f)*(1+.1*nm):1)*(d.final?12/BOSS_FINAL_HP:1)*(G.zone==='underdeep'&&d.raidBoss?(d.raidHp||1):1),dm=dmgScale(f)*(elite&&!raidElite?1.4:1)*levelThreat()*(d.boss?bossDmg(f)*(1+.05*nm)*(d.final?1/BOSS_FINAL_DMG:1):1)*(G.zone==='underdeep'&&d.raidBoss?(d.raidDmg||1):1);
+  const d=MON[type],raid=G.zone==='underdeep'&&(d.raidElite||d.raidBoss),f=G.zone==='underdeep'?(raid?100:Math.min(100,90+(G.room||1))):G.floor,nm=d.boss?[...D.my].reduce((t,k)=>t+.5+mythFloor(k)/100,0):0,sc=(d.sc||1)*(elite?1.4:1),raidElite=G.zone==='underdeep'&&d.raidElite,hm=hpScale(f)*(elite&&!raidElite?6:1)*levelThreat()*(d.boss?bossHp(f)*(1+.1*nm):1)*(d.final?12/BOSS_FINAL_HP:1)*(G.zone==='underdeep'&&d.raidBoss?(d.raidHp||1):1)*deepMul(.05),dm=dmgScale(f)*(elite&&!raidElite?1.4:1)*levelThreat()*(d.boss?bossDmg(f)*(1+.05*nm)*(d.final?1/BOSS_FINAL_DMG:1):1)*(G.zone==='underdeep'&&d.raidBoss?(d.raidDmg||1):1)*deepMul(.03);
   const spr=type==='bat'?A.bat[0]:A[d.spr||type];
   return{type,x,y,hp:d.hp*hm,max:d.hp*hm,dmg:d.dmg*dm,spd:d.spd*(1+Math.min(.25,f*.003))*(1+Math.min(.2,Math.max(0,S.lvl-99)*.002)),r:d.r*(elite?1.3:1),xp:d.xp*xpScale(f)*(elite?5:1),t:rnd(10),kx:0,ky:0,flash:0,frozen:0,slow:0,stun:0,root:0,burn:0,bt:0,poi:0,pt:0,weak:0,z:0,face:1,cd:rnd(1.2,2.4),boss:d.boss,elite,sc,spr,hh:spr.H*sc,cols:ECOL[type]||['#fff','#888'],st:'idle',stT:1,atk:0,ph:0,dead:false};
 }
@@ -1987,11 +2019,12 @@ function enterUnderdeepTown(){
   if((S.underdeepBestRoom||0)<10){toast('지하 10번 방을 정복해야 교역 마을이 열립니다');return sfx.err()}
   clearWorld();G.zone='underdeepTown';G.floor=0;G.room=0;G.map=DEEP_TOWN;const p=G.p;p.x=320;p.y=324;p.hp=D.maxHp;p.mp=D.maxMp;p.ifr=0;setLabels();setMusic('town');save();
 }
+const DEEP_MAX=20,deepMul=k=>G.zone==='underdeep'?1+Math.max(0,(G.room||1)-10)*k:1;
 function enterDungeonRoom(room){
   if(!underdeepOpen()){toast('1층의 봉인된 문을 열어야 지하 던전에 입장할 수 있습니다');return sfx.err()}
-  room=clamp(Math.floor(+room||1),1,10);const unlocked=Math.min(10,(S.underdeepBestRoom||0)+1);
+  room=clamp(Math.floor(+room||1),1,DEEP_MAX);const unlocked=Math.min(DEEP_MAX,(S.underdeepBestRoom||0)+1);
   if(room>unlocked){toast(`제${unlocked}실까지 진행해야 입장할 수 있습니다`);return sfx.err()}
-  clearWorld();G.zone='underdeep';G.floor=0;G.room=room;G.map=buildFloor(90+room);const p=G.p,m=G.map;p.x=m.pw/2;p.y=m.ph-70;setLabels();
+  clearWorld();G.zone='underdeep';G.floor=0;G.room=room;G.map=buildFloor(90+((room-1)%10)+1);const p=G.p,m=G.map;p.x=m.pw/2;p.y=m.ph-70;setLabels();
   const def=UNDERDEEP_ROOMS[room-1],q=def.boss?[]:Array.from({length:Math.min(14,4+Math.ceil(room*.7))},()=>pick(def.pool));
   G.wave={q,t:1.25,boss:def.boss||null,bossSp:false,elite:def.elite||null,hadElite:!!def.elite,cleared:false};
   banner(`지하 · 제${room}실`,def.n+(def.boss?' · 레이드 보스':def.elite?' · 바알급 정예':''));setMusic(def.boss?'boss':'battle');
@@ -2004,12 +2037,13 @@ function updUnderdeep(dt){
   if(!w.q.length&&!w.elite&&(!w.boss||w.bossSp)&&G.en.length===0&&G.pending===0){
     w.cleared=true;S.underdeepBestRoom=Math.max(S.underdeepBestRoom||0,room);const bonus=15000+room*6500;S.gold+=bonus;S.ess+=20+room*5;S.ore+=12+room*3;
     m.inter=[];
-    if(w.boss){drop('item',m.pw/2,m.ph/2,0,mkItem(100,4));drop('item',m.pw/2,m.ph/2,0,mkItem(100,3));spawnChest('gold',m.pw/2,m.ph/2+24)}
-    if(room<10)m.inter.push({x:m.pw/2,y:66,r:24,label:`제${room+1}실`,pr:'[F] 다음 방으로',portal:['#c94cff','#7a26c8','#ffffff'],act:()=>{sfx.portal();fadeTo(()=>enterDungeonRoom(room+1))}});
+    if(w.boss){drop('item',m.pw/2,m.ph/2,0,mkItem(100,4));drop('item',m.pw/2,m.ph/2,0,mkItem(100,3));spawnChest('gold',m.pw/2,m.ph/2+24);
+      const uk=Object.keys(MYTH).find(k=>MYTH[k].uq&&MYTH[k].boss===w.boss);if(uk&&Math.random()<UNIQUE_RATE)later(.8,()=>{drop('item',m.pw/2,m.ph/2-10,0,mkMyth(uk));G.flash=.6;G.flashCol='#3ff0e0';shake(16);banner('유니크 등장!',MYTH[uk].n);sfx.circle();for(let i=0;i<5;i++)later(i*.15,()=>ringFx(m.pw/2,m.ph/2,60+i*30,['#ffffff','#3ff0e0','#3ff0e0','#0a2a2a'],.8,{top:1}))})}
+    if(room<DEEP_MAX)m.inter.push({x:m.pw/2,y:66,r:24,label:`제${room+1}실`,pr:'[F] 다음 방으로',portal:['#c94cff','#7a26c8','#ffffff'],act:()=>{sfx.portal();fadeTo(()=>enterDungeonRoom(room+1))}});
     if(room===10){syncTownLinks();m.inter.push({x:m.pw/2,y:66,r:24,label:'지하 교역 마을',pr:'[F] 입장',portal:['#ff7ad9','#c94cff','#ffffff'],act:()=>fadeTo(enterUnderdeepTown)})}
     m.inter.push({x:m.pw/2,y:m.ph-44,r:24,label:'성역 마을',pr:'[F] 귀환',portal:['#5ed36b','#b8f27a','#ffffff'],act:()=>{sfx.portal();fadeTo(enterTown)}});
     if(w.boss)m.inter.push({x:m.pw/2-68,y:m.ph/2+38,r:20,label:'레이드 재도전',pr:'[F] 같은 보스에 도전',portal:['#ff6b6b','#b22252','#ffffff'],act:()=>{sfx.portal();fadeTo(()=>enterDungeonRoom(room))}});
-    if(w.boss)setMusic('battle');banner(room===10?'무저갱 정복!':`제${room}실 클리어`,`보상 골드 +${bonus}${room===10?' · 지하 교역 마을 개방':''}`);setLabels();for(const k of G.picks)k.vac=true;save();
+    if(w.boss)setMusic('battle');banner(room===DEEP_MAX?'심연의 근원 정복!':room===10?'무저갱 정복!':`제${room}실 클리어`,`보상 골드 +${bonus}${room===10?' · 지하 교역 마을 개방':''}`);setLabels();for(const k of G.picks)k.vac=true;save();
   }
 }
 function spawnChest(kind,x,y){const m=G.map;for(let r=0;r<10&&boxSol(x,y-4,8);r++){let ok=false;for(let a=0;a<8&&!ok;a++){const nx=x+Math.cos(a/8*TAU)*r*16,ny=y+Math.sin(a/8*TAU)*r*16;if(!boxSol(nx,ny-4,8)){x=nx;y=ny;ok=true}}if(ok)break}const c={x,y,r:16,chest:kind,open:false,label:CHEST_N[kind],pr:'[F] 열기',act(){openChest(c)}};m.inter.push(c);setLabels();burst(x,y-8,20,kind==='gold'?['#ffd84a','#ffffff']:['#c9d0dc','#ffffff'],70,.5);sfx.item()}
@@ -2094,7 +2128,7 @@ function update(dt){
   if(G.dead>0){G.dead-=dt;if(G.dead<=0){G.dead=0;fadeTo(enterTown)}}else updPlayer(dt);
   if(G.zone==='tower')updWave(dt);else if(G.zone==='underdeep')updUnderdeep(dt);
   for(const e of G.en){e.ox=e.x;e.oy=e.y}
-  for(const e of G.en)if(!e.dead)updEnemy(e,dt);
+  if(!timeStopped())for(const e of G.en)if(!e.dead)updEnemy(e,dt);
   for(const e of G.en){const vx=(e.x-e.ox)/dt;e.vxs=(e.vxs||0)*.82+vx*.18;e.spdS=(e.spdS||0)*.82+Math.hypot(e.x-e.ox,e.y-e.oy)/dt*.18}
   for(let i=0;i<G.en.length;i++){const a=G.en[i];if(a.frozen>0||a.boss)continue;for(let j=i+1;j<G.en.length;j++){const b=G.en[j];if(b.boss)continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;if(d<m&&d>.01){const o=(m-d)/2*.5,ux=dx/d,uy=dy/d;moveEnt(a,-ux*o,-uy*o,a.r-2);if(!(b.frozen>0))moveEnt(b,ux*o,uy*o,b.r-2)}}}
   const pr=G.pr,prn=pr.length;let prw=0;
@@ -2115,7 +2149,7 @@ function update(dt){
     else if(!b.hit.size)hitFx(b.el,b.x,b.y);
   }
   pr.length=prw;
-  const ep=G.ep,epn=ep.length;let epw=0;
+  const ep=G.ep,epn=timeStopped()?0:ep.length;let epw=timeStopped()?ep.length:0;
   for(let ei=0;ei<epn;ei++){
     const b=ep[ei];b.life-=dt;
     if(b.hm>0){b.hm-=dt;const a=Math.atan2(p.y-10-b.y,p.x-b.x),cur=Math.atan2(b.vy,b.vx),da=((a-cur+Math.PI*3)%TAU)-Math.PI,na=cur+clamp(da,-2.4*dt,2.4*dt),s=Math.hypot(b.vx,b.vy);b.vx=Math.cos(na)*s;b.vy=Math.sin(na)*s;b.ang=na}
@@ -2190,12 +2224,14 @@ function drawAura(p,front){
 function shadow(x,y,w){ctx.fillStyle='rgba(0,0,0,.32)';w=Math.round(w);ctx.fillRect(Math.round(x-w/2)+1,Math.round(y)-1,w-2,1);ctx.fillRect(Math.round(x-w/2),Math.round(y),w,2);ctx.fillRect(Math.round(x-w/2)+1,Math.round(y)+2,w-2,1)}
 function drawStaff(x,y,f,el,cast,t){
   const C=EL[el].c,lean=cast?3:0,bx=x+f*7,top=y-27,tx=bx+f*lean;
-  {const SH=STAFFP[S.eq.staff?S.eq.staff.r:0].sh;pxLine(ctx,bx,y-1,tx,top,SH[0]);pxLine(ctx,bx+f,y-2,tx+f,top+1,SH[1])}
-  ctx.fillStyle=S.eq.staff?RPAL[S.eq.staff.r].m:'#c9972a';ctx.fillRect(Math.round(tx-1),Math.round(top),3,1);ctx.fillRect(Math.round(tx-1+f*1.5),Math.round(top-1),1,1);ctx.fillRect(Math.round(tx-1-f*.5),Math.round(top-1),1,1);
-  const cy=top-4,st=S.eq.staff,rr=st?st.r:0,P=STAFFP[rr],X=Math.round(tx),my=st&&st.my;
+  {const SH=STAFFP[S.eq.staff?Math.min(S.eq.staff.r,5):0].sh;pxLine(ctx,bx,y-1,tx,top,SH[0]);pxLine(ctx,bx+f,y-2,tx+f,top+1,SH[1])}
+  ctx.fillStyle=S.eq.staff?RPAL[Math.min(S.eq.staff.r,5)].m:'#c9972a';ctx.fillRect(Math.round(tx-1),Math.round(top),3,1);ctx.fillRect(Math.round(tx-1+f*1.5),Math.round(top-1),1,1);ctx.fillRect(Math.round(tx-1-f*.5),Math.round(top-1),1,1);
+  const cy=top-4,st=S.eq.staff,rr=st?Math.min(st.r,5):0,P=STAFFP[rr],X=Math.round(tx),my=st&&st.my;
   if(my==='golemStaff'){pxEll(ctx,tx+.5,cy,4,3.5,'#4a4438');pxEll(ctx,tx,cy-.5,3.2,2.8,'#8a8478');pxDisc(ctx,tx+.5,cy,1.2,'#5ed36b')}
   else if(my==='lichTome'){pxDisc(ctx,tx+.5,cy-.5,3,'#a89f84');pxDisc(ctx,tx,cy-1,2.5,'#e9e2c8');ctx.fillStyle='#14121f';ctx.fillRect(X-1,cy-1,1,1);ctx.fillRect(X+1,cy-1,1,1);ctx.fillStyle='#5ed36b';ctx.fillRect(X,cy-5,1,2)}
   else if(my==='archonStaff'){pxPoly(ctx,[[tx+.5,cy-5],[tx+3.5,cy],[tx+.5,cy+3],[tx-2.5,cy]],'#14121f');pxDisc(ctx,tx+.5,cy-.5,1.6,'#ff3a3a');ctx.fillStyle='#c94cff';ctx.fillRect(X-3,cy-3,1,1);ctx.fillRect(X+3,cy-3,1,1)}
+  else if(my==='uqSeal'){pxRing(ctx,tx+.5,cy,4.5,4.5,'#3ff0e0',24);pxDisc(ctx,tx+.5,cy,2,'#ffffff');if(Math.random()<.3)part(tx+rnd(-5,5),cy+rnd(-5,5),0,-12,.5,'#3ff0e0',1)}
+  else if(my==='uqOrigin'){pxPoly(ctx,[[tx+.5,cy-6],[tx+4,cy],[tx+.5,cy+4],[tx-3,cy]],'#14081e');pxDisc(ctx,tx+.5,cy-.5,1.8,'#3ff0e0');if(Math.random()<.3)part(tx+rnd(-5,5),cy+rnd(-5,5),0,-12,.5,'#c94cff',1)}
   else if(my==='wispStaff'){pxPoly(ctx,[[tx+.5,cy-5],[tx+2.5,cy],[tx+.5,cy+2],[tx-1.5,cy]],'#6fd3ff');pxDisc(ctx,tx+.5,cy,1.4,'#eaf6ff')}
   else if(my==='stormScepter'){pxDisc(ctx,tx+.5,cy,2.6,'#c9972a');pxDisc(ctx,tx+.5,cy,1.8,'#fff38a');ctx.fillStyle='#fff';ctx.fillRect(X,cy-5,1,3)}
   else if(my==='shadowStaff'){pxRing(ctx,tx+.5,cy,3.5,3.5,'#7a26c8',16);pxDisc(ctx,tx+.5,cy,2,'#05040a');ctx.fillStyle='#c94cff';ctx.fillRect(X,cy,1,1)}
@@ -2285,6 +2321,7 @@ function drawMinimap(){
   ctx.fillStyle='#ffffff';ctx.fillRect(cx-1,cy-1,3,3);ctx.fillStyle=EL[S.aff[0]].c[1];ctx.fillRect(cx,cy,1,1);
 }
 function drawHUD(){
+  if(timeStopped()){ctx.fillStyle='rgba(63,240,224,.12)';ctx.fillRect(0,0,W,H)}
   {const p=G.p;if(p&&p.db&&p.db.blind>0&&isCombatZone()){const sx=p.x-G.cam.x,sy=p.y-10-G.cam.y,a=Math.min(1,p.db.blind)*.92;ctx.fillStyle=`rgba(0,0,0,${a})`;const R=48;ctx.fillRect(0,0,W,Math.max(0,sy-R));ctx.fillRect(0,sy+R,W,H);ctx.fillRect(0,sy-R,Math.max(0,sx-R),R*2);ctx.fillRect(sx+R,sy-R,W,R*2);ctx.globalAlpha=a*.6;for(let r=R;r>R-14;r-=3)pxRing(ctx,sx,sy,r,r,'#000000',40);ctx.globalAlpha=1}
    if(p&&p.db){let x=W/2-60;const y=H-38;for(const k in p.db){if(p.db[k]<=0)continue;const s=DB[k].n+' '+Math.ceil(p.db[k]);ctx.fillStyle='rgba(20,18,31,.8)';ctx.fillRect(x-2,y-2,s.length*8+4,12);drawText(s,x,y,DB[k].c,1,'l');x+=s.length*8+8}}}
   const p=G.p;HUDR.length=0;
@@ -2438,7 +2475,7 @@ const PANELS={
       h+=`<div class="inv" style="grid-template-columns:repeat(3,2.6em);width:max-content;margin:.4em 0">${[0,1,2].map(i=>{const it=offer[i];return it?`<div class="cell sel" style="border-color:#ff4a6a"><img src="${itemIcon(it)}" alt=""><u>${i+1}</u></div>`:`<div class="cell" style="opacity:.55"><span class="dim">${i+1}</span></div>`}).join('')}</div>`;
       if(offer.length)h+=`<div class="li"><div class="gr"><b>제단에 놓인 장비</b><div class="ds">${offer.map((it,i)=>`${i+1}. ${MYTH[it.my].n}${MYTH[it.my].boss==='demonLord'?' · <span class="gold">100층 보스</span>':''}`).join('<br>')}</div></div><div class="bt">${offer.map((it,i)=>btn('회수 '+(i+1),'altarTake:'+i,true)).join('')}</div></div>`;
       h+=`<div class="li"><div class="gr"><b>전직 속성 선택</b><div class="ds">처음 선택한 세 속성 중 하나를 고릅니다. 전직 후에는 선택한 속성의 마법만 사용할 수 있습니다.</div><div class="bt">${choices.map(el=>{const J=JOBS[el],on=picked===el;return btn(`${on?'✓ ':''}${J.n} · ${EL[el].n}`,`adv2Pick:${el}`,true,on?'go':'')}).join('')}</div></div></div>`;if(picked){const J=JOBS[picked];h+=`<div class="li"><div class="gr"><b>전직하면: <span style="color:${J.c}">${J.n}</span></b> <span class="dim">(선택 속성 ${EL[picked].n})</span><div class="ds">패시브: ${J.d}<br>전용 스킬 1: ${J.sk} · 전용 스킬 2: ${J.sk2}<br>두 전용 스킬은 기존 마법 단축 슬롯을 공유합니다.</div></div></div>`}else h+='<p class="dim">전직할 속성을 먼저 선택하세요.</p>';h+=`<p>${S.circle>=9?'✅':'❌'} 9서클 (현재 ${S.circle}서클) · ${S.lvl>=120?'✅':'❌'} Lv.120 (현재 Lv.${S.lvl})</p>`
-      const available=S.inv.filter(it=>it&&it.my&&MYTH[it.my]);
+      const available=S.inv.filter(it=>it&&it.my&&MYTH[it.my]&&!MYTH[it.my].uq);
       if(offer.length<3){h+=`<div class="hd">가방의 신화 장비 <span>${available.length}개</span></div>`;h+=available.length?available.map(it=>`<div class="li"><img src="${itemIcon(it)}" alt=""><div class="gr"><b style="color:#ff4a6a">${MYTH[it.my].n}</b><div class="ds">${SLOTN[it.slot]} · ${mythFloor(it.my)}층 보스${MYTH[it.my].boss==='demonLord'?' · <span class="gold">필수 조건 충족</span>':''}</div></div><div class="bt">${btn('제단에 넣기','altarPut:'+it.id,true,'go')}</div></div>`).join(''):'<p class="dim">가방에 봉헌할 신화 장비가 없습니다. 장착 중인 장비는 먼저 가방으로 옮겨 주세요.</p>'}
       if(!has100&&offer.length===3)h+=`<p class="no">제단을 열려면 100층 보스 마왕 바알의 신화 장비 1개가 필요합니다.</p>`;
       if(ready&&offer.length===3&&has100&&picked)h+=`<div class="li"><div class="gr"><b class="gold">제단이 응답합니다</b><div class="ds">9서클·Lv.120과 신화 장비 3개(100층 보스 장비 포함)를 충족했습니다. 선택 속성 ${EL[picked].n}으로 전직합니다. 바친 장비는 소모됩니다.</div></div><div class="bt">${btn('바치고 2차 전직으로','advance2',true,'go')}</div></div>`;else if(ready&&offer.length===3&&has100&&!picked)h+='<p class="dim">전직할 속성을 먼저 선택하세요.</p>';
@@ -2497,7 +2534,7 @@ const PANELS={
     let h=`<div class="say"><img src="${ICON.quest}" alt=""><p>"탑의 괴물에겐 전부 현상금이 걸려 있어. 끝내면 다음 의뢰가 바로 붙지."</p></div>`;
     S.quests.forEach((q,i)=>{h+=`<div class="li"><img src="${ICON.scroll}" alt=""><div class="gr"><b>${questText(q)}</b> <span class="${q.done?'gold':'dim'}">${q.cur}/${q.n}</span><div class="ds">보상 ${ic('gold')}${q.gold} ${ic('ess')}${q.ess}${q.ore?' '+ic('ore')+q.ore:''} ${ic('xp')}${questXpReward(q)}</div></div><div class="bt">${btn('보상 받기','claim:'+i,q.done,'go')}</div></div>`});
     return h}},
-  underdeep:{t:'지하 던전',r(){const best=S.underdeepBestRoom||0,next=Math.min(10,best+1);let h=`<div class="say"><img src="${ICON.el_none}" alt=""><p>층이 아닌 방을 차례로 돌파하는 레이드 던전입니다. 제3·7실에는 바알급 정예, 제5실에는 강화 수문장, 제10실에는 그보다 훨씬 강한 최종 보스가 기다립니다. 제10실을 정복하면 지하 교역 마을이 영구 개방됩니다.</p></div><div>최고 기록 <b class="gold">제${best}실</b> / 10실</div><div class="li"><div class="gr"><b>다음 도전 · 제${next}실</b><div class="ds">${UNDERDEEP_ROOMS[next-1].n}${UNDERDEEP_ROOMS[next-1].boss?' · 레이드 보스':''}${UNDERDEEP_ROOMS[next-1].elite?' · 바알급 정예':''}</div></div><div class="bt">${btn('도전','deepEnter:'+next,true,'go')}</div></div>`;if(best>0)h+=`<div class="hd">클리어한 방 재도전</div><div class="li"><div class="gr" style="display:flex;flex-wrap:wrap;gap:.25em">${Array.from({length:best},(_,i)=>btn(`제${i+1}실`,'deepEnter:'+(i+1),true)).join('')}</div></div>`;if(best>=10)h+=`<div class="li"><div class="gr"><b class="gold">지하 교역 마을 개방</b><div class="ds">성역 마을 남쪽의 분홍 포탈로 언제든 이동할 수 있습니다.</div></div><div class="bt">${btn('마을 입장','deepTown',true,'go')}</div></div>`;return h}},
+  underdeep:{t:'지하 던전',r(){const best=S.underdeepBestRoom||0,next=Math.min(DEEP_MAX,best+1);let h=`<div class="say"><img src="${ICON.el_none}" alt=""><p>층이 아닌 방을 차례로 돌파하는 레이드 던전입니다. 제3·7·13·17실에는 바알급 정예, 제5·10·15·20실에는 레이드 보스가 기다립니다. 11실부터는 방마다 더 강해집니다. 레이드 보스는 2% 확률로 <b style="color:#3ff0e0">유니크</b> 장비를 떨어뜨립니다. 제10실을 정복하면 지하 교역 마을이 영구 개방됩니다.</p></div><div>최고 기록 <b class="gold">제${best}실</b> / ${DEEP_MAX}실</div><div class="li"><div class="gr"><b>다음 도전 · 제${next}실</b><div class="ds">${UNDERDEEP_ROOMS[next-1].n}${UNDERDEEP_ROOMS[next-1].boss?' · 레이드 보스':''}${UNDERDEEP_ROOMS[next-1].elite?' · 바알급 정예':''}</div></div><div class="bt">${btn('도전','deepEnter:'+next,true,'go')}</div></div>`;if(best>0)h+=`<div class="hd">클리어한 방 재도전</div><div class="li"><div class="gr" style="display:flex;flex-wrap:wrap;gap:.25em">${Array.from({length:best},(_,i)=>btn(`제${i+1}실`,'deepEnter:'+(i+1),true)).join('')}</div></div>`;if(best>=10)h+=`<div class="li"><div class="gr"><b class="gold">지하 교역 마을 개방</b><div class="ds">성역 마을 남쪽의 분홍 포탈로 언제든 이동할 수 있습니다.</div></div><div class="bt">${btn('마을 입장','deepTown',true,'go')}</div></div>`;return h}},
   deepTrade:{t:'지하 보급상 라온',r(){return `<div class="say"><img src="${ICON.quest}" alt=""><p>“레이드에서 살아 돌아오려면 물자부터 챙기세요.”</p></div><div class="li"><div class="gr"><b>체력 물약</b> ${S.hpPot}/9<div class="ds">최대 생명력의 45% 회복 · 1개당 골드 900, 정수 10개</div></div><div class="bt">${btn('구매','deepPotion:hp',S.hpPot<9&&can({gold:900,ess:10}))}</div></div><div class="li"><div class="gr"><b>마나 물약</b> ${S.mpPot}/9<div class="ds">최대 마나의 50% 회복 · 1개당 골드 900, 정수 10개</div></div><div class="bt">${btn('구매','deepPotion:mp',S.mpPot<9&&can({gold:900,ess:10}))}</div></div><div class="li"><div class="gr"><b>정수 꾸러미</b><div class="ds">정수 +50 · 골드 12,000</div></div><div class="bt">${btn('구매','deepMat:ess',S.gold>=12000)}</div></div><div class="li"><div class="gr"><b>광석 꾸러미</b><div class="ds">광석 +50 · 골드 12,000</div></div><div class="bt">${btn('구매','deepMat:ore',S.gold>=12000)}</div></div>`}},
   deepForge:{t:'지하 대장장이 브란',r(){return `<div class="say"><img src="${ICON.thorgan}" alt=""><p>“무저갱의 재료로 전설 장비를 벼려 주지.”</p></div><p>아이템 레벨 100 전설 장비를 제작합니다. 장비 슬롯은 직접 고릅니다.</p>${['staff','robe','ring'].map(k=>`<div class="li"><img src="${ICON[k]}" alt=""><div class="gr"><b>${SLOTN[k]}</b><div class="ds">전설 보장 · 골드 40,000 · 광석 100 · 정수 100</div></div><div class="bt">${btn('제작','deepCraft:'+k,S.inv.length<BAG()&&can({gold:40000,ore:100,ess:100}),'go')}</div></div>`).join('')}`}},
   deepRest:{t:'수정 치료사 세라',r(){return `<div class="say"><img src="${ICON.eldrin}" alt=""><p>“레이드 전에 상처와 마력을 정돈해 드릴게요.”</p></div><div class="li"><div class="gr"><b>완전 정비</b><div class="ds">HP·MP 완전 회복, 스킬·순간이동 쿨타임 초기화 · 골드 5,000</div></div><div class="bt">${btn('정비','deepRest',S.gold>=5000,'go')}</div></div>`}},
