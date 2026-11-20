@@ -139,7 +139,7 @@ export class Town extends DurableObject {
     if (m.t === "mv") {
       a.p.x = num(m.x, 0, 4000); a.p.y = num(m.y, 0, 4000); a.p.f = m.f < 0 ? -1 : 1; a.p.w = m.w ? 1 : 0;
       this.save(x);
-      this.sendTo(others().filter((y) => y.a.p.zone === a.p.zone), { t: "mv", id: a.id, x: a.p.x, y: a.p.y, f: a.p.f, w: a.p.w });
+      this.sendTo(others().filter((y) => y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), { t: "mv", id: a.id, x: a.p.x, y: a.p.y, f: a.p.f, w: a.p.w });
     } else if (m.t === "st") {
       const p = a.p;
       p.zone = ZONES.includes(m.zone) ? m.zone : p.zone; p.fl = num(m.fl, 0, 999) | 0;
