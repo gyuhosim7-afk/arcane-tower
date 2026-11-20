@@ -108,7 +108,7 @@ export class Town extends DurableObject {
       const who = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/api/whoami", { method: "POST", body: JSON.stringify({ token: String(m.token || "") }) }).then((r) => r.json()).catch(() => ({}));
       if (!who.u) { this.send(ws, { t: "sys", m: "로그인이 필요합니다" }); try { ws.close(4001, "auth"); } catch {} return; }
       for (const y of this.all()) if (y.a.u === who.u && y.w !== ws) { try { y.w.close(4002, "dup"); } catch {} await this.leave(y.w); }
-      a.u = who.u;
+      a.u = who.u; m.nick = who.name;
       a.p = {
         id: a.id, pid: clean(m.pid, 12), nick: clean(m.nick, 12) || "마법사", title: clean(m.title, 16),
         el: ELS.includes(m.el) ? m.el : "fire", job: clean(m.job, 10), lv: num(m.lv, 1, 999) | 0,
@@ -131,7 +131,7 @@ export class Town extends DurableObject {
       p.zone = ZONES.includes(m.zone) ? m.zone : p.zone; p.fl = num(m.fl, 0, 999) | 0;
       p.hp = num(m.hp, 0, 1e9); p.mhp = num(m.mhp, 1, 1e9); p.lv = num(m.lv, 1, 999) | 0;
       p.title = clean(m.title, 16); p.el = ELS.includes(m.el) ? m.el : p.el; p.job = clean(m.job, 10);
-      p.rb = m.rb >= 0 && m.rb <= 6 ? m.rb | 0 : -1; p.nick = clean(m.nick, 12) || p.nick;
+      p.rb = m.rb >= 0 && m.rb <= 6 ? m.rb | 0 : -1;
       if (m.x !== undefined) { p.x = num(m.x, 0, 4000); p.y = num(m.y, 0, 4000); }
       this.save(x);
       this.sendTo(others(), { t: "st", p });
@@ -151,7 +151,9 @@ export class Town extends DurableObject {
     }
     // 파티
     else if (m.t === "pinv") {
-      const y = this.find(m.to);
+      const nm = String(m.name || "").trim().toLowerCase();
+      const y = nm ? this.all().find((z) => z.a.u === nm || z.a.p.nick.toLowerCase() === nm) : this.find(m.to);
+      if (!y && nm) return this.send(ws, { t: "sys", m: "접속 중인 사람 중에 그 닉네임이 없어요" });
       if (!y || y.a.party || y.a.id === a.id) return this.send(ws, { t: "sys", m: "초대할 수 없는 사람입니다" });
       if (a.party && this.partyList(a.party).length >= PARTY_MAX) return this.send(ws, { t: "sys", m: "파티가 가득 찼습니다" });
       y.a.pinv = a.id; this.save(y);
@@ -256,7 +258,8 @@ function sameStr(a, b) {
   for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return d === 0;
 }
-const ID_RE = /^[a-z0-9_]{4,12}$/;
+const ID_RE = /^[가-힣a-z0-9_]{2,12}$/;
+const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
 const SLOTS = ["staff", "robe", "ring"];
 
 // 저장 데이터 검사: 말도 안 되는 값이나 갑자기 뛴 진행도는 거부한다.
@@ -318,9 +321,9 @@ export class Accounts extends DurableObject {
 
     if (path === "/api/register" || path === "/api/login") {
       if (this.limited(ip)) return json({ err: "너무 많이 틀렸어요. 10분 뒤에 다시 해 주세요" }, 429);
-      const u = String(b.u || "").trim().toLowerCase(), p = String(b.p || "");
-      if (!ID_RE.test(u)) return json({ err: "아이디는 영어 소문자·숫자·_ 4~12글자예요" }, 400);
-      if (p.length < 6 || p.length > 64) return json({ err: "비밀번호는 6~64글자예요" }, 400);
+      const name = String(b.u || "").trim().normalize("NFC"), u = name.toLowerCase(), p = String(b.p || "");
+      if (!ID_RE.test(u)) return json({ err: "닉네임은 한글·영문·숫자·_ 2~12글자예요" }, 400);
+      if (path === "/api/register" ? !PW_OK(p) : p.length < 1 || p.length > 64) return json({ err: "비밀번호는 8글자 이상, 영문과 숫자를 섞어 주세요" }, 400);
       let acc = await this.ctx.storage.get("u:" + u);
       if (path === "/api/register") {
         if (acc) return json({ err: "이미 있는 아이디예요" }, 409);
@@ -328,21 +331,26 @@ export class Accounts extends DurableObject {
         const recent = regs.filter((t) => t > Date.now() - 86400000);
         if (recent.length >= 15) return json({ err: "오늘은 이 인터넷에서 계정을 더 만들 수 없어요" }, 429);
         const salt = rand(16);
-        acc = { u, salt, hash: await hashPw(p, salt), save: null, created: Date.now() };
+        acc = { u, name, salt, hash: await hashPw(p, salt), save: null, created: Date.now() };
         await this.ctx.storage.put("ipreg:" + ip, [...recent, Date.now()]);
       } else {
-        if (!acc || !sameStr(await hashPw(p, acc.salt), acc.hash)) { this.fail(ip); return json({ err: "아이디나 비밀번호가 틀렸어요" }, 401); }
+        if (!acc || !sameStr(await hashPw(p, acc.salt), acc.hash)) { this.fail(ip); return json({ err: "닉네임이나 비밀번호가 틀렸어요" }, 401); }
       }
       const token = await this.newToken(acc);
-      return json({ ok: 1, u, token, dev: dev(u), save: acc.save || null });
+      return json({ ok: 1, u, name: acc.name || u, token, dev: dev(u), save: acc.save || null });
+    }
+    if (path === "/api/rank") {
+      const rk = (await this.ctx.storage.get("rank")) || {};
+      const list = Object.values(rk).sort((a, b) => b.lv - a.lv || b.fl - a.fl || b.ud - a.ud).slice(0, 50);
+      return json({ ok: 1, list });
     }
     if (path === "/api/whoami") {
       const acc = await this.session(b.token);
-      return json(acc ? { u: acc.u } : {});
+      return json(acc ? { u: acc.u, name: acc.name || acc.u } : {});
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
-    if (path === "/api/load") return json({ ok: 1, u: acc.u, dev: dev(acc.u), save: acc.save || null });
+    if (path === "/api/load") return json({ ok: 1, u: acc.u, name: acc.name || acc.u, dev: dev(acc.u), save: acc.save || null });
     if (path === "/api/logout") {
       await this.ctx.storage.delete("tok:" + acc.tok); acc.tok = null;
       await this.ctx.storage.put("u:" + acc.u, acc);
@@ -359,17 +367,22 @@ export class Accounts extends DurableObject {
       }
       acc.save = s; acc.saved = Date.now();
       await this.ctx.storage.put("u:" + acc.u, acc);
+      const rk = (await this.ctx.storage.get("rank")) || {};
+      const prevR = rk[acc.u], row = { n: acc.name || acc.u, lv: s.lvl | 0, fl: s.maxFloor | 0, ud: s.underdeepBestRoom | 0, el: String((s.aff || [])[0] || ""), job: String(s.job || ""), c: s.circle | 0 };
+      if (!prevR || prevR.lv !== row.lv || prevR.fl !== row.fl || prevR.ud !== row.ud || prevR.job !== row.job || prevR.n !== row.n) { rk[acc.u] = row; await this.ctx.storage.put("rank", rk); }
       return json({ ok: 1 });
     }
     if (path === "/api/delchar") {
       acc.save = null;
+      const rk = (await this.ctx.storage.get("rank")) || {};
+      if (rk[acc.u]) { delete rk[acc.u]; await this.ctx.storage.put("rank", rk); }
       await this.ctx.storage.put("u:" + acc.u, acc);
       return json({ ok: 1 });
     }
     if (path === "/api/passwd") {
       if (!sameStr(await hashPw(String(b.old || ""), acc.salt), acc.hash)) return json({ err: "지금 비밀번호가 틀렸어요" }, 401);
       const p = String(b.p || "");
-      if (p.length < 6 || p.length > 64) return json({ err: "비밀번호는 6~64글자예요" }, 400);
+      if (!PW_OK(p)) return json({ err: "비밀번호는 8글자 이상, 영문과 숫자를 섞어 주세요" }, 400);
       acc.salt = rand(16); acc.hash = await hashPw(p, acc.salt);
       const token = await this.newToken(acc);
       return json({ ok: 1, token });

@@ -31,7 +31,8 @@ button.muted{opacity:.5}
 #zone{position:absolute;left:50%;top:.35em;transform:translateX(-50%);font-size:1.15em;white-space:nowrap}
 #bossName{position:absolute;left:50%;top:1.55em;transform:translateX(-50%);font-size:.95em;color:#f0b8ff;white-space:nowrap}
 #menuBtns{position:absolute;right:.6em;top:11.8em;display:flex;gap:.3em;pointer-events:auto;font-size:.8em}
-.otherTag{position:absolute;transform:translate(-50%,-100%);font-size:.75em;color:#bfe9ff;white-space:nowrap;pointer-events:none}.chatBub{position:absolute;transform:translate(-50%,-100%);max-width:14em;background:#0c0a18e6;border:.08em solid #6a5aa0;color:#fff;font-size:.78em;padding:.15em .45em;border-radius:.3em;pointer-events:none;white-space:normal;word-break:break-all;text-align:center}#chatBox{position:absolute;left:.6em;top:19%;width:38%;font-size:.8em;pointer-events:none}#chatLog div{color:#e8e4ff;opacity:.9}#chatLog b{color:#ffe27a}#chatIn{pointer-events:auto;width:100%;font:inherit;background:#0c0a18ee;color:#fff;border:.1em solid #6a5aa0;padding:.3em;margin-top:.2em}#netInfo{color:#7ee8a0}#partyBox{position:absolute;right:.6em;top:34%;width:9.5em;font-size:.75em;display:flex;flex-direction:column;gap:.3em}#partyBox div{background:#0c0a18cc;border:.08em solid #4a3a80;padding:.2em .35em}#partyBox b{display:block;color:#bfe9ff}#partyBox span{color:#c9c4e0;font-size:.9em}#partyBox i{display:block;height:.35em;background:#3a1020;margin-top:.15em}#partyBox u{display:block;height:100%;background:#e5484d}
+.otherTag{position:absolute;transform:translate(-50%,-100%);font-size:.75em;color:#bfe9ff;white-space:nowrap;pointer-events:none}.rank{width:100%;border-collapse:collapse;font-size:.85em}.rank th{color:var(--gold);text-align:left;font-weight:normal;border-bottom:1px solid #4a3a80;padding:.2em .3em}.rank td{padding:.2em .3em;border-bottom:1px solid #2a2050}.rank tr.me td{color:#7ee8a0}.pinv{display:flex;gap:.5em;margin:.3em 0}.pinv input{flex:1;font:inherit;background:#0c0a18;color:#fff;border:.1em solid #6a5aa0;padding:.3em .4em}
+.chatBub{position:absolute;transform:translate(-50%,-100%);max-width:14em;background:#0c0a18e6;border:.08em solid #6a5aa0;color:#fff;font-size:.78em;padding:.15em .45em;border-radius:.3em;pointer-events:none;white-space:normal;word-break:break-all;text-align:center}#chatBox{position:absolute;left:.6em;top:19%;width:38%;font-size:.8em;pointer-events:none}#chatLog div{color:#e8e4ff;opacity:.9}#chatLog b{color:#ffe27a}#chatIn{pointer-events:auto;width:100%;font:inherit;background:#0c0a18ee;color:#fff;border:.1em solid #6a5aa0;padding:.3em;margin-top:.2em}#netInfo{color:#7ee8a0}#partyBox{position:absolute;right:.6em;top:34%;width:9.5em;font-size:.75em;display:flex;flex-direction:column;gap:.3em}#partyBox div{background:#0c0a18cc;border:.08em solid #4a3a80;padding:.2em .35em}#partyBox b{display:block;color:#bfe9ff}#partyBox span{color:#c9c4e0;font-size:.9em}#partyBox i{display:block;height:.35em;background:#3a1020;margin-top:.15em}#partyBox u{display:block;height:100%;background:#e5484d}
 #toasts{position:absolute;left:.6em;bottom:4.4em;display:flex;flex-direction:column-reverse;gap:.25em;font-size:.95em;max-width:46%}
 #toasts div{background:rgba(6,8,26,.85);padding:.15em .6em;border-left:.2em solid var(--gold);animation:tin .18s steps(3)}
 @keyframes tin{from{transform:translateX(-1.5em);opacity:0}}
@@ -83,12 +84,12 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
 #title .sub{font-size:1.15em;margin:0;color:var(--gold)}
 #title .menu{display:flex;flex-direction:column;gap:1.4em;padding:.5em 1.6em .5em 1em;margin-top:.4em}
 #title .menu button{font-size:1.3em;background:none;border:0;text-align:left;padding:.25em .3em}#title .menu #bCont{font-size:1.5em;color:var(--gold)}#title .menu #bNew{font-size:1em;opacity:.8;border-top:1px solid rgba(223,228,255,.25);padding-top:.6em}#title .menu #bNew.warn{color:#ff6b6b;opacity:1}#title .menu #bImp,#title .menu #bChars{font-size:.8em;opacity:.8}#codeBox .chl{display:flex;align-items:center;gap:.6em;padding:.35em 0;border-bottom:1px solid rgba(223,228,255,.15)}#codeBox .chl img{width:2em;height:2em;image-rendering:pixelated}#codeBox .chl .gr{flex:1}#codeBox .chl button{font-size:.9em;padding:.2em .7em}#codeBox{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(90vw,34em);padding:.8em 1em;z-index:50;pointer-events:auto}#codeBox b{color:var(--gold);font-size:1.2em}#codeTa{width:100%;height:8em;font:12px monospace;background:#0b0d24;color:#d8dee9;border:.1em solid #6a74b8;border-radius:.2em;word-break:break-all;box-sizing:border-box}#codeBox .cbtn{display:flex;gap:.6em;justify-content:flex-end;margin-top:.5em}#codeBox .cbtn button{font-size:1em;padding:.3em .9em}
-#authBox{display:flex;flex-direction:column;gap:.5em}#authBox input{font:inherit;font-size:1em;background:#0c0a18;color:#fff;border:.1em solid #6a5aa0;padding:.4em .5em;width:15em;pointer-events:auto}#authBox .aub{display:flex;gap:.6em}#authBox .aub button{font-size:1.1em}#title .menu #bOut{font-size:.8em;opacity:.8}#auMsg{margin:0;color:#ffb0b0;font-size:.85em;max-width:17em;min-height:1em}
+#authBox{display:flex;flex-direction:column;gap:.5em}#authBox input{font:inherit;font-size:1em;background:#0c0a18;color:#fff;border:.1em solid #6a5aa0;padding:.4em .5em;width:15em;pointer-events:auto}#authBox .aub{display:flex;gap:.6em}#authBox .aub button{font-size:1.1em}#title .menu #bOut{font-size:.8em;opacity:.8}#title .menu #bCont,#title .menu #bNew{font-size:1.25em;color:#1a1206;background:linear-gradient(#e8b84a,#b8862a);border:.1em solid #ffe27a;text-align:center;padding:.45em .6em;pointer-events:auto}#title .menu #bCont::before,#title .menu #bNew::before{content:'▶ ';visibility:visible;color:#1a1206}#auHint{margin:0;color:var(--dim);font-size:.8em;max-width:17em}#title .menu{gap:.8em}#auMsg{margin:0;color:#ffb0b0;font-size:.85em;max-width:17em;min-height:1em}
 #title .menu button::before{content:'▶ ';visibility:hidden;color:var(--gold)}
 #title .menu button:hover::before,#title .menu button:focus-visible::before{visibility:visible}
 #title .keys{font-size:.8em;color:var(--dim);text-align:center;line-height:1.5;margin-top:.4em}
 #pick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88%;padding:.7em 1.2em .9em;pointer-events:auto}
-#nickRow{display:flex;align-items:center;gap:.8em;margin-bottom:.5em;flex-wrap:wrap}#nickRow label{color:var(--gold)}#nickIn{font:inherit;font-size:1em;padding:.2em .4em;width:9em;background:#0b0d24;color:#fff;border:.1em solid #6a74b8;border-radius:.2em}#nickRow .dim{font-size:.8em}
+#nickRow{display:none!important;display:flex;align-items:center;gap:.8em;margin-bottom:.5em;flex-wrap:wrap}#nickRow label{color:var(--gold)}#nickIn{font:inherit;font-size:1em;padding:.2em .4em;width:9em;background:#0b0d24;color:#fff;border:.1em solid #6a74b8;border-radius:.2em}#nickRow .dim{font-size:.8em}
 #pick h2{margin:0;font-size:1.5em;color:var(--gold);font-weight:normal}
 #pick p{margin:.2em 0 .6em;color:var(--dim);font-size:.9em}
 #pickGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.4em}
@@ -129,7 +130,7 @@ img.ic{image-rendering:pixelated;height:1.1em;vertical-align:-.15em;margin-right
     <div id="title">
       <h1>아케인 타워</h1>
       <p class="sub">아홉 개의 서클, 백 층의 심연의 탑</p>
-      <div class="menu win"><div id="authBox"><input id="auU" maxlength="12" placeholder="아이디 (영어 소문자·숫자 4~12)" autocomplete="username" autocapitalize="off" spellcheck="false"><input id="auP" type="password" maxlength="64" placeholder="비밀번호 (6글자 이상)" autocomplete="current-password"><div class="aub"><button id="bLogin">로그인</button><button id="bReg">회원가입</button></div></div><button id="bCont" hidden>이어하기</button><button id="bNew" hidden>캐릭터 만들기</button><button id="bOut" hidden>로그아웃</button><p id="auMsg"></p></div>
+      <div class="menu win"><button id="bCont" hidden>이어하기</button><button id="bNew" hidden>캐릭터 만들기</button><p id="auHint" hidden>다른 계정으로 로그인하거나 새 계정을 만들려면 아래에 입력하세요.</p><div id="authBox"><input id="auU" maxlength="12" placeholder="닉네임 (2~12자, 한글·영문·숫자·_)" autocomplete="username" autocapitalize="off" spellcheck="false"><input id="auP" type="password" maxlength="64" placeholder="비밀번호 (8자 이상, 영문+숫자)" autocomplete="current-password"><div class="aub"><button id="bLogin">로그인</button><button id="bReg">회원가입</button></div></div><button id="bOut" hidden>로그아웃</button><p id="auMsg"></p></div>
       <div class="keys">WASD 이동 · 마우스 조준, 클릭 매직 애로우 · 1~8 마법 · Space 순간이동(이동 방향)<br>F 대화·포탈·상자 · R 신화 스킬 · Q/E 물약 · Tab 메뉴 · L CRT · M 소리</div>
     </div>
     <div id="pick" class="win" hidden>
@@ -2503,7 +2504,7 @@ const PANELS={
       const spm=statPointScale(S.lvl),row=(k,n,d,v)=>`<div class="li"><div class="gr"><b>${n}</b> <span class="gold">${v}</span><div class="ds">${d}</div></div><div class="bt">${btn('+1','stat:'+k,S.pts>0)}</div></div>`;
       h+=`<div class="say"><img src="${ICON['hero_'+S.aff[0]]}" alt=""><p>${S.title?`<b class="${S.titleColor==='rainbow'?'rainbowText':'gold'}">「${cleanTitle(S.title)}」</b><br>`:''}Lv.${S.lvl} · ${S.circle}서클 ${CT[S.circle]} · 주 속성 ${EL[S.aff[0]].n}${S.job?` · 2차 직업 <b style="color:${JOBS[S.job].c}">${JOBS[S.job].n}</b>`:''}<br><span class="dim">경험치 ${S.xp}/${xpNeed(S.lvl)} · 남은 포인트 · 점당 효율 ${Math.round(spm*100)}%</span> <b class="gold">${S.pts}</b></p></div>`+row('int','지능 INT',`마법 피해 +${(4*spm).toFixed(1)}%, 마나 +${(5*spm).toFixed(1)}`,S.st.int)+row('vit','체력 VIT',`기본 생명력 +${(18*spm).toFixed(1)}, 재생 +${(.08*spm).toFixed(2)}/초`,S.st.vit)+row('crit','치명 CRIT',`치명타율 +${(1.5*spm).toFixed(2)}%, 치명 피해 +${(2*spm).toFixed(2)}%`,S.st.crit)+row('wis','정신 WIS',`쿨타임 감소 +${(spm).toFixed(2)}%, 마나 재생 +${(.35*spm).toFixed(2)}/초`,S.st.wis);
       h+=`<p style="margin-top:.6em">마력 <b>${D.pow.toFixed(1)}</b> · 생명력 <b>${D.maxHp}</b> · 마나 <b>${D.maxMp}</b> · 방어 <b>${Math.round(D.def)}</b> · 치명타 <b>${D.crit.toFixed(1)}%</b> (x${D.critM.toFixed(2)}) · 보스 피해 <b>+${D.bossDmg.toFixed(1)}%</b> · 기본 공격 <b>+${D.basicDmg.toFixed(1)}%</b> · 쿨감 <b>${Math.round(D.cdr*100)}%</b> · 마나 재생 <b>${D.mpR.toFixed(1)}/초</b></p>`;
-      h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('닉네임 변경','nick')} ${btn('코드 입력','devCode')}${DEV.on?' '+btn('개발자 모드','devOpen',true,'go'):''}</div></div>`;
+      h+=`<div class="li"><div class="gr"><b>${S.nick}</b> <span class="dim">고유번호</span> <b class="gold">#${S.pid}</b><div class="ds">친구에게 보여줄 때 이 번호로 서로 구분할 수 있어요.</div></div><div class="bt">${btn('코드 입력','devCode')}${DEV.on?' '+btn('개발자 모드','devOpen',true,'go'):''}</div></div>`;
       h+=`<div>${btn(ui.resetArm?'한 번 더 누르면 삭제됩니다':'이 캐릭터 삭제','reset')}</div>`}
     else if(ui.tab==='inv'){
       const cur=[['gold','골드',Math.floor(S.gold)],['ore','광석',S.ore],['ess','정수',S.ess],['core','마력 코어',S.core||0],['prot','파괴 방지권',S.prot||0],['hpPot','체력 물약',S.hpPot],['mpPot','마나 물약',S.mpPot],['potScroll','윗잠 스크롤',S.potScroll||0],['epotScroll','아랫잠 스크롤',S.epotScroll||0]];
@@ -2633,7 +2634,7 @@ function forgeAnim(it,before,ok,drop,broke,saved){
 function hudHit(gx,gy){for(const r of HUDR){if(r.act&&gx>=r.x&&gx<r.x+r.w&&gy>=r.y&&gy<r.y+r.h){const a=r.act;if(a.startsWith('s:'))cast(a.slice(2));else if(a==='p:hp')usePot('hp');else if(a==='p:mp')usePot('mp');else if(a==='b')blink();else if(a==='m')castMyth();return true}}return false}
 function bindInput(){
   addEventListener('keydown',e=>{
-    if(e.target&&e.target.id==='chatIn')return;if(e.code==='Enter'&&G.started&&!ui.open&&netWant()&&NET.on){e.preventDefault();chatOpen();return}
+    if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;if(e.code==='Enter'&&G.started&&!ui.open&&netWant()&&NET.on){e.preventDefault();chatOpen();return}
     if(!G.started)return;if(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat&&!/^Digit/.test(e.code))return;IN.keys[e.code]=true;
     if(ui.open){if(e.code==='Escape'||e.code==='Tab'||e.code==='KeyF')closePanel();return}
     const m=/^Digit([1-8])$/.exec(e.code),xi={Digit9:8,Digit0:9,Minus:10,Equal:11}[e.code];if(m){const i=+m[1]-1,id=S.slots[i];if(id&&i<D.slots)cast(id)}else if(xi!==undefined&&xi<D.slots){const id=S.slots[xi];if(id)cast(id)}
@@ -2692,14 +2693,14 @@ function charBox(){const box=$('codeBox'),rows=legacyChars();box.hidden=false;$(
   list.innerHTML=rows.map(([pid,o])=>`<div class="chl"><img src="${ICON['hero_'+(o.aff&&o.aff[0])]||''}" alt=""><div class="gr"><b>${cleanTitle(o.title)?`「${cleanTitle(o.title)}」 `:''}${(o.nick||'마법사').replace(/[<>&]/g,'')}</b> <span class="dim">#${pid}</span><br>Lv.${o.lvl} · ${o.circle}서클 · 최고 ${o.maxFloor||0}층</div><button data-pick="${pid}">가져오기</button></div>`).join('')+'<div class="chl"><div class="gr">새 캐릭터로 시작하기</div><button data-new="1">새로 만들기</button></div>';
   list.onclick=ev=>{const pk=ev.target.dataset.pick;if(ev.target.dataset.new){box.hidden=true;showPick();return}
     if(pk){const row=rows.find(r=>r[0]===pk);if(!row)return;ev.target.disabled=true;let o=row[1];try{localStorage.setItem(SAVE_KEY,row[2]);o=loadSave()||o}catch(e){}
-      api('save',{save:o}).then(r=>{if(r.ok){const sl=getSlots();delete sl[pk];putSlots(sl);box.hidden=true;S=o;afterAuth(o)}else{ev.target.disabled=false;$('codeHelp').textContent='가져오기 실패: '+(r.why||r.err||'서버 오류')}})}};
+      o.nick=AUTH.name||o.nick;api('save',{save:o}).then(r=>{if(r.ok){const sl=getSlots();delete sl[pk];putSlots(sl);box.hidden=true;S=o;afterAuth(o)}else{ev.target.disabled=false;$('codeHelp').textContent='가져오기 실패: '+(r.why||r.err||'서버 오류')}})}};
   $('codeX').onclick=()=>{box.hidden=true;list.style.display='none'}}
 const mkPid=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<8;i++){r+=c[Math.random()*c.length|0];if(i===3)r+='-'}return r};
 const cleanNick=n=>String(n||'').replace(/[<>&"'`]/g,'').trim().slice(0,10);
 function ensureId(){if(!S.pid)S.pid=mkPid();if(!S.nick)S.nick='마법사'+(1000+(Math.random()*9000|0))}
 function start(el){
   if(!AUTH||!AUTH.token){authMsg('먼저 로그인해 주세요');return}
-  if(el){S=newSave(el);const n=cleanNick($('nickIn').value);if(n)S.nick=n;AUTH.has=true}ensureId();CLOUD.dirty=true;setTimeout(()=>cloudPush(true),500);loadDevForCurrentCharacter();initAudio();if(AU.master)AU.master.gain.value=S.mute?0:.8;
+  if(el){S=newSave(el);AUTH.has=true}ensureId();S.nick=AUTH.name||S.nick;CLOUD.dirty=true;setTimeout(()=>cloudPush(true),500);loadDevForCurrentCharacter();initAudio();if(AU.master)AU.master.gain.value=S.mute?0:.8;
   G.p={x:320,y:150,hp:1,mp:1,face:1,walk:0,ifr:0,cd:{},mcd:0,bcd:0,pcd:0,castT:0,mvx:0,mvy:0,shield:0,shMax:1,shT:0,regen:0};recalc();if(S.job){S.grim=S.grim||{};grantJobSpells()}G.p.hp=D.maxHp;G.p.mp=D.maxMp;
   while(S.quests.length<3)S.quests.push(mkQuest());
   $('scan').classList.toggle('off',!S.scan);$('bScan').classList.toggle('muted',!S.scan);$('bSnd').classList.toggle('muted',S.mute);syncAuto();
@@ -2716,13 +2717,13 @@ let AUTH=null;try{AUTH=JSON.parse(localStorage.getItem(AUTH_KEY)||'null')}catch(
 const CLOUD={dirty:false,busy:false,dead:false,fail:0};
 function api(path,body){return fetch(API_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.assign({token:AUTH&&AUTH.token},body)),keepalive:path==='save'&&JSON.stringify(body).length<60000}).then(r=>r.json()).catch(()=>({err:'net'}))}
 function authMsg(t){$('auMsg').textContent=t||''}
-function authUI(){const on=!!(AUTH&&AUTH.token);$('authBox').hidden=on;$('bOut').hidden=!on;$('bCont').hidden=!on||!S||!S.lvl||!AUTH.has;$('bNew').hidden=!on||!!AUTH.has;if(on&&AUTH.has)$('bCont').textContent=`이어하기 · ${S.nick} Lv.${S.lvl}`;if(on)authMsg(`${AUTH.u} 계정${AUTH.dev?' · 개발자':''}`)}
-function authGo(kind){const u=$('auU').value.trim().toLowerCase(),p=$('auP').value;initAudio();
-  if(!/^[a-z0-9_]{4,12}$/.test(u)){authMsg('아이디는 영어 소문자·숫자·_ 4~12글자예요');return}if(p.length<6){authMsg('비밀번호는 6글자 이상이에요');return}
+function authUI(){const on=!!(AUTH&&AUTH.token),nm=on?(AUTH.name||AUTH.u):'';$('auHint').hidden=!on;$('bOut').hidden=!on;$('bCont').hidden=!on||!AUTH.has;$('bNew').hidden=!on||!!AUTH.has;if(on&&AUTH.has)$('bCont').textContent=`${nm}(으)로 계속하기 · Lv.${S.lvl}`;if(on&&!AUTH.has)$('bNew').textContent=`${nm} · 캐릭터 만들기`;authMsg(on&&AUTH.dev?'개발자 계정':'')}
+function authGo(kind){const u=$('auU').value.trim().normalize('NFC'),p=$('auP').value;initAudio();
+  if(!/^[가-힣a-zA-Z0-9_]{2,12}$/.test(u)){authMsg('닉네임은 한글·영문·숫자·_ 2~12글자예요');return}if(kind==='register'&&!(p.length>=8&&/[a-zA-Z]/.test(p)&&/[0-9]/.test(p))){authMsg('비밀번호는 8글자 이상, 영문과 숫자를 섞어 주세요');return}if(!p){authMsg('비밀번호를 입력해 주세요');return}
   authMsg(kind==='login'?'로그인 중...':'계정 만드는 중...');AUTH=null;
-  api(kind,{u,p}).then(r=>{if(!r.ok){authMsg(r.err==='net'?'서버에 연결할 수 없어요':r.err||'실패했어요');return}AUTH={u:r.u,token:r.token,dev:!!r.dev};try{localStorage.setItem(AUTH_KEY,JSON.stringify(AUTH))}catch(e){}$('auP').value='';afterAuth(r.save)})}
-function afterAuth(sv){AUTH.has=!!sv;if(sv){try{localStorage.setItem(SAVE_KEY,JSON.stringify(sv))}catch(e){}S=loadSave()||sv;if(S.job){S.grim=S.grim||{};grantJobSpells()}ensureId();loadDevForCurrentCharacter()}
-  authUI();if(!sv){authMsg(`${AUTH.u} 계정 · 캐릭터가 아직 없어요`);if(legacyChars().length)charBox()}}
+  api(kind,{u,p}).then(r=>{if(!r.ok){authMsg(r.err==='net'?'서버에 연결할 수 없어요':r.err||'실패했어요');return}AUTH={u:r.u,name:r.name||r.u,token:r.token,dev:!!r.dev};try{localStorage.setItem(AUTH_KEY,JSON.stringify(AUTH))}catch(e){}$('auP').value='';afterAuth(r.save,r.name)})}
+function afterAuth(sv,name){if(name)AUTH.name=name;try{localStorage.setItem(AUTH_KEY,JSON.stringify({u:AUTH.u,name:AUTH.name,token:AUTH.token,dev:AUTH.dev}))}catch(e){}AUTH.has=!!sv;if(sv){try{localStorage.setItem(SAVE_KEY,JSON.stringify(sv))}catch(e){}S=loadSave()||sv;if(S.job){S.grim=S.grim||{};grantJobSpells()}ensureId();S.nick=AUTH.name||S.nick;loadDevForCurrentCharacter()}
+  authUI();if(!sv&&legacyChars().length)charBox()}
 function cloudPush(force){if(!G.started||!AUTH||!AUTH.token||CLOUD.dead||(!CLOUD.dirty&&!force)||CLOUD.busy)return;CLOUD.busy=true;CLOUD.dirty=false;
   api('save',{save:S}).then(r=>{CLOUD.busy=false;if(r.ok){CLOUD.fail=0;return}CLOUD.dirty=true;
     if(r.err==='session'){CLOUD.dead=true;try{localStorage.removeItem(AUTH_KEY)}catch(e){}alert('다른 기기에서 이 계정으로 로그인해서 연결이 끊겼어요. 다시 로그인해 주세요.');location.reload()}
@@ -2736,7 +2737,7 @@ buildAssets();
   $('bCont').onclick=()=>start();$('bNew').onclick=()=>{initAudio();if(legacyChars().length)charBox();else showPick()};
   $('bOut').onclick=()=>{api('logout',{});AUTH=null;try{localStorage.removeItem(AUTH_KEY);localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()};
   $('pickGrid').addEventListener('click',e=>{const b=e.target.closest('.pk');if(b)start(b.dataset.el)});
-  if(AUTH&&AUTH.token){authMsg('서버에서 불러오는 중...');api('load',{}).then(r=>{if(r.ok)afterAuth(r.save);else if(r.err==='session'){AUTH=null;try{localStorage.removeItem(AUTH_KEY)}catch(e){}authUI();authMsg('다시 로그인해 주세요')}else{authUI();authMsg('서버에 연결할 수 없어요. 새로고침해 주세요')}})}else authUI();
+  if(AUTH&&AUTH.token){authMsg('서버에서 불러오는 중...');api('load',{}).then(r=>{if(r.ok){AUTH.dev=!!r.dev;afterAuth(r.save,r.name)}else if(r.err==='session'){AUTH=null;try{localStorage.removeItem(AUTH_KEY)}catch(e){}authUI();authMsg('다시 로그인해 주세요')}else{authUI();authMsg('서버에 연결할 수 없어요. 새로고침해 주세요')}})}else authUI();
   setInterval(()=>{if(G.started)save()},20000);setInterval(cloudPush,15000);
   addEventListener('visibilitychange',()=>{if(document.hidden&&G.started){save();cloudPush(true)}});
   requestAnimationFrame(frame);
@@ -2797,7 +2798,7 @@ function netParty(){const box=$('partyBox');const mem=NET.party.filter(id=>id!==
   box.replaceChildren(...mem.map(o=>{const d=document.createElement('div'),n=document.createElement('b'),bar=document.createElement('i'),f=document.createElement('u'),s=document.createElement('span');n.textContent=o.nick+' Lv.'+o.lv;s.textContent=netWhere(o);f.style.width=Math.round(100*clamp(o.hp/o.mhp,0,1))+'%';bar.appendChild(f);d.append(n,s,bar);return d}))}
 function drawOther(o){shadow(o.x,o.y,14);const fr=o.walk?((o.walk|0)%2):0,bob=o.walk?((o.walk*2|0)%2):0;drawSpr(heroSet(o.el,fr,o.rb),o.x,o.y+1-bob,o.f<0,'');drawStaff(o.x,o.y-bob,o.f,o.el,false,G.time)}
 const netVisible=o=>G.zone==='town'&&o.zone==='town';
-function netTags(){const run=G.started&&!G.title;const place=(el,x,y,off,ok)=>{const sx=x-G.cam.x,sy=y-G.cam.y+off;if(!run||!ok||sx<-30||sx>W+30||sy<0||sy>H+20){el.style.display='none';return}el.style.display='';el.style.left=(sx/W*100)+'%';el.style.top=(sy/H*100)+'%'};
+function netTags(){const run=G.started&&!G.title&&!ui.open;const place=(el,x,y,off,ok)=>{const sx=x-G.cam.x,sy=y-G.cam.y+off;if(!run||!ok||sx<-30||sx>W+30||sy<0||sy>H+20){el.style.display='none';return}el.style.display='';el.style.left=(sx/W*100)+'%';el.style.top=(sy/H*100)+'%'};
   for(const id in NET.pl){const o=NET.pl[id],v=netVisible(o);o.tag&&place(o.tag,o.x,o.y,-34,v);if(o.bub){if(G.time>o.bubT){o.bub.remove();o.bub=null}else place(o.bub,o.x,o.y,-46,v)}}
   const p=G.p;if(p&&p.bub){if(G.time>p.bubT){p.bub.remove();p.bub=null}else place(p.bub,p.x,p.y,-50,true)}if(((G.time*4)|0)!==NET.pt){NET.pt=(G.time*4)|0;netParty()}}
 function chatOpen(mode){const i=$('chatIn');NET.cm=mode||null;i.placeholder=mode&&mode.k==='w'?`${mode.nick} 님에게 귓속말`:G.zone==='town'?'채팅 (/p 파티)':NET.party.length?'파티 채팅':'채팅';i.hidden=false;i.value='';i.focus();IN.keys={}}
@@ -2810,10 +2811,16 @@ $('chatIn').addEventListener('blur',()=>setTimeout(()=>{if(document.activeElemen
 $('bChat').onclick=()=>chatOpen();
 $('bSoc').onclick=()=>{if(!NET.on){toast('서버에 연결 중입니다');return}openPanel('social')};
 {const _cp=closePanel;closePanel=function(){if(ui.open==='trade'&&NET.tr)netSend({t:'tcancel'});_cp()}}
-PANELS.social={t:'친구 · 접속자',r(){const list=Object.values(NET.pl).sort((a,b)=>b.lv-a.lv);let h='';
+PANELS.social={t:'친구',r(){const tab=ui.stab||'who',list=Object.values(NET.pl).sort((a,b)=>b.lv-a.lv);let h=`<div class="tabs">${btn(`접속자 ${list.length+1}`,'stab:who',true,tab==='who'?'on':'')}${btn('파티'+(NET.party.length?` ${NET.party.length}/4`:''),'stab:party',true,tab==='party'?'on':'')}${btn('랭킹','stab:rank',true,tab==='rank'?'on':'')}</div>`;
+  if(tab==='rank'){if(!NET.rank||Date.now()-NET.rankT>30000){NET.rankT=Date.now();api('rank',{}).then(r=>{if(r.ok){NET.rank=r.list;if(ui.open==='social')refreshPanel()}})}
+    const L=NET.rank||[];h+=L.length?`<table class="rank"><tr><th>#</th><th>이름</th><th>속성·직업</th><th>Lv</th><th>탑 최고 층</th><th>지하 최고 방</th></tr>${L.map((o,i)=>`<tr${o.n===(AUTH&&AUTH.name)?' class="me"':''}><td>${i+1}</td><td>${esc(o.n)}</td><td>${EL[o.el]?EL[o.el].n:''}${o.job&&JOBS[o.job]?' · '+JOBS[o.job].n:''}</td><td>${o.lv}</td><td>${o.fl}</td><td>${o.ud}</td></tr>`).join('')}</table>`:'<p class="dim">불러오는 중...</p>';return h}
+  if(tab==='party'){h+=NET.party.length?'':'<p class="dim">파티가 없어요. 혼자서도 탑에 들어갈 수 있어요.</p>';h+=`<div class="hd">초대 <span>마을에서</span></div><div class="pinv"><input id="pinvIn" maxlength="12" placeholder="초대할 닉네임" autocomplete="off">${btn('초대','pInvName',NET.party.length<4,'go')}</div><p class="dim">최대 4명. 파티원 체력과 위치가 화면 오른쪽에 보여요. 채팅에서 /p 로 파티 채팅.</p>`}
+  if(tab!=='who'){
   for(const r of NET.req)h+=`<div class="li" style="border-color:#ffe27a"><div class="gr"><b class="gold">${esc(r.nick)}</b><div class="ds">${r.k==='p'?'파티 초대':'거래 신청'}</div></div><div class="bt">${btn('수락',(r.k==='p'?'pAcc:':'tAcc:')+r.from,true,'go')} ${btn('거절',(r.k==='p'?'pNo:':'tNo:')+r.from)}</div></div>`;
   if(NET.party.length){h+=`<div class="hd">내 파티 <span>${NET.party.length}/4</span></div>`;for(const id of NET.party){const o=id===NET.me?null:NET.pl[id];h+=`<div class="li"><div class="gr"><b>${o?esc(o.nick):esc(S.nick)+' (나)'}</b> <span class="dim">Lv.${o?o.lv:S.lvl}</span><div class="ds">${o?netWhere(o)+` · 체력 ${Math.round(100*clamp(o.hp/o.mhp,0,1))}%`:'파티 채팅: 채팅 앞에 /p'}</div></div></div>`}h+=`<div class="bt">${btn('파티 나가기','pLeave')}</div>`}
-  h+=`<div class="hd">접속 중 <span>${list.length+1}명</span></div>`;if(!list.length)h+='<p class="dim">지금 접속한 친구가 없습니다.</p>';
+  return h}
+  for(const r of NET.req)h+=`<div class="li" style="border-color:#ffe27a"><div class="gr"><b class="gold">${esc(r.nick)}</b><div class="ds">${r.k==='p'?'파티 초대':'거래 신청'}</div></div><div class="bt">${btn('수락',(r.k==='p'?'pAcc:':'tAcc:')+r.from,true,'go')} ${btn('거절',(r.k==='p'?'pNo:':'tNo:')+r.from)}</div></div>`;
+  h+=`<div class="hd">접속 중 <span>${list.length+1}명</span></div><div class="li"><div class="gr"><b>${esc(S.nick)} (나)</b> <span class="dim">Lv.${S.lvl}</span></div></div>`;if(!list.length)h+='<p class="dim">지금 접속한 친구가 없습니다.</p>';
   const inParty=new Set(NET.party);
   for(const o of list){const canT=G.zone==='town'&&o.zone==='town'&&!NET.tr;h+=`<div class="li"><div class="gr"><b>${o.title?`<span class="gold">「${esc(o.title)}」</span> `:''}${esc(o.nick)}</b> <span class="dim">Lv.${o.lv}${o.pid?' · #'+esc(o.pid):''}</span><div class="ds">${EL[o.el]?EL[o.el].n:''}${o.job&&JOBS[o.job]?' · '+JOBS[o.job].n:''} · ${netWhere(o)}${inParty.has(o.id)?' · <b class="gold">파티</b>':''}</div></div><div class="bt">${btn('귓속말','wTo:'+o.id)} ${btn('파티 초대','pInv:'+o.id,!inParty.has(o.id)&&NET.party.length<4)} ${btn('거래','tReq:'+o.id,canT,'go')}</div></div>`}
   h+='<p class="dim">거래는 둘 다 마을에 있을 때만 됩니다. 채팅: 노트북은 Enter, 태블릿은 [채팅] 버튼.</p>';return h}};
@@ -2831,7 +2838,7 @@ PANELS.trade={t:'거래',r(){const T=NET.tr;if(!T)return '<p>거래가 끝났습
   h+=`<div class="bt" style="margin-top:.6em">${btn(T.okMe?'확정됨 · 상대 기다리는 중':'확정',`tOk`,!T.okMe&&room,'go')} ${btn('거래 취소','tCancel')}</div>${room?'':'<p class="gold">가방 칸이 모자랍니다</p>'}</div></div>`;return h}};
 Object.assign(ACT,{
   wTo(id){const o=NET.pl[id];if(!o)return;closePanel();chatOpen({k:'w',to:id,nick:o.nick})},
-  pInv(id){netSend({t:'pinv',to:id})},pAcc(){NET.req=NET.req.filter(r=>r.k!=='p');netSend({t:'pacc'})},pNo(){NET.req=NET.req.filter(r=>r.k!=='p');netSend({t:'pno'})},pLeave(){netSend({t:'pleave'})},
+  pInv(id){netSend({t:'pinv',to:id})},pInvName(){const i=$('pinvIn'),n=i?i.value.trim():'';if(!n){toast('닉네임을 입력해 주세요');return}if(G.zone!=='town'){toast('초대는 마을에서만 할 수 있어요');return}netSend({t:'pinv',name:n})},stab(t){ui.stab=t},pAcc(){NET.req=NET.req.filter(r=>r.k!=='p');netSend({t:'pacc'})},pNo(){NET.req=NET.req.filter(r=>r.k!=='p');netSend({t:'pno'})},pLeave(){netSend({t:'pleave'})},
   tReq(id){netSend({t:'treq',to:id})},tAcc(){netSend({t:'tacc'})},tNo(){NET.req=NET.req.filter(r=>r.k!=='t');netSend({t:'tno'})},
   tIn(id){const T=NET.tr;id=+id;if(!T)return;if(T.sel!==id){T.sel=id;return}if(T.mine.length>=8){toast('한 번에 8개까지 올릴 수 있습니다');return}T.mine.push(id);T.sel=null;tradeSend()},
   tOut(id){const T=NET.tr;id=+id;if(!T)return;if(T.sel!==id){T.sel=id;return}T.mine=T.mine.filter(x=>x!==id);T.sel=null;tradeSend()},
