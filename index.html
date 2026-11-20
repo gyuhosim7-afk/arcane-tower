@@ -1233,6 +1233,7 @@ function buildTown(){
     {x:320,y:106,r:22,label:'심연의 탑',pr:'[F] 입장',ly:-58,act:()=>openPanel('tower')},
     {x:320,y:226,r:28,label:'승급 제단',pr:'[F] 신화 무기 봉헌',act:()=>openPanel('altar')},
     {x:392,y:222,r:20,label:'모험가 게시판',pr:'[F] 랭킹·접속자',board:1,ly:-34,act:()=>{if(!NET.on){toast('서버에 연결 중입니다');return}ui.stab=ui.stab==='party'||!ui.stab?'rank':ui.stab;openPanel('social')}},
+    {x:248,y:222,r:20,label:'결투장',pr:'[F] PvP 결투',arena:1,ly:-34,act:()=>{if(!NET.on){toast('서버에 연결 중입니다');return}openPanel('pvp')}},
     {x:144,y:156,r:26,label:'마법사 엘드린',pr:'[F] 서클 승급',npc:'eldrin',act:()=>openPanel('eldrin')},
     {x:496,y:156,r:26,label:'연금술사 루나',pr:'[F] 마법서·물약',npc:'luna',act:()=>openPanel('luna')},
     {x:144,y:348,r:26,label:'대장장이 토르간',pr:'[F] 장비',npc:'thorgan',act:()=>openPanel('thorgan')},
@@ -2341,6 +2342,7 @@ function render(){flushK();
   m.anim(G.time);
   for(const it of m.inter)if(it.portal){pxRing(ctx,it.x,it.y,15,8,it.portal[0]);pxRing(ctx,it.x,it.y,12,6,it.portal[1]);drawSwirl(it.x,it.y-12,11,it.portal,G.time,36);if(Math.random()<.3)part(it.x+rnd(-10,10),it.y,0,-rnd(20,50),.7,pick(it.portal),1);light(it.x,it.y-8,54)}
   for(const it of m.inter)if(it.board)drawBoard(it.x,it.y);
+  for(const it of m.inter)if(it.arena)drawArenaSign(it.x,it.y);
   for(const f of G.fx)if(f.layer==='g')f.draw();
   for(const k of G.picks)if(k.x>=cx-28&&k.x<=cx+W+28&&k.y>=cy-28&&k.y<=cy+H+28)drawPick(k);
   const dl=[];for(const e of G.en)dl.push(e);for(const it of m.inter)if(it.npc||it.chest)dl.push(it);if(G.zone==='town')for(const id in NET.pl)if(NET.pl[id].zone==='town')dl.push(NET.pl[id]);if(DU.on&&DU.o&&G.zone==='arena')dl.push(DU.o);if(!G.title)dl.push(p);dl.sort((a,b)=>a.y-b.y);
@@ -2815,6 +2817,13 @@ function netUpdate(dt){const want=netWant();$('bChat').hidden=!want||!NET.on;$('
   for(const id in NET.pl){const o=NET.pl[id],k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;if(Math.hypot(dx,dy)>120){o.x=o.tx;o.y=o.ty}else{o.x+=dx*k;o.y+=dy*k}o.walk=(o.w||Math.hypot(dx,dy)>1.5)?o.walk+dt*9:0}}
 function netParty(){const box=$('partyBox');const mem=NET.party.filter(id=>id!==NET.me).map(id=>NET.pl[id]).filter(Boolean);box.hidden=!mem.length||!netWant();if(box.hidden)return;
   box.replaceChildren(...mem.map(o=>{const d=document.createElement('div'),n=document.createElement('b'),bar=document.createElement('i'),f=document.createElement('u'),s=document.createElement('span');n.textContent=o.nick+' Lv.'+o.lv;s.textContent=netWhere(o);f.style.width=Math.round(100*clamp(o.hp/o.mhp,0,1))+'%';bar.appendChild(f);d.append(n,s,bar);return d}))}
+function drawArenaSign(x,y){shadow(x,y,14);const c=ctx,X=Math.round(x),Y=Math.round(y);
+  c.fillStyle='#4a2a14';c.fillRect(X-2,Y-13,4,14);
+  c.fillStyle='#2a160a';c.fillRect(X-16,Y-34,32,22);c.fillStyle='#6a1326';c.fillRect(X-15,Y-33,30,20);c.fillStyle='#8a1f33';c.fillRect(X-15,Y-33,30,3);
+  // 교차한 검
+  c.strokeStyle='#d8dee9';c.lineWidth=2;c.beginPath();c.moveTo(X-9,Y-16);c.lineTo(X+9,Y-30);c.moveTo(X+9,Y-16);c.lineTo(X-9,Y-30);c.stroke();
+  c.fillStyle='#ffd84a';c.fillRect(X-10,Y-18,3,3);c.fillRect(X+7,Y-18,3,3);c.lineWidth=1;
+  if(NET.on){const n=Object.values(NET.pl).filter(o=>o.zone==='town').length;c.fillStyle='#0c0a18';c.fillRect(X-8,Y-45,16,8);c.fillStyle=(G.time*2|0)%2?'#ff8a8a':'#e5484d';c.fillRect(X-6,Y-43,3,3);drawText(String(n),X-1,Y-44,'#ffffff',.6)}light(x,y-20,20)}
 function drawBoard(x,y){shadow(x,y,14);const c=ctx,X=Math.round(x),Y=Math.round(y),n=Object.keys(NET.pl).length+(NET.on?1:0);
   c.fillStyle='#4a2a14';c.fillRect(X-9,Y-14,3,15);c.fillRect(X+6,Y-14,3,15);
   c.fillStyle='#2a160a';c.fillRect(X-15,Y-31,30,20);c.fillStyle='#8a5a2a';c.fillRect(X-14,Y-30,28,18);c.fillStyle='#b8823e';c.fillRect(X-14,Y-30,28,2);
@@ -2853,6 +2862,17 @@ PANELS.social={t:'모험가 게시판',r(){const tab=ui.stab||'who',list=Object.
   const inParty=new Set(NET.party);
   for(const o of list){const canT=G.zone==='town'&&o.zone==='town'&&!NET.tr;h+=`<div class="li"><div class="gr"><b>${o.title?`<span class="gold">「${esc(o.title)}」</span> `:''}${esc(o.nick)}</b> <span class="dim">Lv.${o.lv}${o.pid?' · #'+esc(o.pid):''}</span><div class="ds">${EL[o.el]?EL[o.el].n:''}${o.job&&JOBS[o.job]?' · '+JOBS[o.job].n:''} · ${netWhere(o)}${inParty.has(o.id)?' · <b class="gold">파티</b>':''}</div></div><div class="bt">${btn('귓속말','wTo:'+o.id)} ${btn('파티 초대','pInv:'+o.id,!inParty.has(o.id)&&NET.party.length<4)} ${btn('거래','tReq:'+o.id,canT,'go')} ${btn('결투','dReq:'+o.id,canT&&!DU.on)}</div></div>`}
   h+='<p class="dim">거래는 둘 다 마을에 있을 때만 됩니다. 채팅: 노트북은 Enter, 태블릿은 [채팅] 버튼.</p>';return h}};
+PANELS.pvp={t:'결투장',r(){if(DU.on)return '<p>결투 중입니다.</p>';
+  const req=NET.req.filter(r=>r.k==='d');let h='<div class="say"><p>같은 스펙으로 겨뤄요 · <b class="gold">체력 1000, 기본 공격과 순간이동만</b>, 작은 경기장, 90초.<br><span class="dim">레벨·장비·직업 효과는 전부 꺼져요. 둘 다 마을에 있어야 신청돼요.</span></p></div>';
+  for(const r of req)h+=`<div class="li" style="border-color:#ff8a8a"><div class="gr"><b class="gold">${esc(r.nick)}</b><div class="ds">결투 신청</div></div><div class="bt">${btn('수락','dAcc:'+r.from,true,'go')} ${btn('거절','dNo:'+r.from)}</div></div>`;
+  const rec=(NET.pvp||[]).find(o=>o.n===(AUTH&&AUTH.name));if(rec)h+=`<div class="li"><div class="gr"><b>내 전적</b><div class="ds">점수 <b class="gold">${rec.r}</b> · ${rec.w}승 ${rec.l}패 · 승률 ${Math.round(100*rec.w/Math.max(1,rec.w+rec.l))}%</div></div></div>`;
+  const list=Object.values(NET.pl).filter(o=>o.zone==='town').sort((a,b)=>b.lv-a.lv);
+  h+=`<div class="hd">마을의 도전자 <span>${list.length}명</span></div>`;
+  if(!list.length)h+='<p class="dim">지금 마을에 다른 사람이 없어요. 친구가 마을에 오면 여기서 바로 신청할 수 있어요.</p>';
+  for(const o of list)h+=`<div class="li"><div class="gr"><b>${o.title?`<span class="gold">「${esc(o.title)}」</span> `:''}${esc(o.nick)}</b> <span class="dim">Lv.${o.lv}</span><div class="ds">${EL[o.el]?EL[o.el].n:''}${o.job&&JOBS[o.job]?' · '+JOBS[o.job].n:''}</div></div><div class="bt">${btn('결투 신청','dReq:'+o.id,!DU.on,'go')}</div></div>`;
+  if(!NET.pvp||Date.now()-NET.pvpT>20000){NET.pvpT=Date.now();api('pvprank',{}).then(r=>{if(r.ok){NET.pvp=r.list;if(ui.open==='pvp')refreshPanel()}})}
+  const L=NET.pvp;h+=`<div class="hd">PvP 순위</div>`;h+=!L?'<p class="dim">불러오는 중...</p>':L.length?`<table class="rank"><tr><th>#</th><th>이름</th><th>점수</th><th>승</th><th>패</th></tr>${L.slice(0,20).map((o,i)=>`<tr${o.n===(AUTH&&AUTH.name)?' class="me"':''}><td>${i+1}</td><td>${esc(o.n)}</td><td class="gold">${o.r}</td><td>${o.w}</td><td>${o.l}</td></tr>`).join('')}</table>`:'<p class="dim">아직 결투 기록이 없어요.</p>';
+  return h}};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tradeCell=(it,a,sel)=>`<div class="cell ${sel?'sel':''}" style="border-color:${RAR[clamp(it.r|0,0,6)].c}" data-a="${a}"><img src="${itemIcon(it)}" alt="">${it.up?`<u>+${it.up}</u>`:''}</div>`;
 PANELS.trade={t:'거래',r(){const T=NET.tr;if(!T)return '<p>거래가 끝났습니다.</p>';const mine=T.mine.map(id=>S.inv.find(it=>it.id===id)).filter(Boolean);
