@@ -7,11 +7,22 @@ const PARTY_MAX = 4;
 const clean = (v, n) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, "").slice(0, n);
 const num = (v, lo, hi) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : lo);
 const ELS = ["fire", "water", "ice", "wind", "earth", "thunder", "holy", "dark"];
+const CORS = { "access-control-allow-origin": "*", "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type" };
+const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "content-type": "application/json" } });
 const ZONES = ["town", "tower", "underdeep", "udtown", "other"];
 
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
+    if (url.pathname.startsWith("/api/")) {
+      if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+      if (req.method !== "POST") return json({ err: "method" }, 405);
+      const ip = req.headers.get("CF-Connecting-IP") || "?";
+      const body = await req.text();
+      if (body.length > 600000) return json({ err: "big" }, 413);
+      const r = await env.ACC.get(env.ACC.idFromName("acc")).fetch("https://acc" + url.pathname, { method: "POST", body, headers: { "x-ip": ip } });
+      return new Response(r.body, { status: r.status, headers: { ...CORS, "content-type": "application/json" } });
+    }
     if (url.pathname === "/town") {
       if (req.headers.get("Upgrade") !== "websocket") return new Response("websocket only", { status: 426 });
       return env.TOWN.get(env.TOWN.idFromName("town-1")).fetch(req);
@@ -43,7 +54,7 @@ export class Town extends DurableObject {
     if (this.ctx.getWebSockets().length >= MAX_PLAYERS) return new Response("full", { status: 503 });
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ id: crypto.randomUUID().slice(0, 8), p: null, lastChat: 0, n: 0, win: 0, party: null, pinv: null, treq: null, trade: null });
+    server.serializeAttachment({ u: null, id: crypto.randomUUID().slice(0, 8), p: null, lastChat: 0, n: 0, win: 0, party: null, pinv: null, treq: null, trade: null });
     return new Response(null, { status: 101, webSocket: client });
   }
   all() {
@@ -94,6 +105,10 @@ export class Town extends DurableObject {
     const others = () => this.all().filter((y) => y.a.id !== a.id);
 
     if (m.t === "hi") {
+      const who = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/api/whoami", { method: "POST", body: JSON.stringify({ token: String(m.token || "") }) }).then((r) => r.json()).catch(() => ({}));
+      if (!who.u) { this.send(ws, { t: "sys", m: "로그인이 필요합니다" }); try { ws.close(4001, "auth"); } catch {} return; }
+      for (const y of this.all()) if (y.a.u === who.u && y.w !== ws) { try { y.w.close(4002, "dup"); } catch {} await this.leave(y.w); }
+      a.u = who.u;
       a.p = {
         id: a.id, pid: clean(m.pid, 12), nick: clean(m.nick, 12) || "마법사", title: clean(m.title, 16),
         el: ELS.includes(m.el) ? m.el : "fire", job: clean(m.job, 10), lv: num(m.lv, 1, 999) | 0,
@@ -225,4 +240,140 @@ export class Town extends DurableObject {
   }
   async webSocketClose(ws) { await this.leave(ws); try { ws.close(); } catch {} }
   async webSocketError(ws) { await this.leave(ws); }
+}
+
+// ───────── 계정 (아이디·비밀번호, 서버 저장) ─────────
+const enc = new TextEncoder();
+const hex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+const rand = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
+async function hashPw(pw, salt) {
+  const key = await crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]);
+  return hex(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: enc.encode(salt), iterations: 100000 }, key, 256));
+}
+function sameStr(a, b) {
+  if (a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+const ID_RE = /^[a-z0-9_]{4,12}$/;
+const SLOTS = ["staff", "robe", "ring"];
+
+// 저장 데이터 검사: 말도 안 되는 값이나 갑자기 뛴 진행도는 거부한다.
+function checkSave(s, prev, dev, mins = 0) {
+  if (!s || typeof s !== "object" || Array.isArray(s)) return "형식";
+  const int = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
+  if (!int(s.lvl, 1, 200) || !int(s.circle, 1, 9)) return "레벨";
+  if (!int(s.gold, 0, 1e15) || !int(s.ess || 0, 0, 1e12) || !int(s.ore || 0, 0, 1e12)) return "재화";
+  if (!int(s.maxFloor || 0, 0, 100) || !int(s.underdeepBestRoom || 0, 0, 20)) return "층";
+  if (!Array.isArray(s.aff) || !s.aff.length || !Array.isArray(s.inv) || s.inv.length > (dev ? 64 : 32)) return "가방";
+  const items = [...s.inv, ...Object.values(s.eq || {}).filter(Boolean)];
+  for (const it of items) if (!it || !SLOTS.includes(it.slot) || !int(it.r, 0, 6) || !int(it.up || 0, 0, 15)) return "아이템";
+  if (prev && !dev) {
+    if (s.lvl - prev.lvl > 25 + mins * 3) return "레벨 급상승";
+    if ((s.maxFloor || 0) - (prev.maxFloor || 0) > 10 + mins) return "층 급상승";
+    if (prev.pid && s.pid !== prev.pid) return "캐릭터";
+  }
+  return null;
+}
+
+export class Accounts extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.fails = new Map(); // ip -> [count, until]
+  }
+  devUsers() {
+    return String(this.env.DEV_USERS || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
+  }
+  async session(token) {
+    if (typeof token !== "string" || token.length !== 64) return null;
+    const t = await this.ctx.storage.get("tok:" + token);
+    if (!t || t.exp < Date.now()) return null;
+    const acc = await this.ctx.storage.get("u:" + t.u);
+    if (!acc || acc.tok !== token) return null;
+    return acc;
+  }
+  async newToken(acc) {
+    if (acc.tok) await this.ctx.storage.delete("tok:" + acc.tok); // 다른 기기는 로그아웃
+    acc.tok = rand(32);
+    await this.ctx.storage.put("tok:" + acc.tok, { u: acc.u, exp: Date.now() + 1000 * 60 * 60 * 24 * 60 });
+    await this.ctx.storage.put("u:" + acc.u, acc);
+    return acc.tok;
+  }
+  limited(ip) {
+    const f = this.fails.get(ip);
+    return f && f[1] > Date.now() && f[0] >= 8;
+  }
+  fail(ip) {
+    const f = this.fails.get(ip) || [0, 0];
+    if (f[1] < Date.now()) { f[0] = 0; }
+    f[0]++; f[1] = Date.now() + 10 * 60 * 1000;
+    this.fails.set(ip, f);
+  }
+  async fetch(req) {
+    const path = new URL(req.url).pathname, ip = req.headers.get("x-ip") || "?";
+    let b;
+    try { b = JSON.parse(await req.text()); } catch { return json({ err: "형식이 잘못됐어요" }, 400); }
+    const dev = (u) => this.devUsers().includes(u);
+
+    if (path === "/api/register" || path === "/api/login") {
+      if (this.limited(ip)) return json({ err: "너무 많이 틀렸어요. 10분 뒤에 다시 해 주세요" }, 429);
+      const u = String(b.u || "").trim().toLowerCase(), p = String(b.p || "");
+      if (!ID_RE.test(u)) return json({ err: "아이디는 영어 소문자·숫자·_ 4~12글자예요" }, 400);
+      if (p.length < 6 || p.length > 64) return json({ err: "비밀번호는 6~64글자예요" }, 400);
+      let acc = await this.ctx.storage.get("u:" + u);
+      if (path === "/api/register") {
+        if (acc) return json({ err: "이미 있는 아이디예요" }, 409);
+        const regs = (await this.ctx.storage.get("ipreg:" + ip)) || [];
+        const recent = regs.filter((t) => t > Date.now() - 86400000);
+        if (recent.length >= 15) return json({ err: "오늘은 이 인터넷에서 계정을 더 만들 수 없어요" }, 429);
+        const salt = rand(16);
+        acc = { u, salt, hash: await hashPw(p, salt), save: null, created: Date.now() };
+        await this.ctx.storage.put("ipreg:" + ip, [...recent, Date.now()]);
+      } else {
+        if (!acc || !sameStr(await hashPw(p, acc.salt), acc.hash)) { this.fail(ip); return json({ err: "아이디나 비밀번호가 틀렸어요" }, 401); }
+      }
+      const token = await this.newToken(acc);
+      return json({ ok: 1, u, token, dev: dev(u), save: acc.save || null });
+    }
+    if (path === "/api/whoami") {
+      const acc = await this.session(b.token);
+      return json(acc ? { u: acc.u } : {});
+    }
+    const acc = await this.session(b.token);
+    if (!acc) return json({ err: "session" }, 401);
+    if (path === "/api/load") return json({ ok: 1, u: acc.u, dev: dev(acc.u), save: acc.save || null });
+    if (path === "/api/logout") {
+      await this.ctx.storage.delete("tok:" + acc.tok); acc.tok = null;
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1 });
+    }
+    if (path === "/api/save") {
+      const s = b.save, why = checkSave(s, acc.save, dev(acc.u), (Date.now() - (acc.saved || 0)) / 60000);
+      if (why) return json({ err: "bad", why }, 400);
+      if (!acc.save && s.pid) {
+        // 이 기기 캐릭터를 처음 올릴 때: 같은 캐릭터를 두 계정에 복사하지 못하게 막는다
+        const owner = await this.ctx.storage.get("pid:" + s.pid);
+        if (owner && owner !== acc.u) return json({ err: "bad", why: "이미 다른 계정에 있는 캐릭터예요" }, 409);
+        await this.ctx.storage.put("pid:" + s.pid, acc.u);
+      }
+      acc.save = s; acc.saved = Date.now();
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1 });
+    }
+    if (path === "/api/delchar") {
+      acc.save = null;
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1 });
+    }
+    if (path === "/api/passwd") {
+      if (!sameStr(await hashPw(String(b.old || ""), acc.salt), acc.hash)) return json({ err: "지금 비밀번호가 틀렸어요" }, 401);
+      const p = String(b.p || "");
+      if (p.length < 6 || p.length > 64) return json({ err: "비밀번호는 6~64글자예요" }, 400);
+      acc.salt = rand(16); acc.hash = await hashPw(p, acc.salt);
+      const token = await this.newToken(acc);
+      return json({ ok: 1, token });
+    }
+    return json({ err: "없는 요청" }, 404);
+  }
 }

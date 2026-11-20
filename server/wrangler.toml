@@ -4,10 +4,21 @@ compatibility_date = "2025-01-01"
 workers_dev = true
 preview_urls = false
 
+[vars]
+DEV_USERS = ""
+
 [[durable_objects.bindings]]
 name = "TOWN"
 class_name = "Town"
 
+[[durable_objects.bindings]]
+name = "ACC"
+class_name = "Accounts"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Town"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Accounts"]
