@@ -1,5 +1,7 @@
 name: Deploy Arcane Tower to Cloudflare Workers
 
+# Triggered by changes to the app/server or this deployment workflow.
+
 on:
   push:
     branches:
