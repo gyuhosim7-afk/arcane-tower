@@ -1231,6 +1231,7 @@ function buildTown(){
   const inter=[
     {x:320,y:106,r:22,label:'심연의 탑',pr:'[F] 입장',ly:-58,act:()=>openPanel('tower')},
     {x:320,y:226,r:28,label:'승급 제단',pr:'[F] 신화 무기 봉헌',act:()=>openPanel('altar')},
+    {x:392,y:222,r:20,label:'모험가 게시판',pr:'[F] 랭킹·접속자',board:1,ly:-34,act:()=>{if(!NET.on){toast('서버에 연결 중입니다');return}ui.stab=ui.stab==='party'||!ui.stab?'rank':ui.stab;openPanel('social')}},
     {x:144,y:156,r:26,label:'마법사 엘드린',pr:'[F] 서클 승급',npc:'eldrin',act:()=>openPanel('eldrin')},
     {x:496,y:156,r:26,label:'연금술사 루나',pr:'[F] 마법서·물약',npc:'luna',act:()=>openPanel('luna')},
     {x:144,y:348,r:26,label:'대장장이 토르간',pr:'[F] 장비',npc:'thorgan',act:()=>openPanel('thorgan')},
@@ -2336,6 +2337,7 @@ function render(){flushK();
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#07060d';ctx.fillRect(0,0,W,H);ctx.drawImage(m.bg,cx,cy,W,H,0,0,W,H);ctx.translate(-cx,-cy);
   m.anim(G.time);
   for(const it of m.inter)if(it.portal){pxRing(ctx,it.x,it.y,15,8,it.portal[0]);pxRing(ctx,it.x,it.y,12,6,it.portal[1]);drawSwirl(it.x,it.y-12,11,it.portal,G.time,36);if(Math.random()<.3)part(it.x+rnd(-10,10),it.y,0,-rnd(20,50),.7,pick(it.portal),1);light(it.x,it.y-8,54)}
+  for(const it of m.inter)if(it.board)drawBoard(it.x,it.y);
   for(const f of G.fx)if(f.layer==='g')f.draw();
   for(const k of G.picks)if(k.x>=cx-28&&k.x<=cx+W+28&&k.y>=cy-28&&k.y<=cy+H+28)drawPick(k);
   const dl=[];for(const e of G.en)dl.push(e);for(const it of m.inter)if(it.npc||it.chest)dl.push(it);if(G.zone==='town')for(const id in NET.pl)if(NET.pl[id].zone==='town')dl.push(NET.pl[id]);if(!G.title)dl.push(p);dl.sort((a,b)=>a.y-b.y);
@@ -2800,6 +2802,12 @@ function netUpdate(dt){const want=netWant();$('bChat').hidden=!want||!NET.on;$('
   for(const id in NET.pl){const o=NET.pl[id],k=Math.min(1,dt*10),dx=o.tx-o.x,dy=o.ty-o.y;if(Math.hypot(dx,dy)>120){o.x=o.tx;o.y=o.ty}else{o.x+=dx*k;o.y+=dy*k}o.walk=(o.w||Math.hypot(dx,dy)>1.5)?o.walk+dt*9:0}}
 function netParty(){const box=$('partyBox');const mem=NET.party.filter(id=>id!==NET.me).map(id=>NET.pl[id]).filter(Boolean);box.hidden=!mem.length||!netWant();if(box.hidden)return;
   box.replaceChildren(...mem.map(o=>{const d=document.createElement('div'),n=document.createElement('b'),bar=document.createElement('i'),f=document.createElement('u'),s=document.createElement('span');n.textContent=o.nick+' Lv.'+o.lv;s.textContent=netWhere(o);f.style.width=Math.round(100*clamp(o.hp/o.mhp,0,1))+'%';bar.appendChild(f);d.append(n,s,bar);return d}))}
+function drawBoard(x,y){shadow(x,y,14);const c=ctx,X=Math.round(x),Y=Math.round(y),n=Object.keys(NET.pl).length+(NET.on?1:0);
+  c.fillStyle='#4a2a14';c.fillRect(X-9,Y-14,3,15);c.fillRect(X+6,Y-14,3,15);
+  c.fillStyle='#2a160a';c.fillRect(X-15,Y-31,30,20);c.fillStyle='#8a5a2a';c.fillRect(X-14,Y-30,28,18);c.fillStyle='#b8823e';c.fillRect(X-14,Y-30,28,2);
+  c.fillStyle='#f0e0b0';c.fillRect(X-11,Y-26,10,10);c.fillRect(X+1,Y-26,10,7);c.fillStyle='#6a4a2a';for(let i=0;i<3;i++){c.fillRect(X-10,Y-24+i*3,8,1)}c.fillRect(X+2,Y-24,8,1);c.fillRect(X+2,Y-22,6,1);
+  c.fillStyle='#e5484d';c.fillRect(X-7,Y-28,2,2);c.fillRect(X+5,Y-28,2,2);
+  if(NET.on){c.fillStyle='#0c0a18';c.fillRect(X-8,Y-42,16,8);c.fillStyle=(G.time*2|0)%2?'#7ee8a0':'#5ac880';c.fillRect(X-6,Y-40,3,3);drawText(String(n),X-1,Y-41,'#ffffff',.6)}light(x,y-20,18)}
 function drawOther(o){shadow(o.x,o.y,14);const fr=o.walk?((o.walk|0)%2):0,bob=o.walk?((o.walk*2|0)%2):0;drawSpr(heroSet(o.el,fr,o.rb),o.x,o.y+1-bob,o.f<0,'');drawStaff(o.x,o.y-bob,o.f,o.el,false,G.time)}
 const netVisible=o=>G.zone==='town'&&o.zone==='town';
 function netTags(){const run=G.started&&!G.title&&!ui.open;const place=(el,x,y,off,ok)=>{const sx=x-G.cam.x,sy=y-G.cam.y+off;if(!run||!ok||sx<-30||sx>W+30||sy<0||sy>H+20){el.style.display='none';return}el.style.display='';el.style.left=(sx/W*100)+'%';el.style.top=(sy/H*100)+'%'};
@@ -2815,7 +2823,7 @@ $('chatIn').addEventListener('blur',()=>setTimeout(()=>{if(document.activeElemen
 $('bChat').onclick=()=>chatOpen();
 $('bSoc').onclick=()=>{if(!NET.on){toast('서버에 연결 중입니다');return}openPanel('social')};
 {const _cp=closePanel;closePanel=function(){if(ui.open==='trade'&&NET.tr)netSend({t:'tcancel'});_cp()}}
-PANELS.social={t:'친구',r(){const tab=ui.stab||'who',list=Object.values(NET.pl).sort((a,b)=>b.lv-a.lv);let h=`<div class="tabs">${btn(`접속자 ${list.length+1}`,'stab:who',true,tab==='who'?'on':'')}${btn('파티'+(NET.party.length?` ${NET.party.length}/4`:''),'stab:party',true,tab==='party'?'on':'')}${btn('랭킹','stab:rank',true,tab==='rank'?'on':'')}</div>`;
+PANELS.social={t:'모험가 게시판',r(){const tab=ui.stab||'who',list=Object.values(NET.pl).sort((a,b)=>b.lv-a.lv);let h=`<div class="tabs">${btn(`접속자 ${list.length+1}`,'stab:who',true,tab==='who'?'on':'')}${btn('파티'+(NET.party.length?` ${NET.party.length}/4`:''),'stab:party',true,tab==='party'?'on':'')}${btn('랭킹','stab:rank',true,tab==='rank'?'on':'')}</div>`;
   if(tab==='rank'){if(!NET.rank||Date.now()-NET.rankT>30000){NET.rankT=Date.now();api('rank',{}).then(r=>{if(r.ok){NET.rank=r.list;if(ui.open==='social')refreshPanel()}})}
     const L=NET.rank||[];h+=L.length?`<table class="rank"><tr><th>#</th><th>이름</th><th>속성·직업</th><th>Lv</th><th>탑 최고 층</th><th>지하 최고 방</th></tr>${L.map((o,i)=>`<tr${o.n===(AUTH&&AUTH.name)?' class="me"':''}><td>${i+1}</td><td>${esc(o.n)}</td><td>${EL[o.el]?EL[o.el].n:''}${o.job&&JOBS[o.job]?' · '+JOBS[o.job].n:''}</td><td>${o.lv}</td><td>${o.fl}</td><td>${o.ud}</td></tr>`).join('')}</table>`:'<p class="dim">불러오는 중...</p>';return h}
   if(tab==='party'){h+=NET.party.length?'':'<p class="dim">파티가 없어요. 혼자서도 탑에 들어갈 수 있어요.</p>';h+=`<div class="hd">초대 <span>마을에서</span></div><div class="pinv"><input id="pinvIn" maxlength="12" placeholder="초대할 닉네임" autocomplete="off">${btn('초대','pInvName',NET.party.length<4,'go')}</div><p class="dim">최대 4명. 파티원 체력과 위치가 화면 오른쪽에 보여요. 채팅에서 /p 로 파티 채팅.</p>`}
