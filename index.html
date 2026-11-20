@@ -1383,19 +1383,19 @@ function pillarFx(x,y,w,h,C,dur){addFx({layer:'t',t:0,upd(dt){this.t+=dt;return 
   light(x,y-h/2,w*5)}})}
 function splash(x,y,R,C){ringFx(x,y,R,C,.4,{top:1});pillarFx(x,y,R*.22,R*1.1,C,.3);for(let i=0;i<24;i++)part(x+rnd(-R*.3,R*.3),y-2,rnd(-70,70),rnd(-170,-60),rnd(.4,.7),pick(C),2,{g:420,add:false})}
 function boltPts(x0,y0,x1,y1,disp){let pts=[[x0,y0],[x1,y1]];for(let k=0;k<4;k++){const n=[pts[0]];for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];n.push([(a[0]+b[0])/2+rnd(-disp,disp),(a[1]+b[1])/2+rnd(-disp,disp)],b)}pts=n;disp*=.55}return pts}
-function drawBoltLine(pts,C,thick,fade){ctx.globalCompositeOperation='lighter';for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];for(let o=-thick;o<=thick;o++)if(o)pxLine(ctx,a[0]+o,a[1],b[0]+o,b[1],C[2])}ctx.globalCompositeOperation='source-over';for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];pxLine(ctx,a[0],a[1],b[0],b[1],fade?C[1]:C[0])}}
+function drawBoltLine(pts,C,thick,fade){for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];pxLine(ctx,a[0],a[1],b[0],b[1],fade?C[2]:C[1])}}
 function boltFx(x0,y0,x1,y1,life=.28){const C=EL.thunder.c;
   addFx({layer:'t',t:0,rt:0,pts:null,fork:null,upd(dt){this.t+=dt;this.rt-=dt;if(this.rt<=0){this.rt=.045;const L=Math.hypot(x1-x0,y1-y0);this.pts=boltPts(x0,y0,x1,y1,L*.2);const m=this.pts[rint(3,this.pts.length-4)]||this.pts[1];this.fork=boltPts(m[0],m[1],m[0]+rnd(-22,22),m[1]+rnd(-22,22),6)}return this.t<life},
     draw(){if(!this.pts)return;const fade=this.t>life*.6;drawBoltLine(this.pts,C,1,fade);if(!fade)drawBoltLine(this.fork,C,0,true);light(x1,y1,40);light((x0+x1)/2,(y0+y1)/2,34)}});
   burst(x1,y1,8,['#ffffff',C[1],C[2]],90,.3,{drag:3});
 }
-function elecBurst(x,y,R){const C=EL.thunder.c;flashFx(x,y-2,R*.5,C[1],.25);ringFx(x,y,R,C,.3,{top:1});
-  addFx({layer:'t',t:0,rt:0,arcs:[],upd(dt){this.t+=dt;this.rt-=dt;if(this.rt<=0){this.rt=.05;this.arcs=[];for(let i=0;i<5;i++){const a=rnd(TAU),r=R*rnd(.5,1);this.arcs.push(boltPts(x,y-3,x+Math.cos(a)*r,y-3+Math.sin(a)*r*.62,5))}}return this.t<.28},draw(){for(const p of this.arcs)drawBoltLine(p,C,0,this.t>.15)}});
-  for(let i=0;i<14;i++){const a=rnd(TAU),s=rnd(100,240);part(x,y-3,Math.cos(a)*s,Math.sin(a)*s*.7,rnd(.12,.3),pick(['#ffffff',C[1]]),1,{st:1,drag:4})}}
+function elecBurst(x,y,R){const C=EL.thunder.c;ringFx(x,y,R*.8,[C[1],C[2],C[2]],.22,{top:1});
+  addFx({layer:'t',t:0,rt:0,arcs:[],upd(dt){this.t+=dt;this.rt-=dt;if(this.rt<=0){this.rt=.09;this.arcs=[];for(let i=0;i<3;i++){const a=rnd(TAU),r=R*rnd(.45,.85);this.arcs.push(boltPts(x,y-3,x+Math.cos(a)*r,y-3+Math.sin(a)*r*.62,5))}}return this.t<.22},draw(){for(const p of this.arcs)drawBoltLine(p,C,0,this.t>.12)}});
+  for(let i=0;i<6;i++){const a=rnd(TAU),sp=rnd(70,150);part(x,y-3,Math.cos(a)*sp,Math.sin(a)*sp*.7,rnd(.12,.24),pick([C[1],C[2]]),1,{st:1,drag:4})}}
 function strikeBolt(x,y,R,C,big){
-  addFx({layer:'t',t:0,rt:0,pts:null,upd(dt){this.t+=dt;this.rt-=dt;if(this.rt<=0){this.rt=.05;this.pts=boltPts(x+rnd(-30,30),y-280,x,y,big?40:26);this.br=boltPts(this.pts[8][0],this.pts[8][1],this.pts[8][0]+rnd(-40,40),this.pts[8][1]+rnd(20,60),8)}return this.t<(big?.42:.3)},
-    draw(){if(!this.pts)return;const fade=this.t>(big?.25:.18);drawBoltLine(this.pts,C,big?2:1,fade);if(!fade)drawBoltLine(this.br,C,0,true);light(x,y-40,big?140:80);light(x,y,R*2)}});
-  elecBurst(x,y,R);if(big){G.flash=.14;G.flashCol='#e8f6ff';decal(x,y+1,R*.45,'#0a0a1a',3)}
+  addFx({layer:'t',t:0,rt:0,pts:null,upd(dt){this.t+=dt;this.rt-=dt;if(this.rt<=0){this.rt=.08;this.pts=boltPts(x+rnd(-18,18),y-220,x,y,big?32:22)}return this.t<(big?.34:.24)},
+    draw(){if(!this.pts)return;const fade=this.t>(big?.22:.16);drawBoltLine(this.pts,C,1,fade);light(x,y-28,big?55:32);light(x,y,R*.75)}});
+  elecBurst(x,y,R);if(big){G.flash=.04;G.flashCol=C[1];decal(x,y+1,R*.3,'#0a0a1a',2)}
 }
 function windBurst(x,y,R){const C=EL.wind.c;
   addFx({layer:'t',t:0,upd(dt){this.t+=dt;return this.t<.4},draw(){const k=this.t/.4,r=R*(.25+k*.85);for(let j=0;j<3;j++){const rot=this.t*10+j*TAU/3;pxArc(ctx,x,y-4,r,r*.62,rot,rot+1.7,k<.5?'#ffffff':C[1]);pxArc(ctx,x,y-4,r-2,(r-2)*.62,rot+.1,rot+1.5,C[2])}light(x,y,R*(1-k))}});
