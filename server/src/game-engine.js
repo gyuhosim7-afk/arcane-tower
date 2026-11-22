@@ -94,6 +94,94 @@ export function sanitizePartySnapshot(snapshot, zone, floor) {
   return { k: "s", z: zone, fl: floor, e: enemies, b: bullets, cl: snapshot.cl ? 1 : 0, kd: kills };
 }
 
+const PARTY_HPM = [[1,1.7],[15,1.77],[25,1.98],[30,2.27],[35,2.73],[40,3.46],[50,4.6],[60,4.96],[75,5.43],[90,6.3],[100,7.0]];
+function partyCurve(table, floor) {
+  for (let i = 1; i < table.length; i++) {
+    if (floor <= table[i][0]) {
+      const a = table[i - 1], b = table[i], t = (floor - a[0]) / (b[0] - a[0]);
+      return a[1] + (b[1] - a[1]) * t;
+    }
+  }
+  return table[table.length - 1][1];
+}
+
+export function partyMonsterMaxHp(type, floor, level, elite, partySize, zone = "tower") {
+  const monster = MONSTERS[type];
+  if (!monster) return 0;
+  const f = zone === "underdeep" ? Math.min(100, 90 + Math.max(1, floor)) : Math.max(1, Math.min(100, floor));
+  const hpScale = (1 + 0.056 * Math.pow(f - 1, 2.2)) * partyCurve(PARTY_HPM, f);
+  const levelThreat = 1 + Math.max(0, Math.min(200, level) - 99) * 0.005;
+  const deepScale = zone === "underdeep" ? 1 + Math.max(0, floor - 10) * 0.05 : 1;
+  const eliteScale = elite ? 6 : 1;
+  let bossScale = 1;
+  if (monster.boss) {
+    const bossLate = 1 + Math.max(0, f - 20) * 0.035;
+    bossScale = (1.9 + f / 26) * 2.4 * bossLate;
+    bossScale *= 0.5 * (1 + 0.8 * (Math.max(1, Math.min(4, partySize)) - 1));
+    if (monster.final) {
+      const finalBossScale = 2.4 * (1 + Math.max(0, 100 - 20) * 0.035);
+      bossScale *= 12 / finalBossScale;
+    }
+  }
+  return Math.max(1, Math.round(monster.hp * hpScale * levelThreat * eliteScale * bossScale * deepScale));
+}
+
+export function createPartyHealthState(snapshot, previous, options, now = Date.now()) {
+  const { zone, floor, level, partySize } = options;
+  const sameRun = previous && previous.zone === zone && previous.floor === floor;
+  const enemies = sameRun ? { ...(previous.enemies || {}) } : {};
+  const seen = new Set();
+  for (const row of snapshot.e || []) {
+    const [id, type, x, y, , face, elite, frozen] = row;
+    seen.add(id);
+    const old = enemies[id];
+    if (old && old.type === type && old.hp > 0) {
+      enemies[id] = { ...old, x, y, face, elite: !!elite, frozen: !!frozen, lastSeenAt: now };
+    } else if (!old) {
+      const maxHp = partyMonsterMaxHp(type, floor, level, !!elite, partySize, zone);
+      if (maxHp) enemies[id] = { id, type, x, y, face, elite: !!elite, frozen: !!frozen, hp: maxHp, maxHp, dead: false, lastSeenAt: now };
+    }
+  }
+  for (const [id, enemy] of Object.entries(enemies)) {
+    if (!seen.has(Number(id)) && now - (enemy.lastSeenAt || now) > 3000) delete enemies[id];
+  }
+  return { zone, floor, enemies };
+}
+
+export function applyPartyHits(state, hits) {
+  const enemies = { ...(state && state.enemies || {}) };
+  const results = [], kills = [];
+  for (const [id, requestedDamage] of hits || []) {
+    const enemy = enemies[id];
+    if (!enemy || enemy.dead || enemy.hp <= 0) continue;
+    const damage = Math.max(1, clampInt(requestedDamage, 1, 100000));
+    const applied = enemy.type && MONSTERS[enemy.type] && MONSTERS[enemy.type].boss
+      ? Math.min(damage, Math.max(1, Math.floor(enemy.maxHp * 0.08)))
+      : damage;
+    const hp = Math.max(0, enemy.hp - applied);
+    const dead = hp <= 0;
+    enemies[id] = { ...enemy, hp, dead };
+    results.push({ id: Number(id), type: enemy.type, x: enemy.x, y: enemy.y, face: enemy.face, elite: enemy.elite, frozen: enemy.frozen, hp, maxHp: enemy.maxHp, dead });
+    if (dead) kills.push(Number(id));
+  }
+  return { state: { ...state, enemies }, results, kills };
+}
+
+export function partyHealthRecords(state) {
+  return Object.values(state && state.enemies || {}).map((enemy) => ({
+    id: enemy.id, type: enemy.type, x: enemy.x, y: enemy.y, face: enemy.face,
+    elite: enemy.elite, frozen: enemy.frozen, hp: enemy.hp, maxHp: enemy.maxHp, dead: !!enemy.dead,
+  }));
+}
+
+export function partyHealthRows(state) {
+  return Object.values(state && state.enemies || {}).map((enemy) => [
+    enemy.id, enemy.type, enemy.x, enemy.y,
+    Math.max(0, Math.min(1000, Math.round(enemy.hp / enemy.maxHp * 1000))),
+    enemy.face, enemy.elite ? 1 : 0, enemy.frozen ? 1 : 0,
+  ]);
+}
+
 export function startEncounter(save, encounterId, now = Date.now()) {
   const spec = encounterSpec(encounterId);
   if (!spec) return { error: "encounter_not_allowed" };

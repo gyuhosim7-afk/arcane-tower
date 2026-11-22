@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -142,6 +142,8 @@ export class Town extends DurableObject {
       for (const y of this.all()) if (y.a.u === who.u && y.w !== ws) { try { y.w.close(4002, "dup"); } catch {} await this.leave(y.w); }
       a.u = who.u; m.nick = who.name;
       a.blinkCooldownMs = num(who.blinkCooldownMs, 500, 10000);
+      a.combatDamage = num(who.combatDamage, 1, 100000);
+      a.combatLevel = num(who.combatLevel, 1, 200) | 0;
       a.blinkAt = 0;
       a.lastMoveAt = Date.now();
       a.p = {
@@ -238,23 +240,38 @@ export class Town extends DurableObject {
         if (m.d.k === "go") {
           if (!["tower", "underdeep", "town"].includes(m.d.z) || !Number.isInteger(m.d.fl) || m.d.fl < 0 || m.d.fl > 999) return;
           d = { k: "go", z: m.d.z, fl: m.d.fl };
+          await this.ctx.storage.put("party-health:" + a.party, { zone: m.d.z, floor: m.d.fl, enemies: {} });
+          this.send(ws, { t: "prel", from: a.id, d: { k: "ready" } });
         } else {
           if (now - (a.partySnapshotAt || 0) < 80) return;
           const snapshot = sanitizePartySnapshot(m.d, a.p.zone, a.p.fl);
           if (!snapshot) return;
           a.partySnapshotAt = now;
-          d = snapshot;
+          const key = "party-health:" + a.party;
+          const previous = await this.ctx.storage.get(key);
+          const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: members.length }, now);
+          await this.ctx.storage.put(key, state);
+          d = { ...snapshot, e: partyHealthRows(state), kd: [] };
+          const auth = { t: "prel", from: a.id, d: { k: "auth", h: partyHealthRecords(state), kd: [] } };
+          this.sendTo(members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), auth);
           this.save(x);
         }
       } else if (m.d.k === "h") {
-        if (a.id === a.party || !["tower", "underdeep"].includes(a.p.zone)) return;
+        if (!["tower", "underdeep"].includes(a.p.zone)) return;
         if (leader.a.p.zone !== a.p.zone || leader.a.p.fl !== a.p.fl) return;
         if (now - (a.partyHitAt || 0) < 180) return;
         a.partyHitAt = now;
         const hits = sanitizePartyHits(m.d.h, a.combatDamage, 8);
         if (!hits.length) return;
-        d = { k: "h", h: hits };
+        const key = "party-health:" + a.party;
+        const state = await this.ctx.storage.get(key);
+        if (!state || state.zone !== a.p.zone || state.floor !== a.p.fl) return;
+        const resolved = applyPartyHits(state, hits);
+        await this.ctx.storage.put(key, resolved.state);
+        const result = { k: "auth", h: partyHealthRecords(resolved.state), kd: resolved.kills };
+        this.sendTo(members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), { t: "prel", from: a.id, d: result });
         this.save(x);
+        return;
       } else return;
       const o = JSON.stringify({ t: "prel", from: a.id, d });
       const recipients = d.k === "s"
@@ -551,7 +568,7 @@ export class Accounts extends DurableObject {
       const acc = await this.session(b.token);
       if (!acc) return json({});
       if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
-      return json({ u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.serverCharacter ? blinkCooldownMs(acc.serverCharacter) : 2500, combatDamage: acc.serverCharacter ? serverAttackPower(acc.serverCharacter) : 1 });
+      return json({ u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.serverCharacter ? blinkCooldownMs(acc.serverCharacter) : 2500, combatDamage: acc.serverCharacter ? serverAttackPower(acc.serverCharacter) : 1, combatLevel: acc.serverCharacter ? acc.serverCharacter.lvl : 1 });
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
