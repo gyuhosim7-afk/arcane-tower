@@ -1478,7 +1478,7 @@ function hurt(e,dmg,o={}){
   const c=!o.dot&&Math.random()*100<D.crit+(jobIs('ice')&&(e.frozen>0||e.slow>0)?25:0);if(jobIs('ice')&&(e.frozen>0||e.slow>0))mul*=1.4;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
   let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
   if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*0.05*(1+(D.bossDmg||0)/100)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;if(hasM('uqOrigin')&&!o.dot&&!e.boss&&e.hp>0&&e.hp<=e.max*.10&&G.p&&(G.p.uqOriginAt||0)<=G.time){G.p.uqOriginAt=G.time+15;d=Math.ceil(e.hp)+1;G.texts.push({x:e.x,y:e.y-e.hh-20,vy:-16,life:1.2,str:'처형!',col:'#3ff0e0',sc:1.3})}/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
-  const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));if(coLead()&&CO.auth&&!e.nid)e.nid=++CO.nid;if((e.ghost||coLead()&&CO.auth)&&e.nid)coHit(e,d);else e.hp-=d;if(!o.dot){e.flash=e.boss?.1:.14;if(!o.proc&&!e.boss){G.hitstop=Math.max(G.hitstop,c?0.055:0.03);hitFx(o.el||'none',e.x,e.y-e.r,c)}}
+  const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));if(coLead()&&CO.auth&&!e.nid)e.nid=++CO.nid;if((e.ghost||coLead()&&CO.auth&&coMates().length>0)&&e.nid)coHit(e,d);else e.hp-=d;if(!o.dot){e.flash=e.boss?.1:.14;if(!o.proc&&!e.boss){G.hitstop=Math.max(G.hitstop,c?0.055:0.03);hitFx(o.el||'none',e.x,e.y-e.r,c)}}
   if(o.kb&&!e.boss&&o.sx!==undefined){const a=Math.atan2(e.y-o.sy,e.x-o.sx);e.kx+=Math.cos(a)*o.kb;e.ky+=Math.sin(a)*o.kb}
   G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+shown+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
   if(!o.dot){if(c){sfx.crit();if(e.boss)G.hitstop=Math.max(G.hitstop||0,.03);shake(2)}else sfx.hit()}
@@ -2968,7 +2968,7 @@ function coRecv(from,d){if(!d)return;
   if(d.k==='h'&&coLead()){const o=NET.pl[from];for(const[nid,dm]of d.h||[]){const e=G.en.find(x=>x.nid===nid&&!x.dead);if(!e)continue;const v=Math.max(1,Math.min(dm,e.boss?e.max*.08:dm));e.hp-=v;e.flash=.1;G.texts.push({x:e.x+rnd(-6,6),y:e.y-e.z-e.hh-10,vy:-26,life:.7,str:''+Math.round(v),col:'#8fd0ff',sc:.9});if(e.hp<=0)kill(e)}}}
 function coopUpd(dt){
   if(coLead()&&(G.zone==='tower'||G.zone==='underdeep')&&coMates().length){CO.last+=dt;if(CO.last>=.1){CO.last=0;coSnapshot()}}
-  if(!CO.on&&!(coLead()&&CO.auth))return;
+  if(!CO.on&&!(coLead()&&CO.auth&&coMates().length>0))return;
   if(CO.on&&(!NET.on||!NET.party.includes(CO.host))){toast('파티장과 연결이 끊겨 마을로 돌아갑니다');CO.toTown=true;coEnd();fadeTo(enterTown);return}
   if(CO.on)for(const g of G.en){if(!g.ghost||g.dead)continue;const k=Math.min(1,dt*12);if(Math.hypot(g.tx-g.x,g.ty-g.y)>140){g.x=g.tx;g.y=g.ty}else{g.x+=(g.tx-g.x)*k;g.y+=(g.ty-g.y)*k}g.t+=dt;if(g.flash>0)g.flash-=dt}
   CO.flushT+=dt;if(CO.flushT>=.1){CO.flushT=0;const h=Object.entries(CO.pend).map(([k,v])=>[+k,Math.round(v)]);if(h.length){CO.pend={};netSend({t:'prel',d:{k:'h',h}})}}}
