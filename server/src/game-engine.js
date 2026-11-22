@@ -99,7 +99,7 @@ export function blinkCooldownMs(save) {
   const wisdom = clampInt(stats.wis || 0, 0, 10000) * pointScale + gearWisdom;
   const circle = clampInt(s.circle || 1, 1, 9);
   const cdr = Math.min(0.5, wisdom * 0.01 + (circle >= 9 ? 0.15 : 0));
-  const level = clampInt(s.blinkLv || 0, 0, 10);
+  const level = clampInt(s.blinkLv || 0, 0, 100);
   const job = s.job === "wind" ? 0.5 : 1;
   const shoes = s.eq && s.eq.shoes;
   const stride = shoes && shoes.my === "uqStride" ? 0.65 : 1;
