@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, applyUnderdeepClearRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -186,7 +186,7 @@ export class Town extends DurableObject {
       } else if (!["wood", "iron"].includes(kind)) return this.send(ws, { t: "chest", ok: 0, kind, msg: "일반 상자 종류가 올바르지 않습니다" });
       const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/chest-reward", {
         method: "POST",
-        body: JSON.stringify({ u: a.u, zone, floor, kind }),
+        body: JSON.stringify({ u: a.u, zone, floor, kind, runId: state.runId }),
       }).then((r) => r.json()).catch(() => ({}));
       if (!granted.ok) return this.send(ws, { t: "chest", ok: 0, kind, msg: granted.err === "already_claimed" ? "이미 보상을 받았습니다" : "상자 보상 처리에 실패했습니다" });
       this.send(ws, { t: "chest", ok: 1, kind, fields: granted.fields, rewards: granted.rewards });
@@ -205,17 +205,19 @@ export class Town extends DurableObject {
         const key = "solo-health:" + a.u;
         const previous = await this.ctx.storage.get(key);
         const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: 1 }, now);
-        state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
-        if (!snapshot.cl) { state.chestKind = null; state.chestDecided = false; }
-        else if (state.cleared && !state.chestDecided) {
-          state.chestDecided = true;
-          if (a.p.zone === "underdeep") state.chestKind = state.floor % 5 === 0 && state.bossKilled ? "gold" : null;
-          else if (state.floor % 5 === 0) state.chestKind = state.bossKilled ? "gold" : null;
-          else if (state.eliteKilled) state.chestKind = "iron";
-          else { const roll = Math.random(); state.chestKind = roll < 0.06 ? "iron" : roll < 0.36 ? "wood" : null; }
-        }
+        updateServerClearState(state, snapshot, a.p.zone, now);
         await this.ctx.storage.put(key, state);
         this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
+        if (state.cleared && a.p.zone === "underdeep" && !state.clearRewardSent[a.u]) {
+          const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/underdeep-clear-reward", {
+            method: "POST", body: JSON.stringify({ u: a.u, room: state.floor, runId: state.runId }),
+          }).then((r) => r.json()).catch(() => ({}));
+          if (granted.ok) {
+            state.clearRewardSent[a.u] = true;
+            await this.ctx.storage.put(key, state);
+            this.send(ws, { t: "solo", d: { k: "loot", fields: granted.fields, rewards: granted.rewards } });
+          }
+        }
         this.save(x);
         return;
       }
@@ -326,7 +328,7 @@ export class Town extends DurableObject {
         if (m.d.k === "go") {
           if (!["tower", "underdeep", "town"].includes(m.d.z) || !Number.isInteger(m.d.fl) || m.d.fl < 0 || m.d.fl > 999) return;
           d = { k: "go", z: m.d.z, fl: m.d.fl };
-          await this.ctx.storage.put("party-health:" + a.party, { zone: m.d.z, floor: m.d.fl, enemies: {} });
+          await this.ctx.storage.put("party-health:" + a.party, { zone: m.d.z, floor: m.d.fl, enemies: {}, runId: crypto.randomUUID(), clearRewardSent: {} });
           this.send(ws, { t: "prel", from: a.id, d: { k: "ready" } });
         } else {
           if (now - (a.partySnapshotAt || 0) < 80) return;
@@ -336,11 +338,26 @@ export class Town extends DurableObject {
           const key = "party-health:" + a.party;
           const previous = await this.ctx.storage.get(key);
           const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: members.length }, now);
-           state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
+           updateServerClearState(state, snapshot, a.p.zone, now);
           await this.ctx.storage.put(key, state);
           d = { ...snapshot, e: partyHealthRows(state), kd: [] };
           const auth = { t: "prel", from: a.id, d: { k: "auth", h: partyHealthRecords(state), kd: [] } };
-          this.sendTo(members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), auth);
+          const recipients = members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl);
+           this.sendTo(recipients, auth);
+           if (state.cleared && a.p.zone === "underdeep") {
+             for (const member of recipients) {
+               const u = member.a.u;
+               if (!u || state.clearRewardSent[u]) continue;
+               const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/underdeep-clear-reward", {
+                 method: "POST", body: JSON.stringify({ u, room: state.floor, runId: state.runId }),
+               }).then((r) => r.json()).catch(() => ({}));
+               if (granted.ok) {
+                 state.clearRewardSent[u] = true;
+                 this.send(member.w, { t: "prel", from: a.id, d: { k: "loot", fields: granted.fields, rewards: granted.rewards } });
+               }
+             }
+             await this.ctx.storage.put(key, state);
+           }
           this.save(x);
         }
       } else if (m.d.k === "h") {
@@ -533,7 +550,7 @@ const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
 const REWARD_FIELDS = ["lvl", "xp", "pts", "st"];
-const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "inv", "uid"];
+const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "underdeepBestRoom", "inv", "uid"];
 function pickRewardFields(save, keys) {
   const out = {};
   for (const key of keys) if (save && save[key] !== undefined) out[key] = JSON.parse(JSON.stringify(save[key]));
@@ -541,6 +558,32 @@ function pickRewardFields(save, keys) {
 }
 const rewardFields = (save) => pickRewardFields(save, REWARD_FIELDS);
 const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
+function updateServerClearState(state, snapshot, zone, now) {
+  const wasCleared = !!state.cleared;
+  state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
+  if (!snapshot.cl) {
+    if (wasCleared) {
+      state.runId = crypto.randomUUID();
+      state.clearRewardSent = {};
+      const fresh = Object.values(state.enemies).filter((enemy) => enemy.lastSeenAt === now);
+      state.enemies = Object.fromEntries(fresh.map((enemy) => [enemy.id, enemy]));
+      state.seenEnemyCount = fresh.length;
+      state.killCount = 0;
+      state.eliteKilled = false;
+      state.bossKilled = false;
+    }
+    state.chestKind = null;
+    state.chestDecided = false;
+  } else if (state.cleared && !state.chestDecided) {
+    state.chestDecided = true;
+    if (zone === "underdeep") state.chestKind = state.bossKilled ? "gold" : null;
+    else if (state.floor % 5 === 0) state.chestKind = state.bossKilled ? "gold" : null;
+    else if (state.eliteKilled) state.chestKind = "iron";
+    else { const roll = Math.random(); state.chestKind = roll < 0.06 ? "iron" : roll < 0.36 ? "wood" : null; }
+  }
+  return state;
+}
+
 const SERVER_ITEM_ID_BASE = 900_000_000_000;
 function serverItemRecord(item) {
   return { slot: item.slot, r: item.r, il: item.il, v: item.v, my: item.my || null, a: JSON.parse(JSON.stringify(item.a || {})), active: true };
@@ -740,6 +783,31 @@ export class Accounts extends DurableObject {
       await this.ctx.storage.put(seenKey, { fields, rewards });
       return json({ ok: 1, fields, rewards, level: granted.level, xp: granted.xp, pts: granted.pts });
     }
+    if (path === "/internal/underdeep-clear-reward") {
+      const u = String(b.u || ""), room = num(b.room, 1, 20) | 0, runId = String(b.runId || "");
+      if (!/^[a-z0-9_]{2,12}$/.test(u) || !/^[0-9a-f-]{36}$/.test(runId)) return json({ err: "invalid_underdeep_reward" }, 400);
+      const target = await this.ctx.storage.get("u:" + u);
+      if (!target || !target.save) return json({ err: "character_required" }, 404);
+      target.underdeepClaims = target.underdeepClaims || {};
+      const claimKey = room + ":" + runId;
+      if (target.underdeepClaims[claimKey]) return json({ ok: 1, duplicate: 1, fields: rewardSyncFields(target.save), rewards: {} });
+      const granted = applyUnderdeepClearRewards(target.save, room);
+      if (granted.error) return json({ err: granted.error }, 400);
+      target.save = granted.save;
+      target.serverItemLedger = target.serverItemLedger || {};
+      target.pendingServerItems = target.pendingServerItems || [];
+      for (const item of granted.itemsAdded) {
+        const id = Math.max(SERVER_ITEM_ID_BASE, target.serverItemNextId || SERVER_ITEM_ID_BASE);
+        item.id = id;
+        target.serverItemNextId = id + 1;
+        target.serverItemLedger[String(id)] = serverItemRecord(item);
+        target.pendingServerItems.push(JSON.parse(JSON.stringify(item)));
+      }
+      target.underdeepClaims[claimKey] = true;
+      target.serverRewardFields = rewardFields(target.save);
+      await this.ctx.storage.put("u:" + u, target);
+      return json({ ok: 1, fields: rewardSyncFields(target.save), rewards: granted.rewards });
+    }
     if (path === "/internal/chest-reward") {
       const u = String(b.u || ""), zone = b.zone === "underdeep" ? "underdeep" : "tower";
       const floor = num(b.floor, 1, 100) | 0, kind = String(b.kind || "");
@@ -747,7 +815,9 @@ export class Accounts extends DurableObject {
       const target = await this.ctx.storage.get("u:" + u);
       if (!target || !target.save) return json({ err: "character_required" }, 404);
       target.chestClaims = target.chestClaims || {};
-      const claimKey = zone + ":" + floor;
+      const runId = String(b.runId || "");
+      if (!/^[0-9a-f-]{36}$/.test(runId)) return json({ err: "invalid_chest_run" }, 400);
+      const claimKey = zone + ":" + floor + ":" + runId;
       if (target.chestClaims[claimKey]) return json({ err: "already_claimed" }, 409);
       const granted = applyChestRewards(target.save, kind, floor, zone);
       if (granted.error) return json({ err: granted.error }, 400);
