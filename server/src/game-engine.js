@@ -161,10 +161,17 @@ export function applyPartyHits(state, hits) {
     const hp = Math.max(0, enemy.hp - applied);
     const dead = hp <= 0;
     enemies[id] = { ...enemy, hp, dead };
-    results.push({ id: Number(id), hp, maxHp: enemy.maxHp, dead });
+    results.push({ id: Number(id), type: enemy.type, x: enemy.x, y: enemy.y, face: enemy.face, elite: enemy.elite, frozen: enemy.frozen, hp, maxHp: enemy.maxHp, dead });
     if (dead) kills.push(Number(id));
   }
   return { state: { ...state, enemies }, results, kills };
+}
+
+export function partyHealthRecords(state) {
+  return Object.values(state && state.enemies || {}).map((enemy) => ({
+    id: enemy.id, type: enemy.type, x: enemy.x, y: enemy.y, face: enemy.face,
+    elite: enemy.elite, frozen: enemy.frozen, hp: enemy.hp, maxHp: enemy.maxHp, dead: !!enemy.dead,
+  }));
 }
 
 export function partyHealthRows(state) {
