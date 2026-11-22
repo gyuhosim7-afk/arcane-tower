@@ -1,6 +1,6 @@
 // index.html(읽기 쉬운 원본)의 게임 코드를 암호화·난독화해서 server/public/index.html로 내보낸다.
 // 친구가 사이트 소스를 봐도 뜯어보기 어렵게 만드는 용도. (서버 검증이 진짜 조작 방지)
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, cpSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import JsOb from "javascript-obfuscator";
@@ -50,4 +50,9 @@ const result = JsOb.obfuscate(js, {
 const out = head + "\n" + result + "\n" + tail.replace("</script>", `</script>\n<!--FORCE_ID=${build}-->`);
 mkdirSync(outDir, { recursive: true });
 writeFileSync(join(outDir, "index.html"), out);
+// GitHub Pages와 Worker 모두 난독화된 동일 빌드를 배포한다.
+const assetsDir = join(here, "..", "assets");
+if (existsSync(assetsDir)) cpSync(assetsDir, join(outDir, "assets"), { recursive: true, force: true });
+const nojekyll = join(here, "..", ".nojekyll");
+if (existsSync(nojekyll)) writeFileSync(join(outDir, ".nojekyll"), readFileSync(nojekyll));
 console.log(`obfuscated build ${build}: ${(js.length / 1024) | 0}KB -> ${(result.length / 1024) | 0}KB`);
