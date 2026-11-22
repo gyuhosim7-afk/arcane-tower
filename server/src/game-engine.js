@@ -226,7 +226,7 @@ export function applyMonsterRewards(save, type, floor, elite = false, zone = "to
 
 const SERVER_MIDS = ["ratKing", "shroomLord", "gargLord", "wispLord", "pharaoh", "cerberus", "stormKing", "deathLord", "magmaTitan", "shadowKing"];
 const SERVER_BOSSES = ["kingslime", "arachne", "golemlord", "ymir", "lich", "ifrit", "harpyQ", "archon", "dragon", "demonLord"];
-const SERVER_UNDERDEEP_BOSSES = [null, null, "underdeepGatekeeper", null, null, null, null, "underdeepCore", null, null, null, null, "underdeepLord", null, null, null, null, "underdeepOrigin"];
+const SERVER_UNDERDEEP_BOSSES = [null, null, null, null, "underdeepGatekeeper", null, null, null, null, "underdeepCore", null, null, null, null, "underdeepLord", null, null, null, null, "underdeepOrigin"];
 const SERVER_MYTH = {
   slimeRing:{boss:"kingslime",slot:"ring",a:{crit:8,hp:120,int:6}},
   spiderRobe:{boss:"arachne",slot:"robe",a:{vit:10,wis:6}},
@@ -329,7 +329,7 @@ export function applyChestRewards(save, kind, floor, zone = "tower", rng = Math.
 
 
 export function applyUnderdeepClearRewards(save, room, rng = Math.random) {
-  if (!save || !Array.isArray(save.inv) || !Number.isInteger(room) || room < 1 || room > 18) return { error: "invalid_underdeep_room" };
+  if (!save || !Array.isArray(save.inv) || !Number.isInteger(room) || room < 1 || room > 20) return { error: "invalid_underdeep_room" };
   const rewards = { gold: 15000 + room * 6500, ess: 20 + room * 5, ore: 12 + room * 3, itemAdded: 0, autoSold: 0, myth: null };
   const next = { ...save, inv: [...save.inv], underdeepBestRoom: Math.max(save.underdeepBestRoom || 0, room) };
   next.gold = clampInt(next.gold || 0, 0, 2_000_000_000) + rewards.gold;
@@ -417,7 +417,7 @@ export function applyPartyHits(state, hits) {
     results.push({ id: Number(id), type: enemy.type, x: enemy.x, y: enemy.y, face: enemy.face, elite: enemy.elite, frozen: enemy.frozen, hp, maxHp: enemy.maxHp, xp: partyMonsterXp(enemy.type, state.floor, enemy.elite, state.zone), dead });
     if (dead) kills.push(Number(id));
   }
-  const eliteKilled = !!state.eliteKilled || kills.some((id) => !!enemies[id]?.elite);
+  const eliteKilled = !!state.eliteKilled || kills.some((id) => { const monster = MONSTERS[enemies[id]?.type]; return !!(enemies[id]?.elite || (monster && monster.raidElite)); });
   const bossKilled = !!state.bossKilled || kills.some((id) => { const monster = MONSTERS[enemies[id]?.type]; return !!(monster && monster.boss && !monster.raidElite); });
   return { state: { ...state, enemies, eliteKilled, bossKilled, killCount: (state.killCount || 0) + kills.length }, results, kills };
 }
