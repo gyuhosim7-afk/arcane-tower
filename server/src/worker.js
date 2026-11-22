@@ -503,16 +503,17 @@ export class Accounts extends DurableObject {
       return json({ ok: 1, combat: acc.combat || null });
     }
     if (path === "/api/combat/start") {
-      if (!acc.save) return json({ err: "character_required" }, 400);
-      const started = startEncounter(acc.save, String(b.encounter || ""), Date.now());
+      // 기존 acc.save는 브라우저가 보낸 레거시 데이터이므로 전투 능력치의 신뢰 원본으로 사용하지 않는다.
+      if (!acc.serverCharacter) return json({ err: "character_migration_required" }, 409);
+      const started = startEncounter(acc.serverCharacter, String(b.encounter || ""), Date.now());
       if (started.error) return json({ err: started.error }, 400);
       acc.combat = started.state;
       await this.ctx.storage.put("u:" + acc.u, acc);
       return json({ ok: 1, combat: acc.combat });
     }
     if (path === "/api/combat/attack") {
-      if (!acc.save || !acc.combat) return json({ err: "no_active_encounter" }, 409);
-      const resolved = resolveAttack(acc.save, acc.combat, Date.now());
+      if (!acc.serverCharacter || !acc.combat) return json({ err: "character_migration_required" }, 409);
+      const resolved = resolveAttack(acc.serverCharacter, acc.combat, Date.now());
       if (resolved.error) return json({ err: resolved.error }, resolved.error === "cooldown" ? 429 : 409);
       acc.combat = resolved.state;
       await this.ctx.storage.put("u:" + acc.u, acc);
