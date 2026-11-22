@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -45,6 +45,12 @@ test("attack damage is computed from server-side character snapshot", () => {
   const first = resolveAttack(character, started, 11000);
   assert.equal(first.result.damage, 45);
   assert.equal(first.result.monsterHp, 4955);
+});
+
+test("party combat damage is derived from the server character snapshot", () => {
+  assert.equal(serverAttackPower(character), 45);
+  const saved = createServerCharacter({ ...character, lvl: 20, st: { int: 10 }, eq: { staff: { v: 5, il: 12 } } });
+  assert.equal(serverAttackPower(saved), 84);
 });
 
 test("server enforces attack cooldown", () => {
