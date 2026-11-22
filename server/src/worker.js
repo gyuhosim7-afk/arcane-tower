@@ -141,6 +141,9 @@ export class Town extends DurableObject {
       if (!who.u) { this.send(ws, { t: "sys", m: "로그인이 필요합니다" }); try { ws.close(4001, "auth"); } catch {} return; }
       for (const y of this.all()) if (y.a.u === who.u && y.w !== ws) { try { y.w.close(4002, "dup"); } catch {} await this.leave(y.w); }
       a.u = who.u; m.nick = who.name;
+      a.blinkCooldownMs = num(who.blinkCooldownMs, 500, 10000);
+      a.blinkAt = 0;
+      a.lastMoveAt = Date.now();
       a.p = {
         id: a.id, pid: clean(m.pid, 12), nick: clean(m.nick, 12) || "마법사", title: clean(m.title, 16),
         el: ELS.includes(m.el) ? m.el : "fire", job: clean(m.job, 10), lv: num(m.lv, 1, 999) | 0,
@@ -155,7 +158,16 @@ export class Town extends DurableObject {
     if (!a.p) return;
 
     if (m.t === "mv") {
-      a.p.x = num(m.x, 0, 4000); a.p.y = num(m.y, 0, 4000); a.p.f = m.f < 0 ? -1 : 1; a.p.w = m.w ? 1 : 0;
+      const nx = num(m.x, 0, 4000), ny = num(m.y, 0, 4000);
+      const dt = Math.max(0.05, Math.min(0.75, (now - (a.lastMoveAt || now)) / 1000));
+      const dist = Math.hypot(nx - a.p.x, ny - a.p.y);
+      const walkLimit = 190 * dt + 14;
+      if (dist > walkLimit) {
+        if (dist > walkLimit + 78 || now - (a.blinkAt || 0) < (a.blinkCooldownMs || 2500)) { this.save(x); return; }
+        a.blinkAt = now;
+      }
+      a.p.x = nx; a.p.y = ny; a.p.f = m.f < 0 ? -1 : 1; a.p.w = m.w ? 1 : 0;
+      a.lastMoveAt = now;
       this.save(x);
       this.sendTo(others().filter((y) => y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), { t: "mv", id: a.id, x: a.p.x, y: a.p.y, f: a.p.f, w: a.p.w });
     } else if (m.t === "st") {
@@ -495,7 +507,7 @@ export class Accounts extends DurableObject {
     }
     if (path === "/api/whoami") {
       const acc = await this.session(b.token);
-      return json(acc ? { u: acc.u, name: acc.name || acc.u } : {});
+      return json(acc ? { u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.save ? (resolveBlink(acc.save, {}, 0).result || {}).cooldownMs || 2500 : 2500 } : {});
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
