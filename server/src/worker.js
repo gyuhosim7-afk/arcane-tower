@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -462,6 +462,14 @@ export class Accounts extends DurableObject {
     f[0]++; f[1] = Date.now() + 10 * 60 * 1000;
     this.fails.set(ip, f);
   }
+  ensureServerCharacter(acc) {
+    if (acc.serverCharacter || !acc.save) return false;
+    const snapshot = createServerCharacter(acc.save);
+    if (!snapshot) return false;
+    acc.serverCharacter = snapshot;
+    acc.serverCharacterMigratedAt = Date.now();
+    return true;
+  }
   async fetch(req) {
     const path = new URL(req.url).pathname, ip = req.headers.get("x-ip") || "?";
     let b;
@@ -510,13 +518,16 @@ export class Accounts extends DurableObject {
     }
     if (path === "/api/whoami") {
       const acc = await this.session(b.token);
-      return json(acc ? { u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.save ? blinkCooldownMs(acc.save) : 2500 } : {});
+      if (!acc) return json({});
+      if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.serverCharacter ? blinkCooldownMs(acc.serverCharacter) : 2500 });
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
     if (path === "/api/movement/blink") {
-      if (!acc.save) return json({ err: "character_required" }, 409);
-      const resolved = resolveBlink(acc.save, acc.movement || {}, Date.now());
+      if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
+      if (!acc.serverCharacter) return json({ err: "character_required" }, 409);
+      const resolved = resolveBlink(acc.serverCharacter, acc.movement || {}, Date.now());
       if (resolved.error) return json({ err: resolved.error, cooldownMs: resolved.cooldownMs, remainingMs: resolved.remainingMs }, 429);
       acc.movement = resolved.state;
       await this.ctx.storage.put("u:" + acc.u, acc);
@@ -526,8 +537,8 @@ export class Accounts extends DurableObject {
       return json({ ok: 1, combat: acc.combat || null });
     }
     if (path === "/api/combat/start") {
-      // 기존 acc.save는 브라우저가 보낸 레거시 데이터이므로 전투 능력치의 신뢰 원본으로 사용하지 않는다.
-      if (!acc.serverCharacter) return json({ err: "character_migration_required" }, 409);
+      if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
+      if (!acc.serverCharacter) return json({ err: "character_required" }, 409);
       const started = startEncounter(acc.serverCharacter, String(b.encounter || ""), Date.now());
       if (started.error) return json({ err: started.error }, 400);
       acc.combat = started.state;
@@ -535,14 +546,18 @@ export class Accounts extends DurableObject {
       return json({ ok: 1, combat: acc.combat });
     }
     if (path === "/api/combat/attack") {
-      if (!acc.serverCharacter || !acc.combat) return json({ err: "character_migration_required" }, 409);
+      if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
+      if (!acc.serverCharacter || !acc.combat) return json({ err: "no_active_encounter" }, 409);
       const resolved = resolveAttack(acc.serverCharacter, acc.combat, Date.now());
       if (resolved.error) return json({ err: resolved.error }, resolved.error === "cooldown" ? 429 : 409);
       acc.combat = resolved.state;
       await this.ctx.storage.put("u:" + acc.u, acc);
       return json({ ok: 1, combat: acc.combat, result: resolved.result });
     }
-    if (path === "/api/load") return json({ ok: 1, u: acc.u, name: acc.name || acc.u, dev: dev(acc.u), save: acc.save || null });
+    if (path === "/api/load") {
+      if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, u: acc.u, name: acc.name || acc.u, dev: dev(acc.u), save: acc.save || null, serverCharacterReady: !!acc.serverCharacter });
+    }
     if (path === "/api/logout") {
       await this.ctx.storage.delete("tok:" + acc.tok); acc.tok = null;
       await this.ctx.storage.put("u:" + acc.u, acc);
@@ -558,6 +573,11 @@ export class Accounts extends DurableObject {
         await this.ctx.storage.put("pid:" + s.pid, acc.u);
       }
       acc.save = s; acc.saved = Date.now();
+      // New characters get a first snapshot; an existing snapshot is never replaced by browser saves.
+      if (!acc.serverCharacter) {
+        acc.serverCharacter = createServerCharacter(s);
+        if (acc.serverCharacter) acc.serverCharacterMigratedAt = Date.now();
+      }
       await this.ctx.storage.put("u:" + acc.u, acc);
       const rk = (await this.ctx.storage.get("rank")) || {};
       const prevR = rk[acc.u], row = { n: acc.name || acc.u, lv: s.lvl | 0, fl: s.maxFloor | 0, ud: s.underdeepBestRoom | 0, el: String((s.aff || [])[0] || ""), job: String(s.job || ""), c: s.circle | 0 };
@@ -566,6 +586,10 @@ export class Accounts extends DurableObject {
     }
     if (path === "/api/delchar") {
       acc.save = null;
+      acc.serverCharacter = null;
+      acc.serverCharacterMigratedAt = null;
+      acc.combat = null;
+      acc.movement = null;
       const rk = (await this.ctx.storage.get("rank")) || {};
       if (rk[acc.u]) { delete rk[acc.u]; await this.ctx.storage.put("rank", rk); }
       await this.ctx.storage.put("u:" + acc.u, acc);

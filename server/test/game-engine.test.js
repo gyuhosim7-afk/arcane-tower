@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -74,4 +74,23 @@ test("client cannot reset the server-owned teleport timestamp", () => {
   const manipulatedClientCooldown = 0;
   assert.equal(manipulatedClientCooldown, 0);
   assert.equal(resolveBlink(save, serverState, 50001).error, "cooldown");
+});
+
+
+test("legacy save is converted into a bounded server-owned character snapshot", () => {
+  const legacy = { ...character, circle: 3, blinkLv: 2, job: "wind", st: { int: 4, wis: 8, ignored: 999999 }, eq: { staff: { v: 3, il: 10, a: { wis: 2 } }, extra: null }, gold: 999999999999 };
+  const snapshot = createServerCharacter(legacy);
+  assert.deepEqual(snapshot.st, { int: 4, wis: 8 });
+  assert.equal(snapshot.eq.staff.v, 3);
+  assert.equal(snapshot.circle, 3);
+  assert.equal(snapshot.job, "wind");
+  assert.equal("gold" in snapshot, false);
+  legacy.st.int = 999;
+  assert.equal(snapshot.st.int, 4);
+});
+
+test("server character migration rejects missing or invalid legacy characters", () => {
+  assert.equal(createServerCharacter(null), null);
+  assert.equal(createServerCharacter({ lvl: 0 }), null);
+  assert.equal(createServerCharacter({ lvl: 201 }), null);
 });
