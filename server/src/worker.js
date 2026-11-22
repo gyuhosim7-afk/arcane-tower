@@ -33,9 +33,11 @@ export default {
 
 // 아이템 한 개를 안전한 모양으로 정리한다 (이상한 값은 버림).
 function cleanItem(it) {
-  if (!it || typeof it !== "object" || !["staff", "robe", "ring"].includes(it.slot)) return null;
-  const o = { slot: it.slot, r: num(it.r, 0, 6) | 0, il: num(it.il, 1, 999) | 0, up: num(it.up, 0, 30) | 0, v: num(it.v, 0, 9) | 0, id: num(it.id, 0, 1e12) };
+  if (!it || typeof it !== "object" || !SLOTS.includes(it.slot)) return null;
+  const o = { slot: it.slot, r: num(it.r, 0, 6) | 0, il: num(it.il, 1, 200) | 0, up: num(it.up, 0, 15) | 0, v: num(it.v, 0, 9) | 0, id: num(it.id, 0, 1e12) };
   if (it.my) o.my = clean(it.my, 24);
+  // 게임에 없는 모양(조작)인 아이템은 거래로 못 넘긴다
+  if (itemLegit(o, false)) return null;
   o.a = {};
   for (const k of Object.keys(it.a || {}).slice(0, 12)) o.a[clean(k, 12)] = num(it.a[k], -1e6, 1e6);
   for (const k of ["pot", "epot"]) {
@@ -342,21 +344,52 @@ function sameStr(a, b) {
 }
 const ID_RE = /^[가-힣a-z0-9_]{2,12}$/;
 const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
-const SLOTS = ["staff", "robe", "ring"];
+const SLOTS = ["staff", "robe", "ring", "shoes"];
+const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
+const isUnique = (my) => typeof my === "string" && /^uq/.test(my);
+// 아이템 하나가 게임에서 나올 수 있는 모양인지 검사 (조작 아이템 차단). dev면 통과.
+function itemLegit(it, dev) {
+  if (!it || typeof it !== "object") return "형식";
+  if (!SLOTS.includes(it.slot)) return "슬롯";
+  if (!Number.isFinite(it.r) || it.r < 0 || it.r > 6) return "등급";
+  if (!Number.isFinite(it.il) || it.il < 1 || it.il > 200) return "아이템레벨";
+  const up = it.up || 0;
+  if (!Number.isFinite(up) || up < 0 || up > 15) return "강화";
+  if (dev) return null;
+  if (it.my) {
+    if (up !== 0) return "신화강화";                                   // 신화/유니크는 강화 불가
+    if (isUnique(it.my) ? it.r !== 6 : it.r !== 5) return "신화등급";   // 유니크=6, 신화=5 고정
+  } else if (it.r > 4) {
+    return "가짜전설";                                                 // 일반 아이템은 전설(4)까지만
+  }
+  return null;
+}
 
 // 저장 데이터 검사: 말도 안 되는 값이나 갑자기 뛴 진행도는 거부한다.
 function checkSave(s, prev, dev, mins = 0) {
   if (!s || typeof s !== "object" || Array.isArray(s)) return "형식";
   const int = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
   if (!int(s.lvl, 1, 200) || !int(s.circle, 1, 9)) return "레벨";
-  if (!int(s.gold, 0, 1e15) || !int(s.ess || 0, 0, 1e12) || !int(s.ore || 0, 0, 1e12)) return "재화";
+  if (!int(s.gold, 0, dev ? 1e15 : 1e11) || !int(s.ess || 0, 0, 1e10) || !int(s.ore || 0, 0, 1e10)) return "재화";
   if (!int(s.maxFloor || 0, 0, 100) || !int(s.underdeepBestRoom || 0, 0, 20)) return "층";
   if (!Array.isArray(s.aff) || !s.aff.length || !Array.isArray(s.inv) || s.inv.length > (dev ? 64 : 32)) return "가방";
   const items = [...s.inv, ...Object.values(s.eq || {}).filter(Boolean)];
-  for (const it of items) if (!it || !SLOTS.includes(it.slot) || !int(it.r, 0, 6) || !int(it.up || 0, 0, 15)) return "아이템";
+  for (const it of items) { const why = itemLegit(it, dev); if (why) return "아이템:" + why; }
+  if (!dev) {
+    // 서클은 레벨 조건을 넘겨야 올릴 수 있다
+    if (s.lvl < (CIRC_LVL[s.circle] || 0)) return "서클-레벨";
+    // 찍은 능력치 + 남은 포인트는 레벨로 얻은 포인트(레벨당 3점)를 넘을 수 없다
+    const st = s.st || {}, spent = (st.int || 0) + (st.vit || 0) + (st.crit || 0) + (st.wis || 0);
+    if (spent < 0 || (s.pts || 0) < 0) return "포인트";
+    if (spent + (s.pts || 0) > (s.lvl - 1) * 3 + 3) return "포인트초과";
+    // 소소한 보유 상한 (흔히 조작하는 값들)
+    if (!int(s.blinkLv || 0, 0, 10) || !int(s.rebirth || 0, 0, 100)) return "보유량";
+    if (!int(s.hpPot || 0, 0, 99) || !int(s.mpPot || 0, 0, 99) || !int(s.prot || 0, 0, 9999) || !int(s.statReset || 0, 0, 9999)) return "보유량";
+  }
   if (prev && !dev) {
     if (s.lvl - prev.lvl > 25 + mins * 3) return "레벨 급상승";
     if ((s.maxFloor || 0) - (prev.maxFloor || 0) > 10 + mins) return "층 급상승";
+    if ((s.gold || 0) - (prev.gold || 0) > 1e8 * (mins + 1)) return "골드 급상승";
     if (prev.pid && s.pid !== prev.pid) return "캐릭터";
   }
   return null;
