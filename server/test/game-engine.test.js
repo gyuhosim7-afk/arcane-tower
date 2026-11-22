@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -169,7 +169,7 @@ test("client cannot reset the server-owned teleport timestamp", () => {
 test("legacy save is converted into a bounded server-owned character snapshot", () => {
   const legacy = { ...character, circle: 3, blinkLv: 2, job: "wind", st: { int: 4, wis: 8, ignored: 999999 }, eq: { staff: { v: 3, il: 10, a: { wis: 2 } }, extra: null }, gold: 999999999999 };
   const snapshot = createServerCharacter(legacy);
-  assert.deepEqual(snapshot.st, { int: 4, wis: 8 });
+  assert.deepEqual(snapshot.st, { int: 4, vit: 0, crit: 0, wis: 8 });
   assert.equal(snapshot.eq.staff.v, 3);
   assert.equal(snapshot.circle, 3);
   assert.equal(snapshot.job, "wind");
@@ -196,4 +196,53 @@ test("legacy character migration preserves teleport levels through 100", () => {
   assert.equal(migrated.blinkLv, 100);
   const bounded = createServerCharacter({ ...character, blinkLv: 150 });
   assert.equal(bounded.blinkLv, 100);
+});
+
+test("server XP uses the game's level curve and grants three points per level", () => {
+  const save = { ...character, lvl: 1, xp: 0, pts: 0, st: { int: 0, vit: 0, crit: 0, wis: 0 } };
+  const result = applyServerXp(save, xpRequired(1));
+  assert.equal(result.level, 2);
+  assert.equal(result.xp, 0);
+  assert.equal(result.pts, 3);
+  const multi = applyServerXp(save, xpRequired(1) + xpRequired(2));
+  assert.equal(multi.level, 3);
+  assert.equal(multi.pts, 6);
+});
+
+test("server stat allocation spends exactly one available point", () => {
+  const save = { ...character, pts: 2, st: { int: 0, vit: 0, crit: 0, wis: 0 } };
+  const result = allocateServerStat(save, "vit");
+  assert.equal(result.pts, 1);
+  assert.equal(result.save.st.vit, 1);
+  assert.equal(allocateServerStat({ ...save, pts: 0 }, "int").error, "no_points");
+  assert.equal(allocateServerStat(save, "gold").error, "invalid_stat");
+});
+
+test("server monster loot follows catalog drop rules and produces valid base equipment", () => {
+  const normal = rollMonsterRewards("slime", 1, false, "tower", () => 0.99);
+  assert.equal(normal.gold, 0);
+  assert.equal(normal.ess, 0);
+  assert.equal(normal.item, null);
+  const elite = rollMonsterRewards("slime", 10, true, "tower", () => 0.99);
+  assert.ok(elite.gold > 0);
+  assert.ok(elite.ess > 0);
+  assert.ok(elite.ore > 0);
+  assert.ok(elite.item);
+  assert.ok(["staff", "robe", "ring"].includes(elite.item.slot));
+  assert.ok(elite.item.r >= 0 && elite.item.r <= 4);
+  const boss = rollMonsterRewards("kingslime", 1, false, "tower", () => 0.99);
+  assert.ok(boss.gold > 0 && boss.ess > 0 && boss.ore > 0);
+  assert.equal(boss.epotScroll, 1);
+});
+
+test("server monster rewards persist XP, currency, and generated inventory items", () => {
+  const save = { ...character, lvl: 1, xp: 0, pts: 0, gold: 0, ess: 0, ore: 0, inv: [], uid: 10 };
+  const result = applyMonsterRewards(save, "slime", 10, true, "tower", () => 0.99);
+  assert.ok(result.save.gold > 0);
+  assert.ok(result.save.ess > 0);
+  assert.ok(result.save.ore > 0);
+  assert.equal(result.save.inv.length, 1);
+  assert.equal(result.save.inv[0].id, 10);
+  assert.equal(result.save.uid, 11);
+  assert.equal(result.save.inv[0].up, 0);
 });
