@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, allocateServerStat } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, allocateServerStat } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -168,6 +168,34 @@ export class Town extends DurableObject {
     }
     if (!a.p) return;
 
+        if (m.t === "chest") {
+      const zone = a.p.zone, floor = a.p.fl, kind = String(m.kind || "");
+      if (m.zone !== zone || m.fl !== floor || !["tower", "underdeep"].includes(zone)) return;
+      if (a.party) {
+        const members = this.partyList(a.party), leader = members.find((y) => y.a.id === a.party);
+        if (!leader || !leader.a.p || leader.a.p.zone !== zone || leader.a.p.fl !== floor) return this.send(ws, { t: "chest", ok: 0, kind, msg: "파티 전투 상태를 확인할 수 없습니다" });
+      }
+      const key = a.party ? "party-health:" + a.party : "solo-health:" + a.u;
+      const state = await this.ctx.storage.get(key);
+      if (!state || state.zone !== zone || state.floor !== floor || !state.cleared) return this.send(ws, { t: "chest", ok: 0, kind, msg: "서버가 층 클리어를 아직 확인하지 못했습니다" });
+      let expected = "wood";
+      if (zone === "underdeep") {
+        if (floor % 5 !== 0 || !state.bossKilled) return this.send(ws, { t: "chest", ok: 0, kind, msg: "레이드 보스 처치가 확인되지 않았습니다" });
+        expected = "gold";
+      } else if (floor % 5 === 0) {
+        if (!state.bossKilled) return this.send(ws, { t: "chest", ok: 0, kind, msg: "보스 처치가 확인되지 않았습니다" });
+        expected = "gold";
+      } else if (state.eliteKilled) expected = "iron";
+      if (kind !== expected) return this.send(ws, { t: "chest", ok: 0, kind, msg: "상자 종류가 서버 기록과 일치하지 않습니다" });
+      const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/chest-reward", {
+        method: "POST",
+        body: JSON.stringify({ u: a.u, zone, floor, kind }),
+      }).then((r) => r.json()).catch(() => ({}));
+      if (!granted.ok) return this.send(ws, { t: "chest", ok: 0, kind, msg: granted.err === "already_claimed" ? "이미 보상을 받았습니다" : "상자 보상 처리에 실패했습니다" });
+      this.send(ws, { t: "chest", ok: 1, kind, fields: granted.fields, rewards: granted.rewards });
+      return;
+    }
+
     // 솔로 전투도 서버가 몬스터 HP와 처치 보상을 소유한다.
     if (m.t === "solo") {
       if (a.party || !m.d || typeof m.d !== "object" || raw.length > 19000) return;
@@ -180,6 +208,7 @@ export class Town extends DurableObject {
         const key = "solo-health:" + a.u;
         const previous = await this.ctx.storage.get(key);
         const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: 1 }, now);
+        state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
         await this.ctx.storage.put(key, state);
         this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
         this.save(x);
@@ -302,6 +331,7 @@ export class Town extends DurableObject {
           const key = "party-health:" + a.party;
           const previous = await this.ctx.storage.get(key);
           const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: members.length }, now);
+           state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
           await this.ctx.storage.put(key, state);
           d = { ...snapshot, e: partyHealthRows(state), kd: [] };
           const auth = { t: "prel", from: a.id, d: { k: "auth", h: partyHealthRecords(state), kd: [] } };
@@ -498,7 +528,7 @@ const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
 const REWARD_FIELDS = ["lvl", "xp", "pts", "st"];
-const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "inv", "uid"];
+const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "inv", "uid"];
 function pickRewardFields(save, keys) {
   const out = {};
   for (const key of keys) if (save && save[key] !== undefined) out[key] = JSON.parse(JSON.stringify(save[key]));
@@ -702,6 +732,32 @@ export class Accounts extends DurableObject {
       await this.ctx.storage.put("u:" + u, target);
       await this.ctx.storage.put(seenKey, { fields, rewards });
       return json({ ok: 1, fields, rewards, level: granted.level, xp: granted.xp, pts: granted.pts });
+    }
+    if (path === "/internal/chest-reward") {
+      const u = String(b.u || ""), zone = b.zone === "underdeep" ? "underdeep" : "tower";
+      const floor = num(b.floor, 1, 100) | 0, kind = String(b.kind || "");
+      if (!/^[a-z0-9_]{2,12}$/.test(u) || !["wood", "iron", "gold"].includes(kind)) return json({ err: "invalid_chest_reward" }, 400);
+      const target = await this.ctx.storage.get("u:" + u);
+      if (!target || !target.save) return json({ err: "character_required" }, 404);
+      target.chestClaims = target.chestClaims || {};
+      const claimKey = zone + ":" + floor;
+      if (target.chestClaims[claimKey]) return json({ err: "already_claimed" }, 409);
+      const granted = applyChestRewards(target.save, kind, floor, zone);
+      if (granted.error) return json({ err: granted.error }, 400);
+      target.save = granted.save;
+      target.serverItemLedger = target.serverItemLedger || {};
+      target.pendingServerItems = target.pendingServerItems || [];
+      for (const item of granted.itemsAdded) {
+        const id = Math.max(SERVER_ITEM_ID_BASE, target.serverItemNextId || SERVER_ITEM_ID_BASE);
+        item.id = id;
+        target.serverItemNextId = id + 1;
+        target.serverItemLedger[String(id)] = serverItemRecord(item);
+        target.pendingServerItems.push(JSON.parse(JSON.stringify(item)));
+      }
+      target.chestClaims[claimKey] = true;
+      target.serverRewardFields = rewardFields(target.save);
+      await this.ctx.storage.put("u:" + u, target);
+      return json({ ok: 1, fields: rewardSyncFields(target.save), rewards: granted.rewards });
     }
     if (path === "/api/whoami") {
       const acc = await this.session(b.token);
