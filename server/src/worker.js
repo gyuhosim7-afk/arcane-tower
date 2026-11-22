@@ -241,6 +241,7 @@ export class Town extends DurableObject {
           if (!["tower", "underdeep", "town"].includes(m.d.z) || !Number.isInteger(m.d.fl) || m.d.fl < 0 || m.d.fl > 999) return;
           d = { k: "go", z: m.d.z, fl: m.d.fl };
           await this.ctx.storage.put("party-health:" + a.party, { zone: m.d.z, floor: m.d.fl, enemies: {} });
+          this.send(ws, { t: "prel", from: a.id, d: { k: "ready" } });
         } else {
           if (now - (a.partySnapshotAt || 0) < 80) return;
           const snapshot = sanitizePartySnapshot(m.d, a.p.zone, a.p.fl);
