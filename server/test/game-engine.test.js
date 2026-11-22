@@ -319,3 +319,12 @@ test("underdeep room completion rewards are server-calculated, including boss ge
   assert.ok(boss.itemsAdded.some((item) => item.r === 3 && !item.my));
   assert.ok(boss.itemsAdded.some((item) => item.my === "uqSeal"));
 });
+
+test("underdeep raid bosses are recognized by server combat state", () => {
+  const snapshot = { e: [[51, "underdeepGatekeeper", 100, 200, 1000, 1, 0, 0]] };
+  const state = createPartyHealthState(snapshot, null, { zone: "underdeep", floor: 5, level: 50, partySize: 1 }, 1000);
+  assert.equal(state.seenEnemyCount, 1);
+  const result = applyPartyHits(state, Array.from({ length: 20 }, () => [51, 100000]));
+  assert.equal(result.state.bossKilled, true);
+  assert.equal(result.state.killCount, 1);
+});
