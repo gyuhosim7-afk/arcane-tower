@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyChestRewards, applyUnderdeepClearRewards, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyChestRewards, applyUnderdeepClearRewards, applyTowerClearRewards, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -329,4 +329,16 @@ test("underdeep raid bosses are recognized by server combat state", () => {
   const result = applyPartyHits(state, Array.from({ length: 20 }, () => [51, 100000]));
   assert.equal(result.state.bossKilled, true);
   assert.equal(result.state.killCount, 1);
+});
+
+test("tower clear rewards and max-floor progress are calculated by the server", () => {
+  const base = { ...character, gold: 0, maxFloor: 0, inv: [] };
+  const first = applyTowerClearRewards(base, 5);
+  assert.equal(first.rewards.gold, 40);
+  assert.equal(first.save.gold, 40);
+  assert.equal(first.save.maxFloor, 5);
+  const replay = applyTowerClearRewards(first.save, 3);
+  assert.equal(replay.save.gold, 68);
+  assert.equal(replay.save.maxFloor, 5);
+  assert.equal(applyTowerClearRewards(base, 101).error, "invalid_tower_floor");
 });

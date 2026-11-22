@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, applyUnderdeepClearRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, applyUnderdeepClearRewards, applyTowerClearRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -208,9 +208,11 @@ export class Town extends DurableObject {
         updateServerClearState(state, snapshot, a.p.zone, now);
         await this.ctx.storage.put(key, state);
         this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
-        if (state.cleared && a.p.zone === "underdeep" && !state.clearRewardSent[a.u]) {
-          const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/underdeep-clear-reward", {
-            method: "POST", body: JSON.stringify({ u: a.u, room: state.floor, runId: state.runId }),
+        if (state.cleared && ["underdeep", "tower"].includes(a.p.zone) && !state.clearRewardSent[a.u]) {
+          const path = a.p.zone === "underdeep" ? "/internal/underdeep-clear-reward" : "/internal/tower-clear-reward";
+          const payload = a.p.zone === "underdeep" ? { u: a.u, room: state.floor, runId: state.runId } : { u: a.u, floor: state.floor, runId: state.runId };
+          const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc" + path, {
+            method: "POST", body: JSON.stringify(payload),
           }).then((r) => r.json()).catch(() => ({}));
           if (granted.ok) {
             state.clearRewardSent[a.u] = true;
@@ -344,12 +346,14 @@ export class Town extends DurableObject {
           const auth = { t: "prel", from: a.id, d: { k: "auth", h: partyHealthRecords(state), kd: [] } };
           const recipients = members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl);
            this.sendTo(recipients, auth);
-           if (state.cleared && a.p.zone === "underdeep") {
+           if (state.cleared && ["underdeep", "tower"].includes(a.p.zone)) {
              for (const member of recipients) {
                const u = member.a.u;
                if (!u || state.clearRewardSent[u]) continue;
-               const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/underdeep-clear-reward", {
-                 method: "POST", body: JSON.stringify({ u, room: state.floor, runId: state.runId }),
+               const path = a.p.zone === "underdeep" ? "/internal/underdeep-clear-reward" : "/internal/tower-clear-reward";
+               const payload = a.p.zone === "underdeep" ? { u, room: state.floor, runId: state.runId } : { u, floor: state.floor, runId: state.runId };
+               const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc" + path, {
+                 method: "POST", body: JSON.stringify(payload),
                }).then((r) => r.json()).catch(() => ({}));
                if (granted.ok) {
                  state.clearRewardSent[u] = true;
@@ -550,7 +554,7 @@ const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
 const REWARD_FIELDS = ["lvl", "xp", "pts", "st"];
-const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "underdeepBestRoom", "inv", "uid"];
+const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "underdeepBestRoom", "maxFloor", "inv", "uid"];
 function pickRewardFields(save, keys) {
   const out = {};
   for (const key of keys) if (save && save[key] !== undefined) out[key] = JSON.parse(JSON.stringify(save[key]));
@@ -782,6 +786,22 @@ export class Accounts extends DurableObject {
       await this.ctx.storage.put("u:" + u, target);
       await this.ctx.storage.put(seenKey, { fields, rewards });
       return json({ ok: 1, fields, rewards, level: granted.level, xp: granted.xp, pts: granted.pts });
+    }
+    if (path === "/internal/tower-clear-reward") {
+      const u = String(b.u || ""), floor = num(b.floor, 1, 100) | 0, runId = String(b.runId || "");
+      if (!/^[a-z0-9_]{2,12}$/.test(u) || !/^[0-9a-f-]{36}$/.test(runId)) return json({ err: "invalid_tower_reward" }, 400);
+      const target = await this.ctx.storage.get("u:" + u);
+      if (!target || !target.save) return json({ err: "character_required" }, 404);
+      target.towerClaims = target.towerClaims || {};
+      const claimKey = floor + ":" + runId;
+      if (target.towerClaims[claimKey]) return json({ ok: 1, duplicate: 1, fields: rewardSyncFields(target.save), rewards: {} });
+      const granted = applyTowerClearRewards(target.save, floor);
+      if (granted.error) return json({ err: granted.error }, 400);
+      target.save = granted.save;
+      target.towerClaims[claimKey] = true;
+      target.serverRewardFields = rewardFields(target.save);
+      await this.ctx.storage.put("u:" + u, target);
+      return json({ ok: 1, fields: rewardSyncFields(target.save), rewards: granted.rewards });
     }
     if (path === "/internal/underdeep-clear-reward") {
       const u = String(b.u || ""), room = num(b.room, 1, 20) | 0, runId = String(b.runId || "");
