@@ -208,6 +208,16 @@ export class Town extends DurableObject {
         updateServerClearState(state, snapshot, a.p.zone);
         await this.ctx.storage.put(key, state);
         this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
+        if (state.cleared && a.p.zone === "underdeep" && !state.clearRewardSent[a.u]) {
+          const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/underdeep-clear-reward", {
+            method: "POST", body: JSON.stringify({ u: a.u, room: state.floor, runId: state.runId }),
+          }).then((r) => r.json()).catch(() => ({}));
+          if (granted.ok) {
+            state.clearRewardSent[a.u] = true;
+            await this.ctx.storage.put(key, state);
+            this.send(ws, { t: "solo", d: { k: "loot", fields: granted.fields, rewards: granted.rewards } });
+          }
+        }
         this.save(x);
         return;
       }
@@ -332,7 +342,22 @@ export class Town extends DurableObject {
           await this.ctx.storage.put(key, state);
           d = { ...snapshot, e: partyHealthRows(state), kd: [] };
           const auth = { t: "prel", from: a.id, d: { k: "auth", h: partyHealthRecords(state), kd: [] } };
-          this.sendTo(members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), auth);
+          const recipients = members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl);
+           this.sendTo(recipients, auth);
+           if (state.cleared && a.p.zone === "underdeep") {
+             for (const member of recipients) {
+               const u = member.a.u;
+               if (!u || state.clearRewardSent[u]) continue;
+               const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/underdeep-clear-reward", {
+                 method: "POST", body: JSON.stringify({ u, room: state.floor, runId: state.runId }),
+               }).then((r) => r.json()).catch(() => ({}));
+               if (granted.ok) {
+                 state.clearRewardSent[u] = true;
+                 this.send(member.w, { t: "prel", from: a.id, d: { k: "loot", fields: granted.fields, rewards: granted.rewards } });
+               }
+             }
+             await this.ctx.storage.put(key, state);
+           }
           this.save(x);
         }
       } else if (m.d.k === "h") {
@@ -749,6 +774,31 @@ export class Accounts extends DurableObject {
       await this.ctx.storage.put(seenKey, { fields, rewards });
       return json({ ok: 1, fields, rewards, level: granted.level, xp: granted.xp, pts: granted.pts });
     }
+    if (path === "/internal/underdeep-clear-reward") {
+      const u = String(b.u || ""), room = num(b.room, 1, 20) | 0, runId = String(b.runId || "");
+      if (!/^[a-z0-9_]{2,12}$/.test(u) || !/^[0-9a-f-]{36}$/.test(runId)) return json({ err: "invalid_underdeep_reward" }, 400);
+      const target = await this.ctx.storage.get("u:" + u);
+      if (!target || !target.save) return json({ err: "character_required" }, 404);
+      target.underdeepClaims = target.underdeepClaims || {};
+      const claimKey = room + ":" + runId;
+      if (target.underdeepClaims[claimKey]) return json({ ok: 1, duplicate: 1, fields: rewardSyncFields(target.save), rewards: {} });
+      const granted = applyUnderdeepClearRewards(target.save, room);
+      if (granted.error) return json({ err: granted.error }, 400);
+      target.save = granted.save;
+      target.serverItemLedger = target.serverItemLedger || {};
+      target.pendingServerItems = target.pendingServerItems || [];
+      for (const item of granted.itemsAdded) {
+        const id = Math.max(SERVER_ITEM_ID_BASE, target.serverItemNextId || SERVER_ITEM_ID_BASE);
+        item.id = id;
+        target.serverItemNextId = id + 1;
+        target.serverItemLedger[String(id)] = serverItemRecord(item);
+        target.pendingServerItems.push(JSON.parse(JSON.stringify(item)));
+      }
+      target.underdeepClaims[claimKey] = true;
+      target.serverRewardFields = rewardFields(target.save);
+      await this.ctx.storage.put("u:" + u, target);
+      return json({ ok: 1, fields: rewardSyncFields(target.save), rewards: granted.rewards });
+    }
     if (path === "/internal/chest-reward") {
       const u = String(b.u || ""), zone = b.zone === "underdeep" ? "underdeep" : "tower";
       const floor = num(b.floor, 1, 100) | 0, kind = String(b.kind || "");
@@ -756,7 +806,9 @@ export class Accounts extends DurableObject {
       const target = await this.ctx.storage.get("u:" + u);
       if (!target || !target.save) return json({ err: "character_required" }, 404);
       target.chestClaims = target.chestClaims || {};
-      const claimKey = zone + ":" + floor;
+      const runId = String(b.runId || "");
+      if (!/^[0-9a-f-]{36}$/.test(runId)) return json({ err: "invalid_chest_run" }, 400);
+      const claimKey = zone + ":" + floor + ":" + runId;
       if (target.chestClaims[claimKey]) return json({ err: "already_claimed" }, 409);
       const granted = applyChestRewards(target.save, kind, floor, zone);
       if (granted.error) return json({ err: granted.error }, 400);
