@@ -328,6 +328,13 @@ export function applyChestRewards(save, kind, floor, zone = "tower", rng = Math.
 }
 
 
+export function applyTowerClearRewards(save, floor) {
+  if (!save || !Array.isArray(save.inv) || !Number.isInteger(floor) || floor < 1 || floor > 100) return { error: "invalid_tower_floor" };
+  const gold = Math.round(10 + floor * 6);
+  const next = { ...save, gold: clampInt(save.gold || 0, 0, 2_000_000_000) + gold, maxFloor: Math.max(save.maxFloor || 0, floor) };
+  return { save: next, rewards: { gold } };
+}
+
 export function applyUnderdeepClearRewards(save, room, rng = Math.random) {
   if (!save || !Array.isArray(save.inv) || !Number.isInteger(room) || room < 1 || room > 20) return { error: "invalid_underdeep_room" };
   const rewards = { gold: 15000 + room * 6500, ess: 20 + room * 5, ore: 12 + room * 3, itemAdded: 0, autoSold: 0, myth: null };
