@@ -178,15 +178,7 @@ export class Town extends DurableObject {
       const key = a.party ? "party-health:" + a.party : "solo-health:" + a.u;
       const state = await this.ctx.storage.get(key);
       if (!state || state.zone !== zone || state.floor !== floor || !state.cleared) return this.send(ws, { t: "chest", ok: 0, kind, msg: "서버가 층 클리어를 아직 확인하지 못했습니다" });
-      let expected = "wood";
-      if (zone === "underdeep") {
-        if (floor % 5 !== 0 || !state.bossKilled) return this.send(ws, { t: "chest", ok: 0, kind, msg: "레이드 보스 처치가 확인되지 않았습니다" });
-        expected = "gold";
-      } else if (floor % 5 === 0) {
-        if (!state.bossKilled) return this.send(ws, { t: "chest", ok: 0, kind, msg: "보스 처치가 확인되지 않았습니다" });
-        expected = "gold";
-      } else if (state.eliteKilled) expected = "iron";
-      if (kind !== expected) return this.send(ws, { t: "chest", ok: 0, kind, msg: "상자 종류가 서버 기록과 일치하지 않습니다" });
+      if (!state.chestDecided || !state.chestKind || kind !== state.chestKind) return this.send(ws, { t: "chest", ok: 0, kind, msg: "상자 종류가 서버 기록과 일치하지 않습니다" });
       const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/chest-reward", {
         method: "POST",
         body: JSON.stringify({ u: a.u, zone, floor, kind }),
@@ -209,6 +201,14 @@ export class Town extends DurableObject {
         const previous = await this.ctx.storage.get(key);
         const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: 1 }, now);
         state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
+        if (!snapshot.cl) { state.chestKind = null; state.chestDecided = false; }
+        else if (state.cleared && !state.chestDecided) {
+          state.chestDecided = true;
+          if (a.p.zone === "underdeep") state.chestKind = state.floor % 5 === 0 && state.bossKilled ? "gold" : null;
+          else if (state.floor % 5 === 0) state.chestKind = state.bossKilled ? "gold" : null;
+          else if (state.eliteKilled) state.chestKind = "iron";
+          else { const roll = Math.random(); state.chestKind = roll < 0.06 ? "iron" : roll < 0.36 ? "wood" : null; }
+        }
         await this.ctx.storage.put(key, state);
         this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
         this.save(x);
