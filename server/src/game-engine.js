@@ -299,6 +299,15 @@ export function applyChestRewards(save, kind, floor, zone = "tower", rng = Math.
       rewards.autoSold += sell;
     }
   }
+  if (zone === "underdeep" && kind === "gold" && floor % 5 === 0) {
+    for (const minR of [4, 3]) {
+      const item = rewardItem(100, !!save.shoesUnlocked, rng, minR);
+      const uid = clampInt(next.uid || 1, 1, Number.MAX_SAFE_INTEGER - 1);
+      item.id = uid; next.uid = uid + 1;
+      if (next.inv.length < 32) itemsAdded.push(item), next.inv.push(item);
+      else { const sell = Math.round((6 + item.il * 3) * (item.r + 1) ** 2); next.gold += sell; rewards.autoSold += sell; }
+    }
+  }
   let mythKey = null;
   if (zone === "tower" && kind === "gold" && floor % 5 === 0) {
     const boss = floor % 10 === 5 ? SERVER_MIDS[Math.floor((floor - 5) / 10)] : SERVER_BOSSES[Math.floor(floor / 10) - 1];
