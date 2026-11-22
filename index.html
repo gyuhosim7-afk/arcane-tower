@@ -1530,7 +1530,7 @@ function kill(e){
   qEvent('kill',e.type);
 }
 /* 지하 레이드 보스·정예: 맞으면 보스마다 다른 디버프 (패턴이 안 겹치는 대신) */
-const RAID_DB={dreadMarshal:[['bleed',4,.4]],voidTyrant:[['blind',2,.25],['curse',4,.3]],underdeepGatekeeper:[['freeze',.6,.25],['bleed',3,.3]],underdeepCore:[['burn',4,.4],['curse',5,.3]],underdeepLord:[['silence',1.5,.2],['poison',5,.4],['blind',2,.15]],underdeepOrigin:[['curse',5,.35],['bleed',4,.35],['silence',1.2,.15],['blind',2,.15]]};
+const RAID_DB={dreadMarshal:[['bleed',4,.4]],voidTyrant:[['blind',2,.25],['curse',4,.3]],underdeepGatekeeper:[['bleed',3,.3]],underdeepCore:[['burn',4,.4],['curse',5,.3]],underdeepLord:[['silence',1.5,.2],['poison',5,.4],['blind',2,.15]],underdeepOrigin:[['curse',5,.35],['bleed',4,.35],['silence',1.2,.15],['blind',2,.15]]};
 function raidDebuff(){if(G.zone!=='underdeep'||G.dead)return;const e=G.en.find(x=>!x.dead&&RAID_DB[x.type]);if(!e)return;for(const[k,t,ch]of RAID_DB[e.type])if(Math.random()<ch)applyDb(k,t)}
 function hurtPlayer(d,source={}){
   const p=G.p;if(p.ifr>0||G.dead||(DEV.on&&DEV.god))return;
