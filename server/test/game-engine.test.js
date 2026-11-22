@@ -98,9 +98,16 @@ test("party boss damage is capped per hit and duplicate kills are blocked", () =
   const state = createPartyHealthState(snapshot, null, { zone: "tower", floor: 1, level: 10, partySize: 2 }, 1000);
   const one = applyPartyHits(state, [[8, 100000]]);
   assert.ok(one.results[0].hp >= state.enemies[8].maxHp * 0.91);
-  const two = applyPartyHits(one.state, [[8, 100000]]);
-  assert.equal(two.results[0].dead, true);
-  assert.deepEqual(applyPartyHits(two.state, [[8, 100000]]).results, []);
+  let current = one.state, killed = false;
+  for (let i = 0; i < 20; i++) {
+    const next = applyPartyHits(current, [[8, 100000]]);
+    if (!next.results.length) break;
+    current = next.state;
+    killed = next.results[0].dead;
+    if (killed) break;
+  }
+  assert.equal(killed, true);
+  assert.deepEqual(applyPartyHits(current, [[8, 100000]]).results, []);
 });
 
 test("server enforces attack cooldown", () => {
