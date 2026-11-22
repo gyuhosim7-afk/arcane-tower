@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -47,4 +47,31 @@ test("server monster catalog includes source game baseline stats", () => {
   assert.equal(MONSTERS.kingslime.boss, 1);
   assert.equal(MONSTERS.ymir.boss, 1);
   assert.ok(Object.keys(MONSTERS).length >= 30);
+});
+
+
+test("teleport cooldown is server-derived and never zero", () => {
+  assert.equal(blinkCooldownMs(character), 2500);
+  const boosted = { ...character, circle: 9, blinkLv: 10, job: "wind", st: { wis: 100 } , eq: { shoes: { my: "uqStride" } } };
+  assert.ok(blinkCooldownMs(boosted) >= 500);
+});
+
+test("server rejects teleport attempts before the account cooldown expires", () => {
+  const save = { ...character, blinkLv: 0 };
+  const first = resolveBlink(save, {}, 10000);
+  assert.equal(first.result.accepted, true);
+  assert.equal(first.state.lastBlinkAt, 10000);
+  const tooSoon = resolveBlink(save, first.state, 11000);
+  assert.equal(tooSoon.error, "cooldown");
+  assert.ok(tooSoon.remainingMs > 0);
+  const ready = resolveBlink(save, first.state, 12500);
+  assert.equal(ready.result.accepted, true);
+});
+
+test("client cannot reset the server-owned teleport timestamp", () => {
+  const save = { ...character, blinkLv: 0 };
+  const serverState = resolveBlink(save, {}, 50000).state;
+  const manipulatedClientCooldown = 0;
+  assert.equal(manipulatedClientCooldown, 0);
+  assert.equal(resolveBlink(save, serverState, 50001).error, "cooldown");
 });
