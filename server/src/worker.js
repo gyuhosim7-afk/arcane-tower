@@ -1,6 +1,6 @@
-// 아케인 타워 서버: 접속자 목록, 마을 위치·채팅, 귓속말, 파티, 거래.
-// 전투와 저장은 각자 기기에서 하고, 서버는 친구끼리 메시지를 이어 준다.
+// 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -141,6 +141,9 @@ export class Town extends DurableObject {
       if (!who.u) { this.send(ws, { t: "sys", m: "로그인이 필요합니다" }); try { ws.close(4001, "auth"); } catch {} return; }
       for (const y of this.all()) if (y.a.u === who.u && y.w !== ws) { try { y.w.close(4002, "dup"); } catch {} await this.leave(y.w); }
       a.u = who.u; m.nick = who.name;
+      a.blinkCooldownMs = num(who.blinkCooldownMs, 500, 10000);
+      a.blinkAt = 0;
+      a.lastMoveAt = Date.now();
       a.p = {
         id: a.id, pid: clean(m.pid, 12), nick: clean(m.nick, 12) || "마법사", title: clean(m.title, 16),
         el: ELS.includes(m.el) ? m.el : "fire", job: clean(m.job, 10), lv: num(m.lv, 1, 999) | 0,
@@ -155,16 +158,28 @@ export class Town extends DurableObject {
     if (!a.p) return;
 
     if (m.t === "mv") {
-      a.p.x = num(m.x, 0, 4000); a.p.y = num(m.y, 0, 4000); a.p.f = m.f < 0 ? -1 : 1; a.p.w = m.w ? 1 : 0;
+      const nx = num(m.x, 0, 4000), ny = num(m.y, 0, 4000);
+      const dt = Math.max(0.05, Math.min(0.75, (now - (a.lastMoveAt || now)) / 1000));
+      const dist = Math.hypot(nx - a.p.x, ny - a.p.y);
+      const walkLimit = 190 * dt + 14;
+      if (dist > walkLimit) {
+        if (dist > walkLimit + 78 || now - (a.blinkAt || 0) < (a.blinkCooldownMs || 2500)) { this.save(x); return; }
+        a.blinkAt = now;
+      }
+      a.p.x = nx; a.p.y = ny; a.p.f = m.f < 0 ? -1 : 1; a.p.w = m.w ? 1 : 0;
+      a.lastMoveAt = now;
       this.save(x);
       this.sendTo(others().filter((y) => y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), { t: "mv", id: a.id, x: a.p.x, y: a.p.y, f: a.p.f, w: a.p.w });
     } else if (m.t === "st") {
-      const p = a.p;
+      const p = a.p, oldZone = p.zone, oldFloor = p.fl;
       p.zone = ZONES.includes(m.zone) ? m.zone : p.zone; p.fl = num(m.fl, 0, 999) | 0;
       p.hp = num(m.hp, 0, 1e9); p.mhp = num(m.mhp, 1, 1e9); p.lv = num(m.lv, 1, 999) | 0;
       p.title = clean(m.title, 16); p.el = ELS.includes(m.el) ? m.el : p.el; p.job = clean(m.job, 10);
       p.rb = m.rb >= 0 && m.rb <= 6 ? m.rb | 0 : -1;
-      if (m.x !== undefined) { p.x = num(m.x, 0, 4000); p.y = num(m.y, 0, 4000); }
+      // 같은 구역·층에서 상태 갱신 메시지로 좌표를 순간이동시키는 우회를 차단한다.
+      if (m.x !== undefined && (p.zone !== oldZone || p.fl !== oldFloor)) {
+        p.x = num(m.x, 0, 4000); p.y = num(m.y, 0, 4000); a.lastMoveAt = now; a.blinkAt = now;
+      }
       this.save(x);
       this.sendTo(others(), { t: "st", p });
     } else if (m.t === "chat") {
@@ -495,10 +510,38 @@ export class Accounts extends DurableObject {
     }
     if (path === "/api/whoami") {
       const acc = await this.session(b.token);
-      return json(acc ? { u: acc.u, name: acc.name || acc.u } : {});
+      return json(acc ? { u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.save ? blinkCooldownMs(acc.save) : 2500 } : {});
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
+    if (path === "/api/movement/blink") {
+      if (!acc.save) return json({ err: "character_required" }, 409);
+      const resolved = resolveBlink(acc.save, acc.movement || {}, Date.now());
+      if (resolved.error) return json({ err: resolved.error, cooldownMs: resolved.cooldownMs, remainingMs: resolved.remainingMs }, 429);
+      acc.movement = resolved.state;
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, movement: acc.movement, result: resolved.result });
+    }
+    if (path === "/api/combat/state") {
+      return json({ ok: 1, combat: acc.combat || null });
+    }
+    if (path === "/api/combat/start") {
+      // 기존 acc.save는 브라우저가 보낸 레거시 데이터이므로 전투 능력치의 신뢰 원본으로 사용하지 않는다.
+      if (!acc.serverCharacter) return json({ err: "character_migration_required" }, 409);
+      const started = startEncounter(acc.serverCharacter, String(b.encounter || ""), Date.now());
+      if (started.error) return json({ err: started.error }, 400);
+      acc.combat = started.state;
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, combat: acc.combat });
+    }
+    if (path === "/api/combat/attack") {
+      if (!acc.serverCharacter || !acc.combat) return json({ err: "character_migration_required" }, 409);
+      const resolved = resolveAttack(acc.serverCharacter, acc.combat, Date.now());
+      if (resolved.error) return json({ err: resolved.error }, resolved.error === "cooldown" ? 429 : 409);
+      acc.combat = resolved.state;
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, combat: acc.combat, result: resolved.result });
+    }
     if (path === "/api/load") return json({ ok: 1, u: acc.u, name: acc.name || acc.u, dev: dev(acc.u), save: acc.save || null });
     if (path === "/api/logout") {
       await this.ctx.storage.delete("tok:" + acc.tok); acc.tok = null;

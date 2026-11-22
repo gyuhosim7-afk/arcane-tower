@@ -1693,12 +1693,19 @@ function castMyth(){
 }
 function shoot(){if(G.zone==='arena')return duelShoot();const p=G.p,tg=aimPoint(),t=staffTip(p),a=Math.atan2(tg.y-t.y,tg.x-t.x);if(Math.abs(tg.x-p.x)>2)p.face=tg.x<p.x?-1:1;G.pr.push(mkBolt('none',t.x,t.y,a,300,spellDmg(SP.arrow),{kb:40,homing:S.auto?1:0}));p.mcd=.3*(1-D.cdr*.5);sfx.shoot();gainMast(.4)}
 function blink(){
-  const p=G.p;if(p.bcd>0||G.dead||ui.open)return;let dx=p.mvx,dy=p.mvy;if(!dx&&!dy){dx=p.face<0?-1:1;dy=0}
-  const C=EL[S.aff[0]].c;burst(p.x,p.y-12,16,C,60,.4);const sx=p.x,sy=p.y;
-  for(let i=0;i<15;i++){if(boxSol(p.x+dx*4,p.y-3+dy*4,4))break;p.x+=dx*4;p.y+=dy*4}
-  for(let i=0;i<8;i++){const k=i/8;part(sx+(p.x-sx)*k,sy+(p.y-sy)*k-12,0,0,.3,C[1],2)}
-  if(hasM('stormFeather')){boltFx(sx,sy-12,p.x,p.y-12,.3);for(const e of G.en)if(!e.dead&&segDist(e.x,e.y-e.r,sx,sy-10,p.x,p.y-10)<16+e.r)hurt(e,D.pow*4,{el:'thunder',st:'stun',stT:.4,proc:1});sfx.zap()}
-  burst(p.x,p.y-12,16,C,60,.4);flashFx(p.x,p.y-12,8,C[1]);p.bcd=blinkCD();p.ifr=Math.max(p.ifr,hasM('uqStride')?1.2:.3);if(G.zone==='arena')netSend({t:'drel',d:{k:'bl'}});if(hasM('shadowStaff'))p.shadowT=G.time+3;if(jobIs('wind'))for(let i=0;i<8;i++)G.pr.push(mkBolt('wind',p.x,p.y-12,i/8*TAU,320,D.pow*2.5,{pierce:99,size:2,kb:120}));sfx.blink();
+  const p=G.p;if(p.bcd>0||p.blinkPending||G.dead||ui.open)return;
+  p.blinkPending=true;
+  // 브라우저의 쿨타임 값은 신뢰하지 않는다. 서버가 계정별 마지막 사용 시각을 검사한다.
+  api('movement/blink').then(r=>{
+    p.blinkPending=false;
+    if(!r||!r.ok){p.bcd=Math.max(p.bcd||0,(r&&r.remainingMs||r&&r.cooldownMs||500)/1000);return}
+    let dx=p.mvx,dy=p.mvy;if(!dx&&!dy){dx=p.face<0?-1:1;dy=0}
+    const C=EL[S.aff[0]].c;burst(p.x,p.y-12,16,C,60,.4);const sx=p.x,sy=p.y;
+    for(let i=0;i<15;i++){if(boxSol(p.x+dx*4,p.y-3+dy*4,4))break;p.x+=dx*4;p.y+=dy*4}
+    for(let i=0;i<8;i++){const k=i/8;part(sx+(p.x-sx)*k,sy+(p.y-sy)*k-12,0,0,.3,C[1],2)}
+    if(hasM('stormFeather')){boltFx(sx,sy-12,p.x,p.y-12,.3);for(const e of G.en)if(!e.dead&&segDist(e.x,e.y-e.r,sx,sy-10,p.x,p.y-10)<16+e.r)hurt(e,D.pow*4,{el:'thunder',st:'stun',stT:.4,proc:1});sfx.zap()}
+    burst(p.x,p.y-12,16,C,60,.4);flashFx(p.x,p.y-12,8,C[1]);p.bcd=(r.result&&r.result.cooldownMs||blinkCD()*1000)/1000;p.ifr=Math.max(p.ifr,hasM('uqStride')?1.2:.3);if(G.zone==='arena')netSend({t:'drel',d:{k:'bl'}});if(hasM('shadowStaff'))p.shadowT=G.time+3;if(jobIs('wind'))for(let i=0;i<8;i++)G.pr.push(mkBolt('wind',p.x,p.y-12,i/8*TAU,320,D.pow*2.5,{pierce:99,size:2,kb:120}));sfx.blink();
+  }).catch(()=>{p.blinkPending=false;p.bcd=Math.max(p.bcd||0,.5);});
 }
 function usePot(k){const p=G.p;if(G.zone==='arena')return;if(G.dead||p.pcd>0)return;if(k==='hp'){if(S.hpPot<1||p.hp>=D.maxHp)return sfx.err();S.hpPot--;const v=Math.round(D.maxHp*.45*healMul());p.hp=Math.min(D.maxHp,p.hp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.8,str:'+'+v,col:'#8ef0a0',sc:1});burst(p.x,p.y-10,14,['#5ed36b','#b8f27a'],50,.6)}
   else{if(S.mpPot<1||p.mp>=D.maxMp)return sfx.err();S.mpPot--;const v=Math.round(D.maxMp*.5);p.mp=Math.min(D.maxMp,p.mp+v);G.texts.push({x:p.x,y:p.y-32,vy:-24,life:.8,str:'+'+v,col:'#8ecbff',sc:1});burst(p.x,p.y-10,14,['#6fd3ff','#3b6cf0'],50,.6)}
