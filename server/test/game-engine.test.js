@@ -115,12 +115,15 @@ test("server character migration rejects missing or invalid legacy characters", 
 });
 
 
-test("teleport skill caps at level 10", () => {
+test("teleport skill reaches level 100 and 0.4 second base cooldown", () => {
   assert.equal(blinkCooldownMs({ ...character, blinkLv: 10 }), 1625);
-  assert.equal(blinkCooldownMs({ ...character, blinkLv: 100 }), 1625);
+  assert.equal(blinkCooldownMs({ ...character, blinkLv: 100 }), 400);
+  assert.equal(blinkCooldownMs({ ...character, blinkLv: 101 }), 400);
 });
 
-test("legacy character migration clamps teleport levels to 10", () => {
+test("legacy character migration preserves teleport levels through 100", () => {
   const migrated = createServerCharacter({ ...character, blinkLv: 100 });
-  assert.equal(migrated.blinkLv, 10);
+  assert.equal(migrated.blinkLv, 100);
+  const bounded = createServerCharacter({ ...character, blinkLv: 150 });
+  assert.equal(bounded.blinkLv, 100);
 });
