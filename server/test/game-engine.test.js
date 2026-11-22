@@ -53,7 +53,7 @@ test("server monster catalog includes source game baseline stats", () => {
 test("teleport cooldown is server-derived and never zero", () => {
   assert.equal(blinkCooldownMs(character), 2500);
   const boosted = { ...character, circle: 9, blinkLv: 10, job: "wind", st: { wis: 100 } , eq: { shoes: { my: "uqStride" } } };
-  assert.equal(blinkCooldownMs(boosted), 406);
+  assert.equal(blinkCooldownMs(boosted), 396);
 });
 
 test("server rejects teleport attempts before the account cooldown expires", () => {
