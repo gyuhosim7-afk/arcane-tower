@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, createPartyHealthState, applyPartyHits, partyHealthRows } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -81,6 +81,13 @@ test("party monster HP is initialized from server catalog and floor scaling", ()
   assert.ok(duo > solo);
   assert.ok(trio > duo);
   assert.equal(partyMonsterMaxHp("not-a-monster", 1, 10, false, 2), 0);
+});
+
+test("party monster XP is calculated from the server catalog and floor", () => {
+  assert.equal(partyMonsterXp("slime", 1), 5);
+  assert.equal(partyMonsterXp("slime", 10), 14);
+  assert.equal(partyMonsterXp("slime", 10, true), 70);
+  assert.equal(partyMonsterXp("unknown", 10), 0);
 });
 
 test("party health state ignores client HP ratios and server applies bounded damage", () => {
