@@ -223,6 +223,52 @@ export function applyMonsterRewards(save, type, floor, elite = false, zone = "to
 }
 
 
+
+const SERVER_MIDS = ["ratKing", "shroomLord", "gargLord", "wispLord", "pharaoh", "cerberus", "stormKing", "deathLord", "magmaTitan", "shadowKing"];
+const SERVER_BOSSES = ["kingslime", "arachne", "golemlord", "ymir", "lich", "ifrit", "harpyQ", "archon", "dragon", "demonLord"];
+const SERVER_UNDERDEEP_BOSSES = ["underdeepGatekeeper", null, null, null, null, "underdeepCore", null, null, null, "underdeepCore", null, null, null, null, "underdeepLord", null, null, null, null, "underdeepOrigin"];
+const SERVER_MYTH = {
+  slimeRing:{boss:"kingslime",slot:"ring",a:{crit:8,hp:120,int:6}},
+  spiderRobe:{boss:"arachne",slot:"robe",a:{vit:10,wis:6}},
+  golemStaff:{boss:"golemlord",slot:"staff",a:{int:12,vit:8}},
+  frostHeart:{boss:"ymir",slot:"ring",a:{int:10,crit:6}},
+  lichTome:{boss:"lich",slot:"staff",a:{int:16,wis:10}},
+  ifritRobe:{boss:"ifrit",slot:"robe",a:{int:10,vit:12}},
+  stormFeather:{boss:"harpyQ",slot:"ring",a:{wis:10}},
+  archonStaff:{boss:"archon",slot:"staff",a:{int:20,crit:8}},
+  dragonScale:{boss:"dragon",slot:"robe",a:{vit:20,int:10}},
+  demonEye:{boss:"demonLord",slot:"ring",a:{int:20,crit:12,wis:12}},
+  ratRing:{boss:"ratKing",slot:"ring",a:{crit:5,hp:60}},
+  sporeRobe:{boss:"shroomLord",slot:"robe",a:{vit:8,int:6}},
+  gargHeart:{boss:"gargLord",slot:"ring",a:{vit:10,hp:100}},
+  wispStaff:{boss:"wispLord",slot:"staff",a:{int:10,wis:6}},
+  pharaohRobe:{boss:"pharaoh",slot:"robe",a:{vit:12,wis:8}},
+  cerbRing:{boss:"cerberus",slot:"ring",a:{crit:10,int:8}},
+  stormScepter:{boss:"stormKing",slot:"staff",a:{int:14}},
+  knightCloak:{boss:"deathLord",slot:"robe",a:{vit:14,int:8}},
+  magmaCore:{boss:"magmaTitan",slot:"ring",a:{vit:12,int:10}},
+  shadowStaff:{boss:"shadowKing",slot:"staff",a:{int:18,crit:8}},
+  uqSeal:{boss:"underdeepGatekeeper",uq:1,slot:"staff",a:{int:18,cdr:4,crit:5}},
+  uqAbyss:{boss:"underdeepCore",uq:1,slot:"robe",a:{vit:20,wis:14,hp:180}},
+  uqEcho:{boss:"underdeepLord",uq:1,slot:"ring",a:{int:16,wis:14,crit:7}},
+  uqOrigin:{boss:"underdeepOrigin",uq:1,slot:"staff",a:{int:22,crit:8,cdr:4}},
+  uqStride:{boss:"underdeepLord",uq:1,slot:"shoes",a:{vit:18,crit:6}}
+};
+function serverMythItem(key, level) {
+  const def = SERVER_MYTH[key];
+  const bossIndex = SERVER_MIDS.indexOf(def.boss);
+  const mythFloor = def.uq ? 110 : bossIndex >= 0 ? bossIndex * 10 + 5 : SERVER_BOSSES.indexOf(def.boss) * 10 + 10;
+  const mul = 1.15 + 0.45 * (mythFloor - 5) / 95;
+  const il = clampInt(level || 1, 1, 200), a = {};
+  for (const [stat, value] of Object.entries(def.a)) {
+    const scaled = ["int", "vit", "wis"].includes(stat) ? value / 16 * (1 + il / 6)
+      : stat === "hp" ? value / 50 * (10 + il * 4)
+      : stat === "mp" ? value / 30 * (10 + il * 3) : value;
+    a[stat] = Math.round(scaled * mul * 10) / 10;
+  }
+  return { slot: def.slot, r: def.uq ? 6 : 5, il, up: 0, my: key, a };
+}
+
 export function applyChestRewards(save, kind, floor, zone = "tower", rng = Math.random) {
   if (!save || !Array.isArray(save.inv) || !["wood", "iron", "gold"].includes(kind)) return { error: "invalid_chest" };
   const f = zone === "underdeep" ? Math.min(100, 90 + Math.max(1, Math.floor(floor))) : Math.max(1, Math.min(100, Math.floor(floor)));
@@ -251,6 +297,24 @@ export function applyChestRewards(save, kind, floor, zone = "tower", rng = Math.
       next.gold += sell;
       rewards.autoSold += sell;
     }
+  }
+  let mythKey = null;
+  if (zone === "tower" && kind === "gold" && floor % 5 === 0) {
+    const boss = floor % 10 === 5 ? SERVER_MIDS[Math.floor((floor - 5) / 10)] : SERVER_BOSSES[Math.floor(floor / 10) - 1];
+    const key = Object.keys(SERVER_MYTH).find((candidate) => SERVER_MYTH[candidate].boss === boss && !SERVER_MYTH[candidate].uq);
+    if (key && rng() < 0.01) mythKey = key;
+  } else if (zone === "underdeep" && kind === "gold" && floor % 5 === 0) {
+    const boss = SERVER_UNDERDEEP_BOSSES[floor - 1];
+    const keys = Object.keys(SERVER_MYTH).filter((candidate) => SERVER_MYTH[candidate].boss === boss && SERVER_MYTH[candidate].uq);
+    if (keys.length && rng() < 0.02) mythKey = keys[Math.floor(rng() * keys.length)];
+  }
+  if (mythKey) {
+    const myth = serverMythItem(mythKey, save.lvl || 1);
+    const uid = clampInt(next.uid || 1, 1, Number.MAX_SAFE_INTEGER - 1);
+    myth.id = uid; next.uid = uid + 1;
+    if (next.inv.length < 32) itemsAdded.push(myth), next.inv.push(myth);
+    else { const sell = Math.round((6 + myth.il * 3) * (myth.r + 1) ** 2); next.gold += sell; rewards.autoSold += sell; }
+    rewards.myth = mythKey;
   }
   rewards.itemAdded = itemsAdded.length;
   return { save: next, rewards, itemsAdded };
