@@ -31,7 +31,7 @@ export function createServerCharacter(save) {
     lvl: clampInt(save.lvl, 1, 200),
     hp: clampInt(save.hp || 100, 1, 1000000),
     mhp: clampInt(save.mhp || save.hp || 100, 1, 1000000),
-    st: { int: clampInt(st.int || 0, 0, 10000), wis: clampInt(st.wis || 0, 0, 10000) },
+    st: { int: clampInt(st.int || 0, 0, 10000), vit: clampInt(st.vit || 0, 0, 10000), crit: clampInt(st.crit || 0, 0, 10000), wis: clampInt(st.wis || 0, 0, 10000) },
     eq: cleanEq,
     circle: clampInt(save.circle || 1, 1, 9),
     blinkLv: clampInt(save.blinkLv || 0, 0, 100),
