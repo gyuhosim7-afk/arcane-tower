@@ -39,6 +39,16 @@ export function createServerCharacter(save) {
   };
 }
 
+// Party relay damage is derived from the immutable server character snapshot.
+export function serverAttackPower(save) {
+  const stats = save && save.st || {};
+  const level = clampInt(save && save.lvl, 1, 200);
+  const intelligence = clampInt(stats.int || 0, 0, 10000);
+  const weapon = save && save.eq && save.eq.staff;
+  const weaponPower = weapon ? clampInt(weapon.v || 0, 0, 10000) + clampInt(weapon.il || 1, 1, 200) : 0;
+  return Math.max(1, level * 2 + intelligence * 3 + weaponPower);
+}
+
 export function startEncounter(save, encounterId, now = Date.now()) {
   const spec = encounterSpec(encounterId);
   if (!spec) return { error: "encounter_not_allowed" };
@@ -69,12 +79,7 @@ export function resolveAttack(save, combat, now = Date.now()) {
   if (now - combat.lastAttackAt < spec.attackCooldownMs) return { error: "cooldown" };
 
   // 공격력은 클라이언트 입력을 받지 않고 서버에 저장된 캐릭터 능력치에서 계산한다.
-  const stats = save.st || {};
-  const level = clampInt(save.lvl, 1, 200);
-  const intelligence = clampInt(stats.int || 0, 0, 10000);
-  const weapon = save.eq && save.eq.staff;
-  const weaponPower = weapon ? clampInt(weapon.v || 0, 0, 10000) + clampInt(weapon.il || 1, 1, 200) : 0;
-  const baseDamage = Math.max(1, level * 2 + intelligence * 3 + weaponPower);
+  const baseDamage = serverAttackPower(save);
   const damage = Math.max(1, baseDamage - spec.defense);
   const monsterHp = Math.max(0, combat.monsterHp - damage);
   const next = {
