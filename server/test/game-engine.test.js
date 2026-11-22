@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyChestRewards, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -253,4 +253,50 @@ test("server combat records omit dead enemies after returning confirmed kill IDs
   const killed = applyPartyHits(state, [[12, 100000]]);
   assert.deepEqual(killed.kills, [12]);
   assert.equal(partyHealthRecords(killed.state).some((row) => row.id === 12), false);
+});
+
+test("server chest rewards create the correct currency, protection, and equipment payload", () => {
+  const save = { ...character, gold: 0, ess: 0, ore: 0, hpPot: 0, mpPot: 0, prot: 0, inv: [], uid: 1, shoesUnlocked: false };
+  const result = applyChestRewards(save, "gold", 5, "tower", () => 0.99);
+  assert.ok(result.save.gold > 0);
+  assert.equal(result.save.ess, 8);
+  assert.equal(result.save.ore, 10);
+  assert.equal(result.save.prot, 1);
+  assert.equal(result.itemsAdded.length, 4);
+  assert.equal(result.rewards.itemAdded, 4);
+  assert.ok(result.itemsAdded.every((item) => item.r >= 2));
+});
+
+test("server chest rewards auto-sell equipment when the bag is full", () => {
+  const inv = Array.from({ length: 32 }, (_, i) => ({ id: i + 1, slot: "staff", r: 0, il: 1, up: 0, v: 0, a: {} }));
+  const save = { ...character, gold: 0, ess: 0, ore: 0, hpPot: 0, mpPot: 0, prot: 0, inv, uid: 33 };
+  const result = applyChestRewards(save, "wood", 1, "tower", () => 0.99);
+  assert.equal(result.itemsAdded.length, 0);
+  assert.ok(result.rewards.autoSold > 0);
+  assert.equal(result.save.inv.length, 32);
+  assert.ok(result.save.gold > result.rewards.gold);
+});
+
+test("server combat state records boss and elite kills for chest eligibility", () => {
+  const snapshot = { e: [[31, "kingslime", 100, 200, 1000, 1, 0, 0], [32, "golem", 120, 210, 1000, 1, 1, 0]] };
+  const state = createPartyHealthState(snapshot, null, { zone: "tower", floor: 5, level: 10, partySize: 1 }, 1000);
+  assert.equal(state.seenEnemyCount, 2);
+  const hits = Array.from({ length: 20 }, () => [31, 100000]).concat([[32, 100000]]);
+  const result = applyPartyHits(state, hits);
+  assert.equal(result.state.bossKilled, true);
+  assert.equal(result.state.eliteKilled, true);
+  assert.equal(result.state.killCount, 2);
+});
+
+test("server gold chests roll tower mythics and underdeep uniques", () => {
+  const base = { ...character, lvl: 50, gold: 0, ess: 0, ore: 0, hpPot: 0, mpPot: 0, prot: 0, inv: [], uid: 1, shoesUnlocked: false };
+  const tower = applyChestRewards(base, "gold", 10, "tower", () => 0);
+  assert.equal(tower.rewards.myth, "slimeRing");
+  assert.ok(tower.itemsAdded.some((item) => item.my === "slimeRing" && item.r === 5));
+  const deep = applyChestRewards(base, "gold", 5, "underdeep", () => 0);
+  assert.equal(deep.rewards.myth, "uqSeal");
+  assert.ok(deep.itemsAdded.some((item) => item.my === "uqSeal" && item.r === 6));
+  assert.ok(deep.itemsAdded.some((item) => item.r === 4 && !item.my));
+  assert.ok(deep.itemsAdded.some((item) => item.r >= 3 && !item.my));
+  assert.equal(deep.itemsAdded.find((item) => item.my === "uqSeal").a.cdr, undefined);
 });
