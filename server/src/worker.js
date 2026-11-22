@@ -178,7 +178,12 @@ export class Town extends DurableObject {
       const key = a.party ? "party-health:" + a.party : "solo-health:" + a.u;
       const state = await this.ctx.storage.get(key);
       if (!state || state.zone !== zone || state.floor !== floor || !state.cleared) return this.send(ws, { t: "chest", ok: 0, kind, msg: "서버가 층 클리어를 아직 확인하지 못했습니다" });
-      if (!state.chestDecided || !state.chestKind || kind !== state.chestKind) return this.send(ws, { t: "chest", ok: 0, kind, msg: "상자 종류가 서버 기록과 일치하지 않습니다" });
+      if (!state.chestDecided) return this.send(ws, { t: "chest", ok: 0, kind, msg: "상자 보상 상태가 아직 확정되지 않았습니다" });
+      if (zone === "underdeep" || floor % 5 === 0) {
+        if (!state.bossKilled || kind !== "gold") return this.send(ws, { t: "chest", ok: 0, kind, msg: "보스 상자 조건이 충족되지 않았습니다" });
+      } else if (state.eliteKilled) {
+        if (kind !== "iron") return this.send(ws, { t: "chest", ok: 0, kind, msg: "정예 보상 상자 종류가 일치하지 않습니다" });
+      } else if (!["wood", "iron"].includes(kind)) return this.send(ws, { t: "chest", ok: 0, kind, msg: "일반 상자 종류가 올바르지 않습니다" });
       const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/chest-reward", {
         method: "POST",
         body: JSON.stringify({ u: a.u, zone, floor, kind }),
