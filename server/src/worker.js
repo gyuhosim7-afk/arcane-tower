@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -499,6 +499,14 @@ export class Accounts extends DurableObject {
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
+    if (path === "/api/movement/blink") {
+      if (!acc.save) return json({ err: "character_required" }, 409);
+      const resolved = resolveBlink(acc.save, acc.movement || {}, Date.now());
+      if (resolved.error) return json({ err: resolved.error, cooldownMs: resolved.cooldownMs, remainingMs: resolved.remainingMs }, 429);
+      acc.movement = resolved.state;
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, movement: acc.movement, result: resolved.result });
+    }
     if (path === "/api/combat/state") {
       return json({ ok: 1, combat: acc.combat || null });
     }
