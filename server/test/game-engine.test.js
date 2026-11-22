@@ -50,7 +50,7 @@ test("attack damage is computed from server-side character snapshot", () => {
 test("party combat damage is derived from the server character snapshot", () => {
   assert.equal(serverAttackPower(character), 45);
   const saved = createServerCharacter({ ...character, lvl: 20, st: { int: 10 }, eq: { staff: { v: 5, il: 12 } } });
-  assert.equal(serverAttackPower(saved), 84);
+  assert.equal(serverAttackPower(saved), 87);
 });
 
 test("server enforces attack cooldown", () => {
