@@ -53,7 +53,7 @@ test("server monster catalog includes source game baseline stats", () => {
 test("teleport cooldown is server-derived and never zero", () => {
   assert.equal(blinkCooldownMs(character), 2500);
   const boosted = { ...character, circle: 9, blinkLv: 10, job: "wind", st: { wis: 100 } , eq: { shoes: { my: "uqStride" } } };
-  assert.equal(blinkCooldownMs(boosted), 558);
+  assert.equal(blinkCooldownMs(boosted), 396);
 });
 
 test("server rejects teleport attempts before the account cooldown expires", () => {
@@ -96,12 +96,12 @@ test("server character migration rejects missing or invalid legacy characters", 
 });
 
 
-test("teleport skill caps at level 100 and reaches a 0.4 second cooldown", () => {
-  assert.equal(blinkCooldownMs({ ...character, blinkLv: 100 }), 400);
-  assert.equal(blinkCooldownMs({ ...character, blinkLv: 150 }), 400);
+test("teleport skill caps at level 10", () => {
+  assert.equal(blinkCooldownMs({ ...character, blinkLv: 10 }), 1625);
+  assert.equal(blinkCooldownMs({ ...character, blinkLv: 100 }), 1625);
 });
 
-test("legacy character migration preserves teleport levels up to 100", () => {
+test("legacy character migration clamps teleport levels to 10", () => {
   const migrated = createServerCharacter({ ...character, blinkLv: 100 });
-  assert.equal(migrated.blinkLv, 100);
+  assert.equal(migrated.blinkLv, 10);
 });
