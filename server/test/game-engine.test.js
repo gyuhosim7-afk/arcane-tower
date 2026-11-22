@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -245,4 +245,12 @@ test("server monster rewards persist XP, currency, and generated inventory items
   assert.equal(result.save.inv[0].id, 10);
   assert.equal(result.save.uid, 11);
   assert.equal(result.save.inv[0].up, 0);
+});
+
+test("server combat records omit dead enemies after returning confirmed kill IDs", () => {
+  const snapshot = { e: [[12, "slime", 100, 200, 1000, 1, 0, 0]] };
+  const state = createPartyHealthState(snapshot, null, { zone: "tower", floor: 1, level: 10, partySize: 1 }, 1000);
+  const killed = applyPartyHits(state, [[12, 100000]]);
+  assert.deepEqual(killed.kills, [12]);
+  assert.equal(partyHealthRecords(killed.state).some((row) => row.id === 12), false);
 });

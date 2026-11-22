@@ -148,6 +148,7 @@ export class Town extends DurableObject {
       if (!who.u) { this.send(ws, { t: "sys", m: "로그인이 필요합니다" }); try { ws.close(4001, "auth"); } catch {} return; }
       for (const y of this.all()) if (y.a.u === who.u && y.w !== ws) { try { y.w.close(4002, "dup"); } catch {} await this.leave(y.w); }
       a.u = who.u; m.nick = who.name;
+      await this.ctx.storage.delete("solo-health:" + who.u);
       a.blinkCooldownMs = num(who.blinkCooldownMs, 500, 10000);
       a.combatDamage = num(who.combatDamage, 1, 100000);
       a.combatLevel = num(who.combatLevel, 1, 200) | 0;
@@ -162,9 +163,53 @@ export class Town extends DurableObject {
       this.save(x);
       this.send(ws, { t: "all", me: a.id, list: others().map((y) => y.a.p) });
       this.sendTo(others(), { t: "join", p: a.p });
+      this.send(ws, { t: "solo", d: { k: "ready" } });
       return;
     }
     if (!a.p) return;
+
+    // 솔로 전투도 서버가 몬스터 HP와 처치 보상을 소유한다.
+    if (m.t === "solo") {
+      if (a.party || !m.d || typeof m.d !== "object" || raw.length > 19000) return;
+      if (!["tower", "underdeep"].includes(a.p.zone)) return;
+      if (m.d.k === "s") {
+        if (now - (a.soloSnapshotAt || 0) < 80) return;
+        const snapshot = sanitizePartySnapshot(m.d, a.p.zone, a.p.fl);
+        if (!snapshot) return;
+        a.soloSnapshotAt = now;
+        const key = "solo-health:" + a.u;
+        const previous = await this.ctx.storage.get(key);
+        const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: 1 }, now);
+        await this.ctx.storage.put(key, state);
+        this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
+        this.save(x);
+        return;
+      }
+      if (m.d.k === "h") {
+        if (now - (a.soloHitAt || 0) < 180) return;
+        a.soloHitAt = now;
+        const hits = sanitizePartyHits(m.d.h, a.combatDamage, 8);
+        if (!hits.length) return;
+        const key = "solo-health:" + a.u;
+        const state = await this.ctx.storage.get(key);
+        if (!state || state.zone !== a.p.zone || state.floor !== a.p.fl) return;
+        const resolved = applyPartyHits(state, hits);
+        await this.ctx.storage.put(key, resolved.state);
+        this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(resolved.state), kd: resolved.kills } });
+        for (const enemyId of resolved.kills) {
+          const enemy = resolved.state.enemies[enemyId];
+          if (!enemy) continue;
+          const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/party-reward", {
+            method: "POST",
+            body: JSON.stringify({ u: a.u, killId: crypto.randomUUID(), type: enemy.type, floor: resolved.state.floor, zone: resolved.state.zone, elite: !!enemy.elite }),
+          }).then((r) => r.json()).catch(() => ({}));
+          if (granted.ok && granted.fields) this.send(ws, { t: "solo", d: { k: "loot", fields: granted.fields, rewards: granted.rewards } });
+        }
+        this.save(x);
+        return;
+      }
+      return;
+    }
 
     if (m.t === "mv") {
       const nx = num(m.x, 0, 4000), ny = num(m.y, 0, 4000);
@@ -450,6 +495,15 @@ const ID_RE = /^[가-힣a-z0-9_]{2,12}$/;
 const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
+const REWARD_FIELDS = ["lvl", "xp", "pts", "st"];
+const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "inv", "uid"];
+function pickRewardFields(save, keys) {
+  const out = {};
+  for (const key of keys) if (save && save[key] !== undefined) out[key] = JSON.parse(JSON.stringify(save[key]));
+  return out;
+}
+const rewardFields = (save) => pickRewardFields(save, REWARD_FIELDS);
+const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
 const isUnique = (my) => typeof my === "string" && /^uq/.test(my);
 // 아이템 하나가 게임에서 나올 수 있는 모양인지 검사 (조작 아이템 차단). dev면 통과.
 function itemLegit(it, dev) {
@@ -602,7 +656,7 @@ export class Accounts extends DurableObject {
       target.serverProgress = target.serverProgress || { xp: 0, kills: 0 };
       target.serverProgress.xp = Math.min(2_000_000_000, (target.serverProgress.xp || 0) + (granted.rewards.xp || 0));
       target.serverProgress.kills = Math.min(2_000_000_000, (target.serverProgress.kills || 0) + 1);
-      const fields = target.serverRewardFields;
+      const fields = rewardSyncFields(target.save);
       const rewards = granted.rewards;
       await this.ctx.storage.put("u:" + u, target);
       await this.ctx.storage.put(seenKey, { fields, rewards });
