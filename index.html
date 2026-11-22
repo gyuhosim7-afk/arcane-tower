@@ -2928,7 +2928,7 @@ Object.assign(ACT,{
 const CO={on:false,auth:false,authKill:false,host:null,gh:{},nid:0,last:0,kills:[],pend:{},flushT:0};
 const coLead=()=>NET.party.length>1&&NET.lead===NET.me;
 const coMates=()=>NET.party.filter(id=>id!==NET.me).map(id=>NET.pl[id]).filter(o=>o&&o.zone===netZone()&&o.fl===netFl());
-function coGo(){if(!coLead()||CO.on)return;const z=G.zone;if(z==='tower'||z==='underdeep'||z==='town'){CO.auth=true;netSend({t:'prel',d:{k:'go',z,fl:netFl()}})}}
+function coGo(){if(!coLead()||CO.on)return;const z=G.zone;if(z==='tower'||z==='underdeep'||z==='town')netSend({t:'prel',d:{k:'go',z,fl:netFl()}})}
 {const _ef=enterFloor;enterFloor=function(f){_ef(f);if(G.zone==='tower')coGo()}}
 {const _ed=enterDungeonRoom;enterDungeonRoom=function(r){_ed(r);if(G.zone==='underdeep')coGo()}}
 {const _et=enterTown;enterTown=function(){const was=CO.on;if(CO.on&&!CO.toTown)coEnd();CO.toTown=false;_et();if(!was)coGo()}}
@@ -2939,6 +2939,7 @@ function coSnapshot(){const e=[],b=[];for(const x of G.en){if(x.dead)continue;if
   for(const q of G.ep){if(b.length>=110)break;b.push([q.x|0,q.y|0,q.vx|0,q.vy|0,q.r,q.col,q.dmg|0,q.boss?1:0])}
   netSend({t:'prel',d:{k:'s',z:G.zone,fl:netFl(),e,b,cl:G.wave&&G.wave.cleared?1:0,kd:CO.kills.splice(0)}})}
 function coRecv(from,d){if(!d)return;
+  if(d.k==='ready'){if(coLead())CO.auth=true;return}
   if(d.k==='auth'){
     CO.auth=true;
     for(const h of d.h||[]){
