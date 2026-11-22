@@ -49,6 +49,23 @@ export function serverAttackPower(save) {
   return Math.max(1, level * 2 + intelligence * 3 + weaponPower);
 }
 
+// Sanitize party hit targets and replace every client-provided damage value.
+export function sanitizePartyHits(rows, power, maxTargets = 8) {
+  if (!Array.isArray(rows)) return [];
+  const damage = clampInt(power, 1, 100000);
+  const limit = clampInt(maxTargets, 1, 8);
+  const seen = new Set(), hits = [];
+  for (const row of rows.slice(0, 32)) {
+    if (!Array.isArray(row) || row.length < 1) continue;
+    const id = Number(row[0]);
+    if (!Number.isSafeInteger(id) || id < 1 || id > 10000000 || seen.has(id)) continue;
+    seen.add(id);
+    hits.push([id, damage]);
+    if (hits.length >= limit) break;
+  }
+  return hits;
+}
+
 export function startEncounter(save, encounterId, now = Date.now()) {
   const spec = encounterSpec(encounterId);
   if (!spec) return { error: "encounter_not_allowed" };
