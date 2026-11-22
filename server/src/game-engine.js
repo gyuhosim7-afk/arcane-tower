@@ -182,7 +182,7 @@ function rewardItem(floor, shoesUnlocked, rng) {
   return item;
 }
 
-export function rollMonsterRewards(type, floor, elite = false, zone = "tower", rng = Math.random) {
+export function rollMonsterRewards(type, floor, elite = false, zone = "tower", rng = Math.random, shoesUnlocked = false) {
   const monster = MONSTERS[type];
   if (!monster || !Number.isFinite(floor)) return { error: "invalid_monster" };
   const f = zone === "underdeep" ? Math.min(100, 90 + Math.max(1, Math.floor(floor))) : Math.max(1, Math.min(100, Math.floor(floor)));
@@ -192,14 +192,15 @@ export function rollMonsterRewards(type, floor, elite = false, zone = "tower", r
   if (rng() < 0.25 || boss || elite) rewards.ess = boss ? 6 + f : elite ? 3 + Math.floor(f / 5) : 1 + Math.floor(f / 15);
   if ((monster.ore && rng() < monster.ore) || boss || elite) rewards.ore = boss ? 5 + (f >> 1) : elite ? 1 + Math.floor(f / 12) : 1 + Math.floor(f / 12);
   if (boss) rewards[rng() < 0.5 ? "potScroll" : "epotScroll"] = 1;
-  if (elite || (!boss && rng() < 0.06 + Math.min(0.06, f * 0.0006))) rewards.item = rewardItem(f, false, rng);
+  if (elite || (!boss && rng() < 0.06 + Math.min(0.06, f * 0.0006))) rewards.item = rewardItem(f, shoesUnlocked, rng);
   return rewards;
 }
 
 export function applyMonsterRewards(save, type, floor, elite = false, zone = "tower", rng = Math.random) {
   if (!save || !Array.isArray(save.inv)) return { error: "invalid_save" };
-  const rewards = rollMonsterRewards(type, floor, elite, zone, rng);
+  const rewards = rollMonsterRewards(type, floor, elite, zone, rng, !!save.shoesUnlocked);
   if (rewards.error) return rewards;
+  if (save.eq && save.eq.ring && save.eq.ring.my === "ratRing") rewards.gold = Math.round(rewards.gold * 1.4);
   const progressed = applyServerXp(save, rewards.xp);
   if (progressed.error) return progressed;
   const next = { ...progressed.save, inv: [...save.inv] };
