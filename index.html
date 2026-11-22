@@ -2415,11 +2415,11 @@ const lv=S.grim[sp.id]||0,ok=canUse(sp),circleOk=(sp.o&&sp.o.job)?S.job===sp.o.j
   let cost='';if(mode==='shop'&&!lv&&circleOk&&!(sp.o&&sp.o.job))cost=`<br>제작: ${costHTML(craftCost(sp))}`;else if(lv&&lv<10)cost=`<br>강화 → Lv.${lv+1}: ${costHTML(enhCost(sp))}`;
   return`<div class="li ${!circleOk&&!lv?'lock':''}"><img src="${ICON['sp_'+icon]}" alt=""><div class="gr"><b>${sp.n}</b> ${elTag(sp.el)} ${lv?`<span class="gold">Lv.${lv}</span>`:circleOk?'':`<span class="no">${sp.c}서클 필요</span>`}<div class="ds">${sp.d} · ${KIND_N[sp.k]} · 마나 ${spellMp(sp)} · 쿨 ${sp.cd}초${cost}</div></div><div class="bt">${b}</div></div>`;
 }
-/* 순간이동 강화: 최대 Lv.100, Lv.100에서 기본 쿨타임 0.4초 */
-const BLINK_MAX=100;
-const blinkCD=()=>G.zone==='arena'?2.5:Math.max(.4,2.5*(1-D.cdr*.5)*(1-.0084*Math.min(BLINK_MAX,S.blinkLv||0))*(S.job==='wind'?.5:1)*(hasM('uqStride')?.65:1));
+/* 순간이동 강화: 최대 Lv.10 */
+const BLINK_MAX=10;
+const blinkCD=()=>G.zone==='arena'?2.5:2.5*(1-D.cdr*.5)*(1-.035*Math.min(BLINK_MAX,S.blinkLv||0))*(S.job==='wind'?.5:1)*(hasM('uqStride')?.65:1);
 const blinkCost=()=>{const lv=(S.blinkLv||0)+1;return{gold:Math.round(150*Math.pow(lv,1.7)),ess:4*lv}};
-function blinkRow(){const lv=S.blinkLv||0;return `<div class="li"><img src="${ICON.blink}" alt=""><div class="gr"><b>순간이동</b> <span class="gold">Lv.${lv}</span><div class="ds">이동하는 방향으로 짧게 순간이동, 0.3초 무적 · 쿨타임 ${blinkCD().toFixed(2)}초 (강화로 기본 쿨타임 감소, Lv.100에서 0.4초)${lv<BLINK_MAX?`<br>강화 → Lv.${lv+1}: ${costHTML(blinkCost())}`:''}</div></div><div class="bt">${lv<BLINK_MAX?btn('강화','blinkUp',can(blinkCost())):'<span class="gold">최대</span>'}</div></div>`}
+function blinkRow(){const lv=S.blinkLv||0;return `<div class="li"><img src="${ICON.blink}" alt=""><div class="gr"><b>순간이동</b> <span class="gold">Lv.${lv}</span><div class="ds">이동하는 방향으로 짧게 순간이동, 0.3초 무적 · 쿨타임 ${blinkCD().toFixed(2)}초 (강화로 기본 쿨타임 감소, Lv.10까지 강화 가능)${lv<BLINK_MAX?`<br>강화 → Lv.${lv+1}: ${costHTML(blinkCost())}`:''}</div></div><div class="bt">${lv<BLINK_MAX?btn('강화','blinkUp',can(blinkCost())):'<span class="gold">최대</span>'}</div></div>`}
 function grimList(mode){
   const els=(S.job?['none',S.job]:(S.circle>=9?['none'].concat(ELS):['none'].concat(S.aff)));
   if(S.job&&ui.gf!=='all'&&!els.includes(ui.gf))ui.gf='all';
