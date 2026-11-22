@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -225,11 +225,38 @@ export class Town extends DurableObject {
       this.send(ws, { t: "party", members: [] });
       this.partySync(pid);
     }
-    // 파티 전투: 파티장 화면의 몬스터 정보와 파티원의 공격을 서로 전달
+    // 파티 전투 중계: 파티장 스냅샷은 파티장만, 공격 요청은 파티원만 보낼 수 있다.
+    // 파티원 피해량은 클라이언트 수치를 버리고 인증된 서버 캐릭터 능력치로 다시 계산한다.
     else if (m.t === "prel") {
-      if (!a.party || raw.length > 19000) return;
-      const o = JSON.stringify({ t: "prel", from: a.id, d: m.d });
-      for (const y of this.partyList(a.party)) if (y.a.id !== a.id) try { y.w.send(o); } catch {}
+      if (!a.party || !m.d || typeof m.d !== "object" || raw.length > 19000) return;
+      const members = this.partyList(a.party);
+      const leader = members.find((y) => y.a.id === a.party);
+      if (!leader || !leader.a.p || !a.p) return;
+      let d;
+      if (m.d.k === "s" || m.d.k === "go") {
+        if (a.id !== a.party) return;
+        if (m.d.k === "go" && (!["tower", "underdeep", "town"].includes(m.d.z) || m.d.fl !== a.p.fl && m.d.z === a.p.zone)) return;
+        d = m.d;
+      } else if (m.d.k === "h") {
+        if (a.id === a.party || !["tower", "underdeep"].includes(a.p.zone)) return;
+        if (leader.a.p.zone !== a.p.zone || leader.a.p.fl !== a.p.fl) return;
+        if (now - (a.partyHitAt || 0) < 180) return;
+        a.partyHitAt = now;
+        const power = num(a.combatDamage, 1, 100000);
+        const seen = new Set(), hits = [];
+        for (const row of (Array.isArray(m.d.h) ? m.d.h : []).slice(0, 8)) {
+          if (!Array.isArray(row) || row.length < 2) continue;
+          const nid = Number(row[0]);
+          if (!Number.isSafeInteger(nid) || nid < 1 || seen.has(nid)) continue;
+          seen.add(nid);
+          hits.push([nid, power]);
+        }
+        if (!hits.length) return;
+        d = { k: "h", h: hits };
+        this.save(x);
+      } else return;
+      const o = JSON.stringify({ t: "prel", from: a.id, d });
+      for (const y of members) if (y.a.id !== a.id) try { y.w.send(o); } catch {}
     }
     // 결투 (PvP)
     else if (m.t === "dreq") {
@@ -520,7 +547,7 @@ export class Accounts extends DurableObject {
       const acc = await this.session(b.token);
       if (!acc) return json({});
       if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
-      return json({ u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.serverCharacter ? blinkCooldownMs(acc.serverCharacter) : 2500 });
+      return json({ u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.serverCharacter ? blinkCooldownMs(acc.serverCharacter) : 2500, combatDamage: acc.serverCharacter ? serverAttackPower(acc.serverCharacter) : 1 });
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
