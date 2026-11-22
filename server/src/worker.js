@@ -233,6 +233,7 @@ export class Town extends DurableObject {
       a.duel = y.a.id; y.a.duel = a.id; a.dt0 = y.a.dt0 = Date.now(); a.dhp = y.a.dhp = 1000;
       // 결투 조작 감시용 (매 판 초기화)
       a.dviol = y.a.dviol = 0; a.dshot = y.a.dshot = 0; a.dblk = y.a.dblk = 0;
+      a.dx = y.a.dx = a.dy = y.a.dy = a.dmt = y.a.dmt = a.dtp = y.a.dtp = 0; a._init = y.a._init = false;
       this.save(x); this.save(y);
       this.send(y.w, { t: "dstart", with: a.id, nick: a.p.nick, el: a.p.el, rb: a.p.rb, side: 0 });
       this.send(ws, { t: "dstart", with: y.a.id, nick: y.a.p.nick, el: y.a.p.el, rb: y.a.p.rb, side: 1 });
@@ -241,6 +242,24 @@ export class Town extends DurableObject {
       if (m.d && m.d.k === "hp") { a.dhp = num(m.d.hp, 0, 1000); this.save(x); }
       // 쿨타임 조작 감시: 기본공격('s')/순간이동('bl') 이벤트가 쿨타임보다 빠르게 오면 위반으로 센다
       if (m.d && (m.d.k === "s" || m.d.k === "bl")) this.pvpGuard(x, m.d.k, Date.now());
+      // 순간이동 조작 차단: 쿨타임 안 지났는데 걸음으로 설명 안 되는 위치 점프(=순간이동)는 상대에게 전달하지 않는다.
+      // 그래서 조작으로 무한 순간이동해도 상대 화면에선 그 자리에 멈춰 보여 공격을 피할 수 없다.
+      if (m.d && m.d.k === "m") {
+        const now = Date.now(), nx = num(m.d.x, 0, 4000), ny = num(m.d.y, 0, 4000);
+        if (a._init) {
+          const dt = Math.max(0.02, (now - (a.dmt || now)) / 1000);
+          const dist = Math.hypot(nx - a.dx, ny - a.dy);
+          const walkMax = 95 * dt + 14; // 경기장 걸음 속도(여유 포함)
+          if (dist > walkMax) {
+            if (now - (a.dtp || 0) < 2100) {        // 순간이동 쿨타임(2.5s)이 아직 안 지남
+              a.dviol = (a.dviol || 0) + 1; this.save(x);
+              return;                                // 이 순간이동은 상대에게 전달 안 함
+            }
+            a.dtp = now;                             // 정상 순간이동 1회 허용
+          }
+        }
+        a.dx = nx; a.dy = ny; a.dmt = now; a._init = true; this.save(x);
+      }
       if (y && y.a.duel === a.id) this.send(y.w, { t: "drel", d: m.d });
     } else if (m.t === "dend") {
       const y = a.duel && this.find(a.duel);
