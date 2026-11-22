@@ -495,6 +495,15 @@ const ID_RE = /^[가-힣a-z0-9_]{2,12}$/;
 const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
+const REWARD_FIELDS = ["lvl", "xp", "pts", "st"];
+const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "inv", "uid"];
+function pickRewardFields(save, keys) {
+  const out = {};
+  for (const key of keys) if (save && save[key] !== undefined) out[key] = JSON.parse(JSON.stringify(save[key]));
+  return out;
+}
+const rewardFields = (save) => pickRewardFields(save, REWARD_FIELDS);
+const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
 const isUnique = (my) => typeof my === "string" && /^uq/.test(my);
 // 아이템 하나가 게임에서 나올 수 있는 모양인지 검사 (조작 아이템 차단). dev면 통과.
 function itemLegit(it, dev) {
@@ -647,7 +656,7 @@ export class Accounts extends DurableObject {
       target.serverProgress = target.serverProgress || { xp: 0, kills: 0 };
       target.serverProgress.xp = Math.min(2_000_000_000, (target.serverProgress.xp || 0) + (granted.rewards.xp || 0));
       target.serverProgress.kills = Math.min(2_000_000_000, (target.serverProgress.kills || 0) + 1);
-      const fields = target.serverRewardFields;
+      const fields = rewardSyncFields(target.save);
       const rewards = granted.rewards;
       await this.ctx.storage.put("u:" + u, target);
       await this.ctx.storage.put(seenKey, { fields, rewards });
