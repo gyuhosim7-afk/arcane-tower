@@ -2946,7 +2946,7 @@ function coRecv(from,d){if(!d)return;
       if(!h||!Number.isSafeInteger(h.id)||!MON[h.type])continue;
       let e=G.en.find(q=>q.nid===h.id);
       if(!e){e=mkEnemy(h.type,h.x,h.y,!!h.elite);e.nid=h.id;if(CO.on){e.ghost=1;CO.gh[h.id]=e}G.en.push(e)}
-      e.max=Math.max(1,+h.maxHp||e.max);e.hp=clamp(+h.hp||0,0,e.max);e.x=h.x;e.y=h.y;e.face=h.face<0?-1:1;e.frozen=h.frozen?.2:0;
+      e.max=Math.max(1,+h.maxHp||e.max);e.hp=clamp(+h.hp||0,0,e.max);e.x=h.x;e.y=h.y;e.face=h.face<0?-1:1;e.frozen=h.frozen?.2:0;e.xp=Math.max(0,Math.floor(+h.xp||0));
       if(h.dead&&!e.dead){e.hp=0;kill(e)}else if(!h.dead)e.dead=false;
     }
     return;
