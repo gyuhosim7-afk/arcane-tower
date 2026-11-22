@@ -2062,7 +2062,7 @@ function updWave(dt){
   if(w.elite&&w.t<=0&&w.q.length<floorCount(G.floor)*.6){const s=spawnPos(100);spawnMon(w.elite,s.x,s.y,true);banner('정예 등장',MON[w.elite].n);w.elite=null}
   if(w.q.length&&w.t<=0&&G.en.length+G.pending<16){const n=Math.min(w.q.length,rint(2,4));for(let i=0;i<n;i++){const s=spawnPos(80);spawnMon(w.q.pop(),s.x,s.y)}w.t=1.1}
   if(!w.q.length&&!w.elite&&(!w.boss||w.bossSp)&&G.en.length===0&&G.pending===0){
-    w.cleared=true;const f=G.floor,bonus=Math.round(10+f*6);S.gold+=bonus;S.maxFloor=Math.max(S.maxFloor,f);qEvent('floor');sfx.clear();
+    w.cleared=true;const f=G.floor,bonus=Math.round(10+f*6);if(!(AUTH&&AUTH.token))S.gold+=bonus;S.maxFloor=Math.max(S.maxFloor,f);qEvent('floor');sfx.clear();
     const m=G.map;m.inter=[];
     if(f===1)m.inter.push(makeUnderdeepDoor(m));
     if(f<100)m.inter.push({x:m.pw/2,y:66,r:24,label:`${f+1}층으로`,pr:'[F] 올라가기',portal:['#6fd3ff','#3b6cf0','#ffffff'],act:()=>{sfx.portal();fadeTo(()=>enterFloor(f+1))}});
@@ -2981,7 +2981,7 @@ function coSnapshot(){const e=[],b=[];for(const x of G.en){if(x.dead)continue;if
 function coRecv(from,d){if(!d)return;
   if(d.k==='loot'){
     const f=d.fields||{};
-    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','hpPot','mpPot','prot','underdeepBestRoom','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
+    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','hpPot','mpPot','prot','underdeepBestRoom','maxFloor','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
     if(f.st)S.st=Object.assign({int:0,vit:0,crit:0,wis:0},f.st);
     recalc();
     if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
