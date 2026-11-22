@@ -226,7 +226,7 @@ export function applyMonsterRewards(save, type, floor, elite = false, zone = "to
 
 const SERVER_MIDS = ["ratKing", "shroomLord", "gargLord", "wispLord", "pharaoh", "cerberus", "stormKing", "deathLord", "magmaTitan", "shadowKing"];
 const SERVER_BOSSES = ["kingslime", "arachne", "golemlord", "ymir", "lich", "ifrit", "harpyQ", "archon", "dragon", "demonLord"];
-const SERVER_UNDERDEEP_BOSSES = ["underdeepGatekeeper", null, null, null, null, "underdeepCore", null, null, null, "underdeepCore", null, null, null, null, "underdeepLord", null, null, null, null, "underdeepOrigin"];
+const SERVER_UNDERDEEP_BOSSES = [null, null, null, null, "underdeepGatekeeper", null, null, null, null, "underdeepCore", null, null, null, null, "underdeepLord", null, null, null, null, "underdeepOrigin"];
 const SERVER_MYTH = {
   slimeRing:{boss:"kingslime",slot:"ring",a:{crit:8,hp:120,int:6}},
   spiderRobe:{boss:"arachne",slot:"robe",a:{vit:10,wis:6}},
