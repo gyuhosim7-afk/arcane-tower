@@ -282,6 +282,7 @@ export function createPartyHealthState(snapshot, previous, options, now = Date.n
   const sameRun = previous && previous.zone === zone && previous.floor === floor;
   const enemies = sameRun ? { ...(previous.enemies || {}) } : {};
   const seen = new Set();
+  let seenEnemyCount = sameRun ? (previous.seenEnemyCount || 0) : 0;
   for (const row of snapshot.e || []) {
     const [id, type, x, y, , face, elite, frozen] = row;
     seen.add(id);
@@ -290,13 +291,13 @@ export function createPartyHealthState(snapshot, previous, options, now = Date.n
       enemies[id] = { ...old, x, y, face, elite: !!elite, frozen: !!frozen, lastSeenAt: now };
     } else if (!old) {
       const maxHp = partyMonsterMaxHp(type, floor, level, !!elite, partySize, zone);
-      if (maxHp) enemies[id] = { id, type, x, y, face, elite: !!elite, frozen: !!frozen, hp: maxHp, maxHp, dead: false, lastSeenAt: now };
+      if (maxHp) { enemies[id] = { id, type, x, y, face, elite: !!elite, frozen: !!frozen, hp: maxHp, maxHp, dead: false, lastSeenAt: now }; seenEnemyCount++; }
     }
   }
   for (const [id, enemy] of Object.entries(enemies)) {
     if (!seen.has(Number(id)) && now - (enemy.lastSeenAt || now) > 3000) delete enemies[id];
   }
-  return { zone, floor, enemies };
+  return { zone, floor, enemies, seenEnemyCount, killCount: sameRun ? (previous.killCount || 0) : 0, eliteKilled: sameRun ? !!previous.eliteKilled : false, bossKilled: sameRun ? !!previous.bossKilled : false, cleared: sameRun ? !!previous.cleared : false };
 }
 
 export function applyPartyHits(state, hits) {
@@ -315,7 +316,9 @@ export function applyPartyHits(state, hits) {
     results.push({ id: Number(id), type: enemy.type, x: enemy.x, y: enemy.y, face: enemy.face, elite: enemy.elite, frozen: enemy.frozen, hp, maxHp: enemy.maxHp, xp: partyMonsterXp(enemy.type, state.floor, enemy.elite, state.zone), dead });
     if (dead) kills.push(Number(id));
   }
-  return { state: { ...state, enemies }, results, kills };
+  const eliteKilled = !!state.eliteKilled || kills.some((id) => !!enemies[id]?.elite);
+  const bossKilled = !!state.bossKilled || kills.some((id) => !!(MONSTERS[enemies[id]?.type] && MONSTERS[enemies[id].type].boss));
+  return { state: { ...state, enemies, eliteKilled, bossKilled, killCount: (state.killCount || 0) + kills.length }, results, kills };
 }
 
 export function partyHealthRecords(state) {
