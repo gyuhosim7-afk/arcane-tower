@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, allocateServerStat } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -275,8 +275,23 @@ export class Town extends DurableObject {
         if (!state || state.zone !== a.p.zone || state.floor !== a.p.fl) return;
         const resolved = applyPartyHits(state, hits);
         await this.ctx.storage.put(key, resolved.state);
+        const recipients = members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl);
         const result = { k: "auth", h: partyHealthRecords(resolved.state), kd: resolved.kills };
-        this.sendTo(members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), { t: "prel", from: a.id, d: result });
+        this.sendTo(recipients, { t: "prel", from: a.id, d: result });
+        // 처치가 서버에서 확정된 경우에만 각 계정에 개인 보상을 한 번 지급한다.
+        for (const enemyId of resolved.kills) {
+          const enemy = resolved.state.enemies[enemyId];
+          if (!enemy) continue;
+          const killId = crypto.randomUUID();
+          for (const member of recipients) {
+            if (!member.a.u) continue;
+            const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/party-reward", {
+              method: "POST",
+              body: JSON.stringify({ u: member.a.u, killId, type: enemy.type, floor: resolved.state.floor, zone: resolved.state.zone, elite: !!enemy.elite }),
+            }).then((r) => r.json()).catch(() => ({}));
+            if (granted.ok && granted.fields) this.send(member.w, { t: "prel", from: a.id, d: { k: "loot", fields: granted.fields, rewards: granted.rewards } });
+          }
+        }
         this.save(x);
         return;
       } else return;
@@ -571,6 +586,28 @@ export class Accounts extends DurableObject {
       const list = Object.values(rk).sort((a, b) => b.lv - a.lv || b.fl - a.fl || b.ud - a.ud).slice(0, 50);
       return json({ ok: 1, list });
     }
+    if (path === "/internal/party-reward") {
+      const u = String(b.u || ""), killId = String(b.killId || "");
+      if (!/^[a-z0-9_]{2,12}$/.test(u) || killId.length < 16 || killId.length > 80) return json({ err: "invalid_internal_reward" }, 400);
+      const seenKey = "party-reward:" + killId;
+      const seen = await this.ctx.storage.get(seenKey);
+      if (seen) return json({ ok: 1, duplicate: 1, fields: seen.fields, rewards: seen.rewards });
+      const target = await this.ctx.storage.get("u:" + u);
+      if (!target || !target.save) return json({ err: "character_required" }, 404);
+      const granted = applyMonsterRewards(target.save, String(b.type || ""), num(b.floor, 1, 100), !!b.elite, b.zone === "underdeep" ? "underdeep" : "tower");
+      if (granted.error) return json({ err: granted.error }, 400);
+      target.save = granted.save;
+      target.serverCharacter = createServerCharacter(target.save);
+      target.serverRewardFields = rewardFields(target.save);
+      target.serverProgress = target.serverProgress || { xp: 0, kills: 0 };
+      target.serverProgress.xp = Math.min(2_000_000_000, (target.serverProgress.xp || 0) + (granted.rewards.xp || 0));
+      target.serverProgress.kills = Math.min(2_000_000_000, (target.serverProgress.kills || 0) + 1);
+      const fields = target.serverRewardFields;
+      const rewards = granted.rewards;
+      await this.ctx.storage.put("u:" + u, target);
+      await this.ctx.storage.put(seenKey, { fields, rewards });
+      return json({ ok: 1, fields, rewards, level: granted.level, xp: granted.xp, pts: granted.pts });
+    }
     if (path === "/api/whoami") {
       const acc = await this.session(b.token);
       if (!acc) return json({});
@@ -615,6 +652,16 @@ export class Accounts extends DurableObject {
       await this.ctx.storage.put("u:" + acc.u, acc);
       return json({ ok: 1, combat: acc.combat, result: resolved.result, serverProgress: acc.serverProgress || { xp: 0, kills: 0 } });
     }
+    if (path === "/api/stats/allocate") {
+      if (!acc.save) return json({ err: "character_required" }, 409);
+      const allocated = allocateServerStat(acc.save, String(b.stat || ""));
+      if (allocated.error) return json({ err: allocated.error }, 400);
+      acc.save = allocated.save;
+      acc.serverCharacter = createServerCharacter(acc.save);
+      acc.serverRewardFields = rewardFields(acc.save);
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, stat: allocated.stat, pts: allocated.pts, st: acc.save.st });
+    }
     if (path === "/api/load") {
       if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
       return json({ ok: 1, u: acc.u, name: acc.name || acc.u, dev: dev(acc.u), save: acc.save || null, serverCharacterReady: !!acc.serverCharacter });
@@ -625,8 +672,11 @@ export class Accounts extends DurableObject {
       return json({ ok: 1 });
     }
     if (path === "/api/save") {
-      const s = b.save, why = checkSave(s, acc.save, dev(acc.u), (Date.now() - (acc.saved || 0)) / 60000);
+      const incoming = b.save, why = checkSave(incoming, acc.save, dev(acc.u), (Date.now() - (acc.saved || 0)) / 60000);
       if (why) return json({ err: "bad", why }, 400);
+      const s = { ...incoming };
+      // 보상/스탯 API가 서버에서 확정한 필드는 브라우저 저장으로 되돌릴 수 없다.
+      if (acc.serverRewardFields) Object.assign(s, rewardFields(acc.serverRewardFields));
       if (!acc.save && s.pid) {
         // 이 기기 캐릭터를 처음 올릴 때: 같은 캐릭터를 두 계정에 복사하지 못하게 막는다
         const owner = await this.ctx.storage.get("pid:" + s.pid);
