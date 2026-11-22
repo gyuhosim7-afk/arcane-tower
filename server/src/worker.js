@@ -565,7 +565,7 @@ export class Accounts extends DurableObject {
       const acc = await this.session(b.token);
       if (!acc) return json({});
       if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
-      return json({ u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.serverCharacter ? blinkCooldownMs(acc.serverCharacter) : 2500, combatDamage: acc.serverCharacter ? serverAttackPower(acc.serverCharacter) : 1 });
+      return json({ u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.serverCharacter ? blinkCooldownMs(acc.serverCharacter) : 2500, combatDamage: acc.serverCharacter ? serverAttackPower(acc.serverCharacter) : 1, combatLevel: acc.serverCharacter ? acc.serverCharacter.lvl : 1 });
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
