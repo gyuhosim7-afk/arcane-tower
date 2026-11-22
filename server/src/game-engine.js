@@ -372,7 +372,7 @@ export function createPartyHealthState(snapshot, previous, options, now = Date.n
   for (const [id, enemy] of Object.entries(enemies)) {
     if (!seen.has(Number(id)) && now - (enemy.lastSeenAt || now) > 3000) delete enemies[id];
   }
-  return { zone, floor, enemies, seenEnemyCount, killCount: sameRun ? (previous.killCount || 0) : 0, eliteKilled: sameRun ? !!previous.eliteKilled : false, bossKilled: sameRun ? !!previous.bossKilled : false, cleared: sameRun ? !!previous.cleared : false, chestKind: sameRun ? previous.chestKind || null : null, chestDecided: sameRun ? !!previous.chestDecided : false };
+  return { zone, floor, enemies, seenEnemyCount, killCount: sameRun ? (previous.killCount || 0) : 0, eliteKilled: sameRun ? !!previous.eliteKilled : false, bossKilled: sameRun ? !!previous.bossKilled : false, cleared: sameRun ? !!previous.cleared : false, chestKind: sameRun ? previous.chestKind || null : null, chestDecided: sameRun ? !!previous.chestDecided : false, runId: sameRun ? previous.runId || crypto.randomUUID() : crypto.randomUUID(), clearRewardSent: sameRun ? { ...(previous.clearRewardSent || {}) } : {} };
 }
 
 export function applyPartyHits(state, hits) {
