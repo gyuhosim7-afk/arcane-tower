@@ -112,6 +112,115 @@ export function partyMonsterXp(type, floor, elite = false, zone = "tower") {
   return Math.max(0, Math.round((monster.xp || 0) * (1 + 0.2 * (f - 1)) * (elite ? 5 : 1)));
 }
 
+
+// Match the browser's level curve so server-awarded XP produces identical level-ups.
+const MAX_LEVEL = 200;
+const XP_NEED = (() => {
+  const floorCount = (f) => Math.min(42, 9 + Math.floor(f * 0.36));
+  const xpScale = (f) => 1 + 0.2 * (f - 1);
+  const fx = (f) => floorCount(Math.max(1, Math.round(f))) * 9 * xpScale(f) * 1.4 + 60 * xpScale(f) / 10;
+  const cum = (f) => {
+    let sum = 0; const n = Math.floor(f);
+    for (let i = 1; i <= n; i++) sum += fx(i);
+    return sum + fx(n + 1) * (f - n);
+  };
+  const table = [0]; let prev = 0;
+  for (let level = 1; level < MAX_LEVEL; level++) {
+    const need = cum(level / 0.7);
+    table[level] = Math.max(25, Math.round((need - prev) * (1 + Math.max(0, level - 60) * 0.08)), table[level - 1] || 0);
+    prev += Math.round(need - prev) - table[level];
+    prev += table[level];
+  }
+  return table;
+})();
+
+export function xpRequired(level) {
+  return XP_NEED[clampInt(level, 1, MAX_LEVEL - 1)] || 1e12;
+}
+
+export function applyServerXp(save, amount) {
+  if (!save || !Number.isInteger(save.lvl) || save.lvl < 1 || save.lvl > MAX_LEVEL) return { error: "invalid_character" };
+  const next = { ...save, st: { ...(save.st || {}) } };
+  let xp = clampInt(next.xp || 0, 0, 2_000_000_000);
+  const gained = clampInt(amount, 0, 2_000_000_000);
+  if (next.lvl >= MAX_LEVEL) xp = 0;
+  else {
+    xp = Math.min(2_000_000_000, xp + gained);
+    while (next.lvl < MAX_LEVEL && xp >= xpRequired(next.lvl)) {
+      xp -= xpRequired(next.lvl);
+      next.lvl++;
+      next.pts = clampInt((next.pts || 0) + 3, 0, 100000);
+    }
+    if (next.lvl >= MAX_LEVEL) xp = 0;
+  }
+  next.xp = xp;
+  return { save: next, gained, level: next.lvl, xp: next.xp, pts: next.pts || 0 };
+}
+
+export function allocateServerStat(save, stat) {
+  if (!save || !["int", "vit", "crit", "wis"].includes(stat)) return { error: "invalid_stat" };
+  const pts = clampInt(save.pts || 0, 0, 100000);
+  if (pts < 1) return { error: "no_points" };
+  const st = { ...(save.st || {}) };
+  st[stat] = clampInt(st[stat] || 0, 0, 10000) + 1;
+  return { save: { ...save, st, pts: pts - 1 }, stat, value: st[stat], pts: pts - 1 };
+}
+
+function rewardItem(floor, shoesUnlocked, rng) {
+  const x = rng() * 100, bonus = Math.min(1.5, floor / 100);
+  const rarity = x < 0.8 + bonus ? 4 : x < 4 + bonus * 3 ? 3 : x < 15 + bonus * 6 ? 2 : x < 42 ? 1 : 0;
+  const slots = shoesUnlocked ? ["robe", "staff", "ring", "shoes"] : ["robe", "staff", "ring"];
+  const slot = slots[Math.floor(rng() * slots.length)];
+  const item = { slot, r: rarity, il: Math.max(1, floor), up: 0, v: Math.floor(rng() * 5), a: {} };
+  const affixes = ["int", "vit", "wis", "crit", "hp", "pow"];
+  const base = { int: 1 + floor / 6, vit: 1 + floor / 6, wis: 1 + floor / 6, crit: 1 + rarity * 0.6, hp: 10 + floor * 4, pow: 1 + floor * 0.5 };
+  for (let i = 0; i < Math.min(3, rarity); i++) {
+    const key = affixes[Math.floor(rng() * affixes.length)];
+    const value = Math.round(base[key] * (0.8 + rng() * 0.4) * 10) / 10;
+    item.a[key] = Math.round(((item.a[key] || 0) + value) * 10) / 10;
+  }
+  return item;
+}
+
+export function rollMonsterRewards(type, floor, elite = false, zone = "tower", rng = Math.random) {
+  const monster = MONSTERS[type];
+  if (!monster || !Number.isFinite(floor)) return { error: "invalid_monster" };
+  const f = zone === "underdeep" ? Math.min(100, 90 + Math.max(1, Math.floor(floor))) : Math.max(1, Math.min(100, Math.floor(floor)));
+  const boss = !!monster.boss;
+  const rewards = { xp: partyMonsterXp(type, floor, elite, zone), gold: 0, ess: 0, ore: 0, potScroll: 0, epotScroll: 0, item: null };
+  if (rng() < 0.6 || boss || elite) rewards.gold = Math.round((2 + f * 1.2) * (0.7 + rng() * 0.7) * (boss ? 14 : elite ? 6 : 1));
+  if (rng() < 0.25 || boss || elite) rewards.ess = boss ? 6 + f : elite ? 3 + Math.floor(f / 5) : 1 + Math.floor(f / 15);
+  if ((monster.ore && rng() < monster.ore) || boss || elite) rewards.ore = boss ? 5 + (f >> 1) : elite ? 1 + Math.floor(f / 12) : 1 + Math.floor(f / 12);
+  if (boss) rewards[rng() < 0.5 ? "potScroll" : "epotScroll"] = 1;
+  if (elite || (!boss && rng() < 0.06 + Math.min(0.06, f * 0.0006))) rewards.item = rewardItem(f, false, rng);
+  return rewards;
+}
+
+export function applyMonsterRewards(save, type, floor, elite = false, zone = "tower", rng = Math.random) {
+  if (!save || !Array.isArray(save.inv)) return { error: "invalid_save" };
+  const rewards = rollMonsterRewards(type, floor, elite, zone, rng);
+  if (rewards.error) return rewards;
+  const progressed = applyServerXp(save, rewards.xp);
+  if (progressed.error) return progressed;
+  const next = { ...progressed.save, inv: [...save.inv] };
+  for (const key of ["gold", "ess", "ore", "potScroll", "epotScroll"]) {
+    next[key] = clampInt(next[key] || 0, 0, 2_000_000_000) + rewards[key];
+  }
+  let itemAdded = false;
+  if (rewards.item) {
+    const uid = clampInt(next.uid || 1, 1, Number.MAX_SAFE_INTEGER - 1);
+    rewards.item.id = uid;
+    next.uid = uid + 1;
+    if (next.inv.length < 32) { next.inv.push(rewards.item); itemAdded = true; }
+    else {
+      const sell = Math.round((6 + rewards.item.il * 3) * (rewards.item.r + 1) ** 2);
+      next.gold += sell;
+      rewards.autoSold = sell;
+    }
+  }
+  return { save: next, rewards: { ...rewards, itemAdded }, level: next.lvl, xp: next.xp, pts: next.pts || 0 };
+}
+
 export function partyMonsterMaxHp(type, floor, level, elite, partySize, zone = "tower") {
   const monster = MONSTERS[type];
   if (!monster) return 0;
