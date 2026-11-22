@@ -31,7 +31,7 @@ export function createServerCharacter(save) {
     st: { int: clampInt(st.int || 0, 0, 10000), wis: clampInt(st.wis || 0, 0, 10000) },
     eq: cleanEq,
     circle: clampInt(save.circle || 1, 1, 9),
-    blinkLv: clampInt(save.blinkLv || 0, 0, 100),
+    blinkLv: clampInt(save.blinkLv || 0, 0, 10),
     job: typeof save.job === "string" ? save.job.slice(0, 16) : "",
   };
 }
@@ -92,11 +92,11 @@ export function blinkCooldownMs(save) {
   const wisdom = clampInt(stats.wis || 0, 0, 10000) * pointScale + gearWisdom;
   const circle = clampInt(s.circle || 1, 1, 9);
   const cdr = Math.min(0.5, wisdom * 0.01 + (circle >= 9 ? 0.15 : 0));
-  const level = clampInt(s.blinkLv || 0, 0, 100);
+  const level = clampInt(s.blinkLv || 0, 0, 10);
   const job = s.job === "wind" ? 0.5 : 1;
   const shoes = s.eq && s.eq.shoes;
   const stride = shoes && shoes.my === "uqStride" ? 0.65 : 1;
-  return Math.max(400, Math.round(2500 * (1 - cdr * 0.5) * (1 - 0.0084 * level) * job * stride));
+  return Math.round(2500 * (1 - cdr * 0.5) * (1 - 0.035 * level) * job * stride);
 }
 
 export function resolveBlink(save, movement = {}, now = Date.now()) {
