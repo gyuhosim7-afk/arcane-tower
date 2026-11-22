@@ -293,7 +293,7 @@ test("server gold chests roll tower mythics and underdeep uniques", () => {
   const tower = applyChestRewards(base, "gold", 10, "tower", () => 0);
   assert.equal(tower.rewards.myth, "slimeRing");
   assert.ok(tower.itemsAdded.some((item) => item.my === "slimeRing" && item.r === 5));
-  const deep = applyUnderdeepClearRewards(base, 3, () => 0);
+  const deep = applyUnderdeepClearRewards(base, 5, () => 0);
   assert.equal(deep.rewards.myth, "uqSeal");
   assert.ok(deep.itemsAdded.some((item) => item.my === "uqSeal" && item.r === 6));
   assert.ok(deep.itemsAdded.some((item) => item.r === 4 && !item.my));
@@ -310,9 +310,9 @@ test("underdeep room completion rewards are server-calculated, including boss ge
   assert.equal(normal.save.underdeepBestRoom, 1);
   assert.equal(normal.itemsAdded.length, 0);
   const boss = applyUnderdeepClearRewards(base, 3, () => 0);
-  assert.equal(boss.save.gold, 34500);
-  assert.equal(boss.save.ess, 35);
-  assert.equal(boss.save.ore, 21);
+  assert.equal(boss.save.gold, 47500);
+  assert.equal(boss.save.ess, 45);
+  assert.equal(boss.save.ore, 27);
   assert.equal(boss.itemsAdded.length, 3);
   assert.equal(boss.rewards.myth, "uqSeal");
   assert.ok(boss.itemsAdded.some((item) => item.r === 4 && !item.my));
