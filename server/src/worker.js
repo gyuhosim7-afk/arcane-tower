@@ -969,6 +969,28 @@ export class Accounts extends DurableObject {
       await this.ctx.storage.put("u:" + acc.u, acc);
       return json({ ok: 1, stat: allocated.stat, pts: allocated.pts, st: acc.save.st });
     }
+    if (path === "/api/quest/claim") {
+      ensureServerQuests(acc);
+      const index = Math.floor(num(b.index, 0, 2));
+      const quest = acc.serverQuests[index];
+      if (!quest || !quest.done) return json({ err: "quest_not_complete" }, 409);
+      const xp = Math.round((quest.xp || 0) * 0.2);
+      const progressed = applyServerXp(acc.save, xp);
+      if (progressed.error) return json({ err: progressed.error }, 400);
+      const next = { ...progressed.save, gold: Math.min(2_000_000_000, (progressed.save.gold || 0) + (quest.gold || 0)), ess: Math.min(2_000_000_000, (progressed.save.ess || 0) + (quest.ess || 0)), ore: Math.min(2_000_000_000, (progressed.save.ore || 0) + (quest.ore || 0)) };
+      const quests = acc.serverQuests.filter((_, i) => i !== index);
+      quests.push(makeServerQuest(next));
+      acc.serverQuests = quests;
+      next.quests = quests.map((q) => ({ ...q }));
+      acc.save = next;
+      acc.serverCharacter = createServerCharacter(acc.save);
+      acc.serverRewardFields = rewardFields(acc.save);
+      acc.serverProgress = acc.serverProgress || { xp: 0, kills: 0 };
+      acc.serverProgress.xp = Math.min(2_000_000_000, (acc.serverProgress.xp || 0) + xp);
+      acc.saved = Date.now();
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, fields: rewardSyncFields(acc.save), rewards: { xp, gold: quest.gold || 0, ess: quest.ess || 0, ore: quest.ore || 0 } });
+    }
     if (path === "/api/load") {
       if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
       if (acc.save) {
