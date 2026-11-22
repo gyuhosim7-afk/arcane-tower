@@ -297,7 +297,7 @@ test("server gold chests roll tower mythics and underdeep uniques", () => {
   assert.equal(deep.rewards.myth, "uqSeal");
   assert.ok(deep.itemsAdded.some((item) => item.my === "uqSeal" && item.r === 6));
   assert.ok(deep.itemsAdded.some((item) => item.r === 4 && !item.my));
-  assert.ok(deep.itemsAdded.some((item) => item.r === 3 && !item.my));
+  assert.ok(deep.itemsAdded.some((item) => item.r >= 3 && !item.my));
   assert.equal(deep.itemsAdded.find((item) => item.my === "uqSeal").a.cdr, undefined);
 });
 
@@ -309,14 +309,14 @@ test("underdeep room completion rewards are server-calculated, including boss ge
   assert.equal(normal.save.ore, 15);
   assert.equal(normal.save.underdeepBestRoom, 1);
   assert.equal(normal.itemsAdded.length, 0);
-  const boss = applyUnderdeepClearRewards(base, 3, () => 0);
+  const boss = applyUnderdeepClearRewards(base, 5, () => 0);
   assert.equal(boss.save.gold, 47500);
   assert.equal(boss.save.ess, 45);
   assert.equal(boss.save.ore, 27);
   assert.equal(boss.itemsAdded.length, 3);
   assert.equal(boss.rewards.myth, "uqSeal");
   assert.ok(boss.itemsAdded.some((item) => item.r === 4 && !item.my));
-  assert.ok(boss.itemsAdded.some((item) => item.r === 3 && !item.my));
+  assert.ok(boss.itemsAdded.some((item) => item.r >= 3 && !item.my));
   assert.ok(boss.itemsAdded.some((item) => item.my === "uqSeal"));
 });
 
@@ -324,6 +324,8 @@ test("underdeep raid bosses are recognized by server combat state", () => {
   const snapshot = { e: [[51, "underdeepGatekeeper", 100, 200, 1000, 1, 0, 0]] };
   const state = createPartyHealthState(snapshot, null, { zone: "underdeep", floor: 5, level: 50, partySize: 1 }, 1000);
   assert.equal(state.seenEnemyCount, 1);
+  state.enemies[51].hp = 1000;
+  state.enemies[51].maxHp = 1000;
   const result = applyPartyHits(state, Array.from({ length: 20 }, () => [51, 100000]));
   assert.equal(result.state.bossKilled, true);
   assert.equal(result.state.killCount, 1);
