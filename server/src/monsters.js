@@ -36,5 +36,14 @@ export const MONSTERS = Object.freeze({
   harpyQ:{n:'폭풍여왕 실피드',hp:850,dmg:16,spd:60,xp:620,r:12,boss:1,sc:2.2,spr:'harpyQ',pat:['charge','sweep','blink','pincer','flower','combo','orbit'],sum:'harpy',bc:'#ffe27a',fly:1,weak:['thunder','earth'],res:['wind']},
   archon:{n:'암흑 대사제 벨가르',hp:1000,dmg:16,spd:34,xp:700,r:12,boss:1,sc:2,weak:['holy','wind'],res:['thunder']},
   dragon:{n:'심연룡 니드',hp:1300,dmg:22,spd:30,xp:820,r:18,boss:1,sc:2.4,spr:'dragon',pat:['breath','meteorBig','sweep','grid','charge','flower','lasers','orbit','pincer'],bc:'#c94cff',weak:['ice','thunder'],res:['fire']},
-  demonLord:{n:'심연의 마왕 바알',hp:1300,dmg:80,spd:40,xp:1800,r:16,boss:1,sc:3,spr:'demonLord',pat:['lasers','sweep','wall','grid','cross','orbit','homing','meteorBig','breath','flower','blink','pincer','rain','mines','ring','spiral'],bc:'#ff3a3a',weak:['holy','dark'],res:['wind'],final:1}
+  demonLord:{n:'심연의 마왕 바알',hp:1300,dmg:80,spd:40,xp:1800,r:16,boss:1,sc:3,spr:'demonLord',pat:['lasers','sweep','wall','grid','cross','orbit','homing','meteorBig','breath','flower','blink','pincer','rain','mines','ring','spiral'],bc:'#ff3a3a',weak:['holy','dark'],res:['wind'],final:1},
+  riftfang:{n:'균열 사냥개',hp:260,dmg:34,spd:92,xp:120,r:8,ai:'dash'},
+  abyssalArcanist:{n:'심연술사',hp:210,dmg:38,spd:28,xp:130,r:6,ai:'shoot'},
+  obsidianGuard:{n:'흑요석 파수꾼',hp:520,dmg:46,spd:26,xp:190,r:11,ai:'slam'},
+  dreadMarshal:{n:'심연의 집행자',hp:1300,dmg:104,spd:42,xp:1800,r:15,boss:1,final:1,raidElite:1,sc:2.7},
+  voidTyrant:{n:'공허의 폭군',hp:1300,dmg:104,spd:36,xp:2200,r:16,boss:1,final:1,raidElite:1,sc:2.8},
+  underdeepGatekeeper:{n:'지하 봉인 수문장',hp:1450,dmg:88,spd:34,xp:4200,r:18,boss:1,final:1,raidBoss:1,raidHp:90,raidDmg:11.83,sc:3},
+  underdeepCore:{n:'무저갱의 심장',hp:1900,dmg:105,spd:38,xp:12000,r:20,boss:1,final:1,raidBoss:1,raidHp:68.5,raidDmg:9.91,sc:3.4},
+  underdeepLord:{n:'망각의 군주',hp:2100,dmg:112,spd:36,xp:20000,r:16,boss:1,final:1,raidBoss:1,raidHp:69.4,raidDmg:9.75,sc:2.9},
+  underdeepOrigin:{n:'심연의 근원',hp:2600,dmg:122,spd:40,xp:40000,r:20,boss:1,final:1,raidBoss:1,raidHp:63.4,raidDmg:9.1,sc:3.3}
 });
