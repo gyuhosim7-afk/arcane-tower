@@ -33,7 +33,7 @@ jobs:
           node-version: 20
       - name: Install dependencies
         working-directory: server
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Build obfuscated site
         working-directory: server
         run: npm run build
