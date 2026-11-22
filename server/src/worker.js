@@ -819,6 +819,10 @@ export class Accounts extends DurableObject {
       const granted = applyMonsterRewards(target.save, String(b.type || ""), num(b.floor, 1, 100), !!b.elite, b.zone === "underdeep" ? "underdeep" : "tower");
       if (granted.error) return json({ err: granted.error }, 400);
       target.save = granted.save;
+      ensureServerQuests(target);
+      const monsterType = String(b.type || "");
+      progressServerQuests(target, "kill", monsterType);
+      if (MONSTERS[monsterType] && MONSTERS[monsterType].boss) progressServerQuests(target, "boss");
       target.serverItemLedger = target.serverItemLedger || {};
       target.pendingServerItems = target.pendingServerItems || [];
       if (granted.rewards.itemAdded && granted.rewards.item) {
@@ -851,6 +855,8 @@ export class Accounts extends DurableObject {
       const granted = applyTowerClearRewards(target.save, floor);
       if (granted.error) return json({ err: granted.error }, 400);
       target.save = granted.save;
+      ensureServerQuests(target);
+      progressServerQuests(target, "floor");
       target.towerClaims[claimKey] = true;
       target.serverRewardFields = rewardFields(target.save);
       await this.ctx.storage.put("u:" + u, target);
@@ -965,6 +971,11 @@ export class Accounts extends DurableObject {
     }
     if (path === "/api/load") {
       if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
+      if (acc.save) {
+        ensureServerQuests(acc);
+        acc.serverRewardFields = rewardFields(acc.save);
+        await this.ctx.storage.put("u:" + acc.u, acc);
+      }
       return json({ ok: 1, u: acc.u, name: acc.name || acc.u, dev: dev(acc.u), save: acc.save || null, serverCharacterReady: !!acc.serverCharacter });
     }
     if (path === "/api/logout") {
@@ -996,6 +1007,8 @@ export class Accounts extends DurableObject {
         await this.ctx.storage.put("pid:" + s.pid, acc.u);
       }
       acc.save = s; acc.saved = Date.now();
+      ensureServerQuests(acc);
+      acc.serverRewardFields = rewardFields(acc.save);
       acc.serverItemLedger = acc.serverItemLedger || {};
       // New characters get a first snapshot; an existing snapshot is never replaced by browser saves.
       if (!acc.serverCharacter) {
