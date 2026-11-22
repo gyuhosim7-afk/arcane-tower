@@ -433,7 +433,9 @@ export class Town extends DurableObject {
     } else if (m.t === "toff") {
       const y = a.trade && this.find(a.trade.with);
       if (!y) return this.tradeClose(x, "상대가 사라졌습니다");
-      const items = (Array.isArray(m.items) ? m.items : []).slice(0, 8).map(cleanItem).filter(Boolean);
+      const offered = Array.isArray(m.items) ? m.items : [];
+      if (offered.some((item) => Number(item && item.id) >= SERVER_ITEM_ID_BASE)) return this.send(ws, { t: "sys", m: "서버 소유 장비의 거래는 아직 이전 중입니다" });
+      const items = offered.slice(0, 8).map(cleanItem).filter(Boolean);
       const off = { items, gold: num(m.gold, 0, 1e12) | 0 };
       await this.ctx.storage.put("off:" + a.id, off);
       a.trade.ok = false; y.a.trade.ok = false; this.save(x); this.save(y);
