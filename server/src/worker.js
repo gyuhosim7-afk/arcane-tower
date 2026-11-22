@@ -57,6 +57,22 @@ export class Town extends DurableObject {
     server.serializeAttachment({ u: null, id: crypto.randomUUID().slice(0, 8), p: null, lastChat: 0, n: 0, win: 0, party: null, pinv: null, treq: null, trade: null });
     return new Response(null, { status: 101, webSocket: client });
   }
+  // 결투 중 행동 속도 감시. 쿨타임보다 빠른 기본공격/순간이동은 위반으로 센다.
+  // 주의: 이건 "정상 함수를 호출하되 쿨타임 값만 0으로 바꾼" 흔한 조작을 잡는다.
+  // TODO(완성): 조작자가 blink()를 아예 안 거치고 좌표만 순간이동시키는 경우는,
+  //   아래 'm'(이동) 중계에서 좌표 점프 거리/빈도를 재서 걸러야 한다. (지금은 뼈대만)
+  pvpGuard(x, kind, now) {
+    const a = x.a;
+    // 각 행동의 최소 간격(ms). 기본공격 쿨 0.3s, 순간이동 쿨 2.5s → 약간의 네트워크 여유를 뺀 값.
+    const MIN = kind === "s" ? 240 : kind === "bl" ? 2100 : 0;
+    if (!MIN) return;
+    const key = kind === "s" ? "dshot" : "dblk";
+    const last = a[key] || 0;
+    if (last && now - last < MIN) a.dviol = (a.dviol || 0) + 1;
+    a[key] = now;
+    this.save(x);
+    // TODO(완성): a.dviol 가 즉시 강퇴 기준을 넘으면 여기서 ws.close(4003,"cheat") 로 끊고 결투 무효 처리.
+  }
   async pvpRecord(wu, lu) {
     if (!wu || !lu || wu === lu) return;
     // 같은 두 사람끼리는 하루 10판까지만 기록 (점수 몰아주기 방지)
@@ -212,12 +228,17 @@ export class Town extends DurableObject {
       if (!y) return this.send(ws, { t: "sys", m: "결투 신청이 사라졌습니다" });
       if (m.t === "dno") return this.send(y.w, { t: "sys", m: a.p.nick + " 님이 결투를 거절했습니다" });
       if (y.a.duel || a.duel) return this.send(ws, { t: "sys", m: "상대가 다른 결투 중입니다" });
-      a.duel = y.a.id; y.a.duel = a.id; a.dt0 = y.a.dt0 = Date.now(); a.dhp = y.a.dhp = 1000; this.save(x); this.save(y);
+      a.duel = y.a.id; y.a.duel = a.id; a.dt0 = y.a.dt0 = Date.now(); a.dhp = y.a.dhp = 1000;
+      // 결투 조작 감시용 (매 판 초기화)
+      a.dviol = y.a.dviol = 0; a.dshot = y.a.dshot = 0; a.dblk = y.a.dblk = 0;
+      this.save(x); this.save(y);
       this.send(y.w, { t: "dstart", with: a.id, nick: a.p.nick, el: a.p.el, rb: a.p.rb, side: 0 });
       this.send(ws, { t: "dstart", with: y.a.id, nick: y.a.p.nick, el: y.a.p.el, rb: y.a.p.rb, side: 1 });
     } else if (m.t === "drel") {
       const y = a.duel && this.find(a.duel);
       if (m.d && m.d.k === "hp") { a.dhp = num(m.d.hp, 0, 1000); this.save(x); }
+      // 쿨타임 조작 감시: 기본공격('s')/순간이동('bl') 이벤트가 쿨타임보다 빠르게 오면 위반으로 센다
+      if (m.d && (m.d.k === "s" || m.d.k === "bl")) this.pvpGuard(x, m.d.k, Date.now());
       if (y && y.a.duel === a.id) this.send(y.w, { t: "drel", d: m.d });
     } else if (m.t === "dend") {
       const y = a.duel && this.find(a.duel);
@@ -228,6 +249,13 @@ export class Town extends DurableObject {
         let win = null, lose = null;
         if (m.res === "time") { if (a.dhp > y.a.dhp) { win = a; lose = y.a; } else if (y.a.dhp > a.dhp) { win = y.a; lose = a; } }
         else { win = y.a; lose = a; }
+        // 이긴 쪽이 쿨타임 조작 의심(위반 누적)이면 랭킹에 기록하지 않는다 (조작 승리 무효)
+        const CHEAT_VIOLATIONS = 8; // TODO(완성): 실제 플레이 로그 보며 숫자 조정
+        if (win && (win.dviol || 0) >= CHEAT_VIOLATIONS) {
+          this.send(win === a ? ws : y.w, { t: "sys", m: "비정상 행동이 감지되어 이 결투는 랭킹에 반영되지 않았습니다" });
+          win = null;
+          // TODO(완성): 상대(정상 플레이어)에게는 승리를 줄지, 그냥 무효로 둘지 결정. 반복 위반자는 ws.close()로 강퇴도 가능.
+        }
         if (win && Date.now() - (a.dt0 || 0) > 5000) await this.pvpRecord(win.u, lose.u);
       }
     }
