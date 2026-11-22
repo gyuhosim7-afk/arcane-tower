@@ -2024,7 +2024,7 @@ function updUnderdeep(dt){
   if(w.q.length&&w.t<=0&&G.en.length+G.pending<12){const n=Math.min(w.q.length,rint(2,3));for(let i=0;i<n;i++){const s=spawnPos(90);spawnMon(w.q.pop(),s.x,s.y)}w.t=1.15}
   if(w.elite&&w.t<=0&&!w.q.length&&G.en.length===0&&G.pending===0){const k=w.elite,s=spawnPos(130);spawnMon(k,s.x,s.y,true);banner('레이드급 정예 등장',MON[k].n+' · 바알급 위협도');w.elite=null;w.t=1}
   if(!w.q.length&&!w.elite&&(!w.boss||w.bossSp)&&G.en.length===0&&G.pending===0){
-    w.cleared=true;S.underdeepBestRoom=Math.max(S.underdeepBestRoom||0,room);const bonus=15000+room*6500;S.gold+=bonus;S.ess+=20+room*5;S.ore+=12+room*3;
+    w.cleared=true;S.underdeepBestRoom=Math.max(S.underdeepBestRoom||0,room);const bonus=15000+room*6500;if(!(AUTH&&AUTH.token)){S.gold+=bonus;S.ess+=20+room*5;S.ore+=12+room*3;}
     m.inter=[];
     if(w.boss){if(!(AUTH&&AUTH.token)){drop('item',m.pw/2,m.ph/2,0,mkItem(100,4));drop('item',m.pw/2,m.ph/2,0,mkItem(100,3))}spawnChest('gold',m.pw/2,m.ph/2+24);
       const uks=Object.keys(MYTH).filter(k=>MYTH[k].uq&&MYTH[k].boss===w.boss),uk=uks.length?pick(uks):null;if(!(AUTH&&AUTH.token)&&uk&&Math.random()<UNIQUE_RATE)later(.8,()=>{drop('item',m.pw/2,m.ph/2-10,0,mkMyth(uk));G.flash=.6;G.flashCol='#3ff0e0';shake(16);banner('유니크 등장!',MYTH[uk].n);sfx.circle();for(let i=0;i<5;i++)later(i*.15,()=>ringFx(m.pw/2,m.ph/2,60+i*30,['#ffffff','#3ff0e0','#3ff0e0','#0a2a2a'],.8,{top:1}))})}
@@ -2981,7 +2981,7 @@ function coSnapshot(){const e=[],b=[];for(const x of G.en){if(x.dead)continue;if
 function coRecv(from,d){if(!d)return;
   if(d.k==='loot'){
     const f=d.fields||{};
-    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','hpPot','mpPot','prot','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
+    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','hpPot','mpPot','prot','underdeepBestRoom','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
     if(f.st)S.st=Object.assign({int:0,vit:0,crit:0,wis:0},f.st);
     recalc();
     if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
