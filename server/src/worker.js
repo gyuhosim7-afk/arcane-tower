@@ -417,7 +417,7 @@ function checkSave(s, prev, dev, mins = 0) {
     if (spent < 0 || (s.pts || 0) < 0) return "포인트";
     if (spent + (s.pts || 0) > (s.lvl - 1) * 3 + 3) return "포인트초과";
     // 소소한 보유 상한 (흔히 조작하는 값들)
-    if (!int(s.blinkLv || 0, 0, 10) || !int(s.rebirth || 0, 0, 100)) return "보유량";
+    if (!int(s.blinkLv || 0, 0, 100) || !int(s.rebirth || 0, 0, 100)) return "보유량";
     if (!int(s.hpPot || 0, 0, 99) || !int(s.mpPot || 0, 0, 99) || !int(s.prot || 0, 0, 9999) || !int(s.statReset || 0, 0, 9999)) return "보유량";
   }
   if (prev && !dev) {
