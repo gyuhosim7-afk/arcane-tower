@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -507,7 +507,7 @@ export class Accounts extends DurableObject {
     }
     if (path === "/api/whoami") {
       const acc = await this.session(b.token);
-      return json(acc ? { u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.save ? (resolveBlink(acc.save, {}, 0).result || {}).cooldownMs || 2500 : 2500 } : {});
+      return json(acc ? { u: acc.u, name: acc.name || acc.u, blinkCooldownMs: acc.save ? blinkCooldownMs(acc.save) : 2500 } : {});
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
