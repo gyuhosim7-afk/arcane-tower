@@ -47,6 +47,9 @@ export function startEncounter(save, encounterId, now = Date.now()) {
     state: {
       id: crypto.randomUUID(),
       encounterId,
+      monsterName: spec.name,
+      monsterBoss: !!spec.boss,
+      rewardXp: spec.xp,
       monsterHp: spec.maxHp,
       monsterMaxHp: spec.maxHp,
       startedAt: now,
