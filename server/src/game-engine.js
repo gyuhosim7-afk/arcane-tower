@@ -254,8 +254,9 @@ const SERVER_MYTH = {
   uqOrigin:{boss:"underdeepOrigin",uq:1,slot:"staff",a:{int:22,crit:8,cdr:4}},
   uqStride:{boss:"underdeepLord",uq:1,slot:"shoes",a:{vit:18,crit:6}}
 };
-function serverMythItem(key, level) {
+export function serverMythItem(key, level) {
   const def = SERVER_MYTH[key];
+  if (!def) return null;
   const bossIndex = SERVER_MIDS.indexOf(def.boss);
   const mythFloor = def.uq ? 110 : bossIndex >= 0 ? bossIndex * 10 + 5 : SERVER_BOSSES.indexOf(def.boss) * 10 + 10;
   const mul = 1.15 + 0.45 * (mythFloor - 5) / 95;
