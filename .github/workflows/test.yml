@@ -1,0 +1,35 @@
+name: Test Arcane Tower
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "server/**"
+      - "index.html"
+      - ".github/workflows/test.yml"
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - "index.html"
+      - ".github/workflows/test.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        working-directory: server
+        run: npm install --no-audit --no-fund
+      - name: Run server tests
+        working-directory: server
+        run: npm test
+      - name: Build client bundle
+        working-directory: server
+        run: npm run build
