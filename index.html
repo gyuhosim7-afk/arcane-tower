@@ -1472,7 +1472,11 @@ function status(e,st,t,dmg){
   else if(st==='root')e.root=Math.max(e.root,(t||2)*(e.boss?.5:1));
 }
 function hurt(e,dmg,o={}){
-  if(e.dead||e.hp<=0)return 0;const d0=MON[e.type];let mul=1,weak=false;
+  if(e.dead||e.hp<=0)return 0;
+  if(typeof AUTH!=='undefined'&&AUTH&&AUTH.token&&isCombatZone()){
+    const partyReady=NET.party.length>1&&(CO.auth||CO.on),soloReady=NET.party.length<=1&&SO.auth;
+    if(!partyReady&&!soloReady)return 0;
+  }const d0=MON[e.type];let mul=1,weak=false;
   if(o.el){if(d0.weak&&d0.weak.includes(o.el)){mul*=1.5;weak=true}if(d0.res&&d0.res.includes(o.el))mul*=.6;}
   if(e.weak>0)mul*=1.25;if(e.frozen>0&&hasM('frostHeart'))mul*=1.4;if((e.frozen>0||e.slow>0)&&hasM('wispStaff'))mul*=1.25;if(G.p&&G.p.shadowT>G.time&&!o.dot)mul*=1.4;if(e.boss&&!o.dot)mul*=1+(D.bossDmg||0)/100;
   const c=!o.dot&&Math.random()*100<D.crit+(jobIs('ice')&&(e.frozen>0||e.slow>0)?25:0);if(jobIs('ice')&&(e.frozen>0||e.slow>0))mul*=1.4;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
