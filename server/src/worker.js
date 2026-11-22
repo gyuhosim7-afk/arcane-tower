@@ -338,7 +338,7 @@ export class Town extends DurableObject {
           const key = "party-health:" + a.party;
           const previous = await this.ctx.storage.get(key);
           const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: members.length }, now);
-           updateServerClearState(state, snapshot, a.p.zone);
+           updateServerClearState(state, snapshot, a.p.zone, now);
           await this.ctx.storage.put(key, state);
           d = { ...snapshot, e: partyHealthRows(state), kd: [] };
           const auth = { t: "prel", from: a.id, d: { k: "auth", h: partyHealthRecords(state), kd: [] } };
