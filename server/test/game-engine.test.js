@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -58,6 +58,19 @@ test("party hit sanitizer ignores client damage, duplicates, and invalid target 
   assert.deepEqual(sanitizePartyHits(rows, 45), [[4, 45], [9, 45], [10, 45]]);
   assert.deepEqual(sanitizePartyHits(rows, 45, 2), [[4, 45], [9, 45]]);
   assert.deepEqual(sanitizePartyHits("not-an-array", 45), []);
+});
+
+test("party snapshot sanitizer rejects spoofed zones and bounds enemy and projectile data", () => {
+  assert.equal(sanitizePartySnapshot({ z: "town", fl: 1 }, "tower", 1), null);
+  const safe = sanitizePartySnapshot({
+    z: "tower", fl: 4,
+    e: [[1, "slime", 99999, -10, 1500, 0, 1, 0], [2, "unknown", 1, 1, 1000, 1, 0, 0]],
+    b: [[99999, -5, 99999, -99999, 99, "not-a-color", 999999, 1]],
+    kd: [1, 2, "bad"], cl: true,
+  }, "tower", 4);
+  assert.deepEqual(safe.e, [[1, "slime", 4000, 0, 1000, 1, 1, 0]]);
+  assert.deepEqual(safe.b, [[4000, 0, 2000, -2000, 30, "#ffffff", 50000, 1]]);
+  assert.deepEqual(safe.kd, [1, 2]);
 });
 
 test("server enforces attack cooldown", () => {

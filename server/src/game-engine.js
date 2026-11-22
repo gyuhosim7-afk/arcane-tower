@@ -66,6 +66,34 @@ export function sanitizePartyHits(rows, power, maxTargets = 8) {
   return hits;
 }
 
+// Validate the party leader's visual combat snapshot before it is relayed.
+export function sanitizePartySnapshot(snapshot, zone, floor) {
+  if (!snapshot || typeof snapshot !== "object" || snapshot.z !== zone || snapshot.fl !== floor) return null;
+  if (!["tower", "underdeep"].includes(zone)) return null;
+  const enemies = [];
+  for (const row of (Array.isArray(snapshot.e) ? snapshot.e : []).slice(0, 80)) {
+    if (!Array.isArray(row) || row.length < 8) continue;
+    const [rawId, rawType, rawX, rawY, rawHp, rawFace, rawElite, rawFrozen] = row;
+    const id = Number(rawId), type = String(rawType);
+    if (!Number.isSafeInteger(id) || id < 1 || id > 10000000 || !MONSTERS[type]) continue;
+    const x = Number(rawX), y = Number(rawY), hp = Number(rawHp);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(hp)) continue;
+    enemies.push([id, type, Math.max(0, Math.min(4000, Math.round(x))), Math.max(0, Math.min(4000, Math.round(y))), Math.max(0, Math.min(1000, Math.round(hp))), Number(rawFace) < 0 ? -1 : 1, rawElite ? 1 : 0, rawFrozen ? 1 : 0]);
+  }
+  const bullets = [];
+  for (const row of (Array.isArray(snapshot.b) ? snapshot.b : []).slice(0, 110)) {
+    if (!Array.isArray(row) || row.length < 8) continue;
+    const [rx, ry, rvx, rvy, rr, rawColor, rdmg, rboss] = row;
+    const values = [rx, ry, rvx, rvy, rr, rdmg].map(Number);
+    if (!values.every(Number.isFinite)) continue;
+    const [x, y, vx, vy, radius, damage] = values;
+    const color = /^#[0-9a-f]{3,8}$/i.test(String(rawColor)) ? String(rawColor) : "#ffffff";
+    bullets.push([Math.max(0, Math.min(4000, Math.round(x))), Math.max(0, Math.min(4000, Math.round(y))), Math.max(-2000, Math.min(2000, Math.round(vx))), Math.max(-2000, Math.min(2000, Math.round(vy))), Math.max(1, Math.min(30, radius)), color, Math.max(0, Math.min(50000, Math.round(damage))), rboss ? 1 : 0]);
+  }
+  const kills = (Array.isArray(snapshot.kd) ? snapshot.kd : []).slice(0, 80).map(Number).filter((id) => Number.isSafeInteger(id) && id > 0 && id <= 10000000);
+  return { k: "s", z: zone, fl: floor, e: enemies, b: bullets, cl: snapshot.cl ? 1 : 0, kd: kills };
+}
+
 export function startEncounter(save, encounterId, now = Date.now()) {
   const spec = encounterSpec(encounterId);
   if (!spec) return { error: "encounter_not_allowed" };

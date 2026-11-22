@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -235,8 +235,17 @@ export class Town extends DurableObject {
       let d;
       if (m.d.k === "s" || m.d.k === "go") {
         if (a.id !== a.party) return;
-        if (m.d.k === "go" && (!["tower", "underdeep", "town"].includes(m.d.z) || m.d.fl !== a.p.fl && m.d.z === a.p.zone)) return;
-        d = m.d;
+        if (m.d.k === "go") {
+          if (!["tower", "underdeep", "town"].includes(m.d.z) || !Number.isInteger(m.d.fl) || m.d.fl < 0 || m.d.fl > 999) return;
+          d = { k: "go", z: m.d.z, fl: m.d.fl };
+        } else {
+          if (now - (a.partySnapshotAt || 0) < 80) return;
+          const snapshot = sanitizePartySnapshot(m.d, a.p.zone, a.p.fl);
+          if (!snapshot) return;
+          a.partySnapshotAt = now;
+          d = snapshot;
+          this.save(x);
+        }
       } else if (m.d.k === "h") {
         if (a.id === a.party || !["tower", "underdeep"].includes(a.p.zone)) return;
         if (leader.a.p.zone !== a.p.zone || leader.a.p.fl !== a.p.fl) return;
@@ -248,7 +257,10 @@ export class Town extends DurableObject {
         this.save(x);
       } else return;
       const o = JSON.stringify({ t: "prel", from: a.id, d });
-      for (const y of members) if (y.a.id !== a.id) try { y.w.send(o); } catch {}
+      const recipients = d.k === "s"
+        ? members.filter((y) => y.a.id !== a.id && y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl)
+        : members.filter((y) => y.a.id !== a.id);
+      for (const y of recipients) try { y.w.send(o); } catch {}
     }
     // 결투 (PvP)
     else if (m.t === "dreq") {
