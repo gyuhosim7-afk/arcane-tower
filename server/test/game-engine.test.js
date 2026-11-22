@@ -287,3 +287,16 @@ test("server combat state records boss and elite kills for chest eligibility", (
   assert.equal(result.state.eliteKilled, true);
   assert.equal(result.state.killCount, 2);
 });
+
+test("server gold chests roll tower mythics and underdeep uniques", () => {
+  const base = { ...character, lvl: 50, gold: 0, ess: 0, ore: 0, hpPot: 0, mpPot: 0, prot: 0, inv: [], uid: 1, shoesUnlocked: false };
+  const tower = applyChestRewards(base, "gold", 10, "tower", () => 0);
+  assert.equal(tower.rewards.myth, "slimeRing");
+  assert.ok(tower.itemsAdded.some((item) => item.my === "slimeRing" && item.r === 5));
+  const deep = applyChestRewards(base, "gold", 5, "underdeep", () => 0);
+  assert.equal(deep.rewards.myth, "uqSeal");
+  assert.ok(deep.itemsAdded.some((item) => item.my === "uqSeal" && item.r === 6));
+  assert.ok(deep.itemsAdded.some((item) => item.r === 4 && !item.my));
+  assert.ok(deep.itemsAdded.some((item) => item.r >= 3 && !item.my));
+  assert.equal(deep.itemsAdded.find((item) => item.my === "uqSeal").a.cdr, undefined);
+});
