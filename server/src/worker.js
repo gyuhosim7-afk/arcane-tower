@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -251,6 +251,8 @@ export class Town extends DurableObject {
           const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: members.length }, now);
           await this.ctx.storage.put(key, state);
           d = { ...snapshot, e: partyHealthRows(state), kd: [] };
+          const auth = { t: "prel", from: a.id, d: { k: "auth", h: partyHealthRecords(state), kd: [] } };
+          this.sendTo(members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), auth);
           this.save(x);
         }
       } else if (m.d.k === "h") {
@@ -265,7 +267,7 @@ export class Town extends DurableObject {
         if (!state || state.zone !== a.p.zone || state.floor !== a.p.fl) return;
         const resolved = applyPartyHits(state, hits);
         await this.ctx.storage.put(key, resolved.state);
-        const result = { k: "auth", h: resolved.results, kd: resolved.kills };
+        const result = { k: "auth", h: partyHealthRecords(resolved.state), kd: resolved.kills };
         this.sendTo(members.filter((y) => y.a.p && y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), { t: "prel", from: a.id, d: result });
         this.save(x);
         return;
