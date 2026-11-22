@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, allocateServerStat } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -561,8 +561,10 @@ function validateServerItemOwnership(save, account) {
     const sameBase = item.slot === record.slot && item.r === record.r && item.v === record.v && (item.my || null) === record.my;
     const sameStats = JSON.stringify(item.a || {}) === JSON.stringify(record.a || {});
     const sameLevel = item.il === record.il;
-    if (!sameBase || (!sameStats || !sameLevel) && !(item.my && item.il === save.lvl)) return "server_item_modified";
-    if (item.my && item.il === save.lvl && (!sameStats || !sameLevel)) {
+    const mythExpected = item.my ? serverMythItem(item.my, save.lvl) : null;
+    const validMythLevel = !!(mythExpected && item.il === save.lvl && JSON.stringify(item.a || {}) === JSON.stringify(mythExpected.a));
+    if (!sameBase || (!sameStats || !sameLevel) && !validMythLevel) return "server_item_modified";
+    if (validMythLevel && (!sameStats || !sameLevel)) {
       record.il = item.il;
       record.a = JSON.parse(JSON.stringify(item.a || {}));
     }
