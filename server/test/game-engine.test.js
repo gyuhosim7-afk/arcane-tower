@@ -213,7 +213,7 @@ test("server stat allocation spends exactly one available point", () => {
   const save = { ...character, pts: 2, st: { int: 0, vit: 0, crit: 0, wis: 0 } };
   const result = allocateServerStat(save, "vit");
   assert.equal(result.pts, 1);
-  assert.equal(result.st.vit, 1);
+  assert.equal(result.save.st.vit, 1);
   assert.equal(allocateServerStat({ ...save, pts: 0 }, "int").error, "no_points");
   assert.equal(allocateServerStat(save, "gold").error, "invalid_stat");
 });
