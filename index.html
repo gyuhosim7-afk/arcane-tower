@@ -1478,7 +1478,7 @@ function hurt(e,dmg,o={}){
   const c=!o.dot&&Math.random()*100<D.crit+(jobIs('ice')&&(e.frozen>0||e.slow>0)?25:0);if(jobIs('ice')&&(e.frozen>0||e.slow>0))mul*=1.4;mul=Math.min(mul,2.5);/* 약점·약화·빙결 같은 배율이 한꺼번에 겹쳐도 최대 2.5배 */
   let d=Math.max(1,Math.round(dmg*mul*(c?D.critM:1)*rnd(.92,1.08)));
   if(e.boss&&!o.dot)d=Math.min(d,Math.round(e.max*0.05*(1+(D.bossDmg||0)/100)));if(DEV.on&&DEV.ohk)d=Math.ceil(e.hp)+1;if(hasM('uqOrigin')&&!o.dot&&!e.boss&&e.hp>0&&e.hp<=e.max*.10&&G.p&&(G.p.uqOriginAt||0)<=G.time){G.p.uqOriginAt=G.time+15;d=Math.ceil(e.hp)+1;G.texts.push({x:e.x,y:e.y-e.hh-20,vy:-16,life:1.2,str:'처형!',col:'#3ff0e0',sc:1.3})}/* 일반 타격 5%, 용술 타격은 최대 체력의 10%까지 */
-  const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));if(e.ghost)coHit(e,d);else e.hp-=d;if(!o.dot){e.flash=e.boss?.1:.14;if(!o.proc&&!e.boss){G.hitstop=Math.max(G.hitstop,c?0.055:0.03);hitFx(o.el||'none',e.x,e.y-e.r,c)}}
+  const shown=Math.min(d,Math.max(1,Math.ceil(e.hp)));if(coLead()&&CO.auth&&!e.nid)e.nid=++CO.nid;if((e.ghost||coLead()&&CO.auth)&&e.nid)coHit(e,d);else e.hp-=d;if(!o.dot){e.flash=e.boss?.1:.14;if(!o.proc&&!e.boss){G.hitstop=Math.max(G.hitstop,c?0.055:0.03);hitFx(o.el||'none',e.x,e.y-e.r,c)}}
   if(o.kb&&!e.boss&&o.sx!==undefined){const a=Math.atan2(e.y-o.sy,e.x-o.sx);e.kx+=Math.cos(a)*o.kb;e.ky+=Math.sin(a)*o.kb}
   G.texts.push({x:e.x+rnd(-5,5),y:e.y-e.z-e.hh-4,vy:-30,life:.75,str:''+shown+(c?'!':''),col:o.dot?(o.el==='fire'?'#ffaa5a':'#9cf07a'):c?'#ffe27a':weak?'#ffa060':'#ffffff',sc:c?2:1});
   if(!o.dot){if(c){sfx.crit();if(e.boss)G.hitstop=Math.max(G.hitstop||0,.03);shake(2)}else sfx.hit()}
@@ -2925,24 +2925,35 @@ Object.assign(ACT,{
   tOk(){const T=NET.tr;if(!T)return;if(T.gold>S.gold||T.mine.some(id=>!S.inv.some(it=>it.id===id))){tradeSend();return}netSend({t:'tok'})},
   tCancel(){netSend({t:'tcancel'})}});
 /* 파티 같이 싸우기: 파티장 기기가 몬스터를 맡고, 파티원에게 몬스터·탄막을 보내 준다. 파티원 공격은 파티장 몬스터에 들어간다. */
-const CO={on:false,host:null,gh:{},nid:0,last:0,kills:[],pend:{},flushT:0};
+const CO={on:false,auth:false,authKill:false,host:null,gh:{},nid:0,last:0,kills:[],pend:{},flushT:0};
 const coLead=()=>NET.party.length>1&&NET.lead===NET.me;
 const coMates=()=>NET.party.filter(id=>id!==NET.me).map(id=>NET.pl[id]).filter(o=>o&&o.zone===netZone()&&o.fl===netFl());
-function coGo(){if(!coLead()||CO.on)return;const z=G.zone;if(z==='tower'||z==='underdeep'||z==='town')netSend({t:'prel',d:{k:'go',z,fl:netFl()}})}
+function coGo(){if(!coLead()||CO.on)return;const z=G.zone;if(z==='tower'||z==='underdeep'||z==='town'){CO.auth=true;netSend({t:'prel',d:{k:'go',z,fl:netFl()}})}}
 {const _ef=enterFloor;enterFloor=function(f){_ef(f);if(G.zone==='tower')coGo()}}
 {const _ed=enterDungeonRoom;enterDungeonRoom=function(r){_ed(r);if(G.zone==='underdeep')coGo()}}
 {const _et=enterTown;enterTown=function(){const was=CO.on;if(CO.on&&!CO.toTown)coEnd();CO.toTown=false;_et();if(!was)coGo()}}
-{const _k=kill;kill=function(e){if(e.nid&&coLead())CO.kills.push(e.nid);_k(e)}}
-function coEnd(){CO.on=false;CO.host=null;CO.gh={};CO.pend={}}
+{const _k=kill;kill=function(e){_k(e)}}
+function coEnd(){CO.on=false;CO.auth=false;CO.host=null;CO.gh={};CO.pend={}}
 function coHit(e,d){CO.pend[e.nid]=(CO.pend[e.nid]||0)+d}
 function coSnapshot(){const e=[],b=[];for(const x of G.en){if(x.dead)continue;if(!x.nid)x.nid=++CO.nid;e.push([x.nid,x.type,x.x|0,x.y|0,Math.max(0,Math.round(x.hp/x.max*1000)),x.face<0?-1:1,x.elite?1:0,x.frozen>0?1:0])}
   for(const q of G.ep){if(b.length>=110)break;b.push([q.x|0,q.y|0,q.vx|0,q.vy|0,q.r,q.col,q.dmg|0,q.boss?1:0])}
   netSend({t:'prel',d:{k:'s',z:G.zone,fl:netFl(),e,b,cl:G.wave&&G.wave.cleared?1:0,kd:CO.kills.splice(0)}})}
 function coRecv(from,d){if(!d)return;
+  if(d.k==='auth'){
+    CO.auth=true;
+    for(const h of d.h||[]){
+      if(!h||!Number.isSafeInteger(h.id)||!MON[h.type])continue;
+      let e=G.en.find(q=>q.nid===h.id);
+      if(!e){e=mkEnemy(h.type,h.x,h.y,!!h.elite);e.nid=h.id;if(CO.on){e.ghost=1;CO.gh[h.id]=e}G.en.push(e)}
+      e.max=Math.max(1,+h.maxHp||e.max);e.hp=clamp(+h.hp||0,0,e.max);e.x=h.x;e.y=h.y;e.face=h.face<0?-1:1;e.frozen=h.frozen?.2:0;
+      if(h.dead&&!e.dead){e.hp=0;kill(e)}else if(!h.dead)e.dead=false;
+    }
+    return;
+  }
   if(d.k==='go'){if(from!==NET.lead)return;
     if(d.z==='town'){if(CO.on){toast('파티장이 마을로 돌아갔습니다');CO.toTown=true;coEnd();fadeTo(enterTown)}return}
     if(G.dead)return;if(NET.tr||DU.on)return;
-    CO.on=true;CO.host=from;CO.gh={};if(ui.open)closePanel();toast(`파티장을 따라 ${d.z==='tower'?d.fl+'층':'지하 '+d.fl+'번 방'}으로 이동합니다`);
+    CO.on=true;CO.auth=true;CO.host=from;CO.gh={};if(ui.open)closePanel();toast(`파티장을 따라 ${d.z==='tower'?d.fl+'층':'지하 '+d.fl+'번 방'}으로 이동합니다`);
     fadeTo(()=>{if(d.z==='tower')enterFloor(d.fl);else enterDungeonRoom(d.fl);G.en=[];G.ep=[];G.pending=0;G.wave={q:[],t:99,cleared:false,coopWait:1};CO.gh={}});return}
   if(d.k==='s'){if(!CO.on||from!==CO.host||d.z!==G.zone||d.fl!==netFl())return;const seen=new Set();
     for(const r of d.e){const[nid,type,x,y,hp,face,elite,fr]=r;if(!MON[type])continue;seen.add(nid);let g=CO.gh[nid];if(g&&g.dead)continue;
@@ -2956,9 +2967,9 @@ function coRecv(from,d){if(!d)return;
   if(d.k==='h'&&coLead()){const o=NET.pl[from];for(const[nid,dm]of d.h||[]){const e=G.en.find(x=>x.nid===nid&&!x.dead);if(!e)continue;const v=Math.max(1,Math.min(dm,e.boss?e.max*.08:dm));e.hp-=v;e.flash=.1;G.texts.push({x:e.x+rnd(-6,6),y:e.y-e.z-e.hh-10,vy:-26,life:.7,str:''+Math.round(v),col:'#8fd0ff',sc:.9});if(e.hp<=0)kill(e)}}}
 function coopUpd(dt){
   if(coLead()&&(G.zone==='tower'||G.zone==='underdeep')&&coMates().length){CO.last+=dt;if(CO.last>=.1){CO.last=0;coSnapshot()}}
-  if(!CO.on)return;
-  if(!NET.on||!NET.party.includes(CO.host)){toast('파티장과 연결이 끊겨 마을로 돌아갑니다');CO.toTown=true;coEnd();fadeTo(enterTown);return}
-  for(const g of G.en){if(!g.ghost||g.dead)continue;const k=Math.min(1,dt*12);if(Math.hypot(g.tx-g.x,g.ty-g.y)>140){g.x=g.tx;g.y=g.ty}else{g.x+=(g.tx-g.x)*k;g.y+=(g.ty-g.y)*k}g.t+=dt;if(g.flash>0)g.flash-=dt}
+  if(!CO.on&&!(coLead()&&CO.auth))return;
+  if(CO.on&&(!NET.on||!NET.party.includes(CO.host))){toast('파티장과 연결이 끊겨 마을로 돌아갑니다');CO.toTown=true;coEnd();fadeTo(enterTown);return}
+  if(CO.on)for(const g of G.en){if(!g.ghost||g.dead)continue;const k=Math.min(1,dt*12);if(Math.hypot(g.tx-g.x,g.ty-g.y)>140){g.x=g.tx;g.y=g.ty}else{g.x+=(g.tx-g.x)*k;g.y+=(g.ty-g.y)*k}g.t+=dt;if(g.flash>0)g.flash-=dt}
   CO.flushT+=dt;if(CO.flushT>=.1){CO.flushT=0;const h=Object.entries(CO.pend).map(([k,v])=>[+k,Math.round(v)]);if(h.length){CO.pend={};netSend({t:'prel',d:{k:'h',h}})}}}
 
 /* 결투(PvP): 같은 스펙, 기본 공격과 순간이동만, 작은 경기장, 전부 수동 */
