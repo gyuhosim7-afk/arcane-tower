@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, createPartyHealthState, applyPartyHits, partyHealthRows } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -71,6 +71,36 @@ test("party snapshot sanitizer rejects spoofed zones and bounds enemy and projec
   assert.deepEqual(safe.e, [[1, "slime", 4000, 0, 1000, 1, 1, 0]]);
   assert.deepEqual(safe.b, [[4000, 0, 2000, -2000, 30, "#ffffff", 50000, 1]]);
   assert.deepEqual(safe.kd, [1, 2]);
+});
+
+test("party monster HP is initialized from server catalog and floor scaling", () => {
+  const solo = partyMonsterMaxHp("kingslime", 1, 10, false, 1, "tower");
+  const duo = partyMonsterMaxHp("kingslime", 1, 10, false, 2, "tower");
+  const trio = partyMonsterMaxHp("kingslime", 1, 10, false, 3, "tower");
+  assert.ok(solo > 0);
+  assert.ok(duo < solo);
+  assert.ok(trio > duo);
+  assert.equal(partyMonsterMaxHp("not-a-monster", 1, 10, false, 2), 0);
+});
+
+test("party health state ignores client HP ratios and server applies bounded damage", () => {
+  const snapshot = { e: [[7, "slime", 100, 200, 1, 1, 0, 0]] };
+  const state = createPartyHealthState(snapshot, null, { zone: "tower", floor: 1, level: 10, partySize: 2 }, 1000);
+  const enemy = state.enemies[7];
+  assert.equal(enemy.hp, enemy.maxHp);
+  const hit = applyPartyHits(state, [[7, 45]]);
+  assert.equal(hit.results[0].hp, Math.max(0, enemy.maxHp - 45));
+  assert.deepEqual(partyHealthRows(hit.state)[0].slice(0, 2), [7, "slime"]);
+});
+
+test("party boss damage is capped per hit and duplicate kills are blocked", () => {
+  const snapshot = { e: [[8, "kingslime", 100, 200, 1000, 1, 0, 0]] };
+  const state = createPartyHealthState(snapshot, null, { zone: "tower", floor: 1, level: 10, partySize: 2 }, 1000);
+  const one = applyPartyHits(state, [[8, 100000]]);
+  assert.ok(one.results[0].hp >= state.enemies[8].maxHp * 0.91);
+  const two = applyPartyHits(one.state, [[8, 100000]]);
+  assert.equal(two.results[0].dead, true);
+  assert.deepEqual(applyPartyHits(two.state, [[8, 100000]]).results, []);
 });
 
 test("server enforces attack cooldown", () => {
