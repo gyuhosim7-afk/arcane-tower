@@ -205,7 +205,7 @@ export class Town extends DurableObject {
         const key = "solo-health:" + a.u;
         const previous = await this.ctx.storage.get(key);
         const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: 1 }, now);
-        updateServerClearState(state, snapshot, a.p.zone);
+        updateServerClearState(state, snapshot, a.p.zone, now);
         await this.ctx.storage.put(key, state);
         this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
         if (state.cleared && a.p.zone === "underdeep" && !state.clearRewardSent[a.u]) {
@@ -558,11 +558,20 @@ function pickRewardFields(save, keys) {
 }
 const rewardFields = (save) => pickRewardFields(save, REWARD_FIELDS);
 const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
-function updateServerClearState(state, snapshot, zone) {
+function updateServerClearState(state, snapshot, zone, now) {
   const wasCleared = !!state.cleared;
   state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
   if (!snapshot.cl) {
-    if (wasCleared) { state.runId = crypto.randomUUID(); state.clearRewardSent = {}; }
+    if (wasCleared) {
+      state.runId = crypto.randomUUID();
+      state.clearRewardSent = {};
+      const fresh = Object.values(state.enemies).filter((enemy) => enemy.lastSeenAt === now);
+      state.enemies = Object.fromEntries(fresh.map((enemy) => [enemy.id, enemy]));
+      state.seenEnemyCount = fresh.length;
+      state.killCount = 0;
+      state.eliteKilled = false;
+      state.bossKilled = false;
+    }
     state.chestKind = null;
     state.chestDecided = false;
   } else if (state.cleared && !state.chestDecided) {
