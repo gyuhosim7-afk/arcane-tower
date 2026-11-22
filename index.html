@@ -947,7 +947,7 @@ function potentialBox(it,lower=false){
   return`<div style="margin:.5em 0;padding:.5em;border:1px solid ${POT_COLORS[grade]};border-radius:6px;background:rgba(25,30,55,.45)"><b style="color:${POT_COLORS[grade]}">${name} · ${POT_GRADES[grade]}</b><div class="ds" style="margin:.25em 0">${(data&&data.lines||[]).map((line,i)=>potentialLineText(line,i,grade,lower)).join('<br>')}</div>${btn(`${name} 스크롤 사용 · 보유 ${scrolls}`,`${lower?'usePotScrollBottom':'usePotScrollTop'}:${it.id}`,scrolls>0,'go')}</div>`;
 }
 function potentialPanel(it){ensureItemPotentials(it);return`<div style="margin-top:.5em"><div class="sec">잠재능력 · 같은 옵션 중복 가능</div>${potentialBox(it,false)}${potentialBox(it,true)}</div>`}
-function buyPotentialScroll(lower=false){const cost=potentialCost(null,lower);if(!pay(cost))return;const key=lower?'epotScroll':'potScroll';S[key]=(S[key]||0)+1;sfx.buy();toast(`${lower?'아랫잠':'윗잠'} 변경 스크롤을 구매했습니다 · 보유 ${S[key]}개`)}
+async function buyPotentialScroll(lower=false){const cost=potentialCost(null,lower);if(!await pay(cost))return;const key=lower?'epotScroll':'potScroll';S[key]=(S[key]||0)+1;sfx.buy();toast(`${lower?'아랫잠':'윗잠'} 변경 스크롤을 구매했습니다 · 보유 ${S[key]}개`)}
 function rerollItemPotential(id,lower=false){
   const it=Object.values(S.eq).find(x=>x&&x.id===+id)||S.inv.find(x=>x&&x.id===+id);if(!it)return;
   const countKey=lower?'epotScroll':'potScroll';if(!(S[countKey]>0)){toast(`대장간에서 ${lower?'아랫잠':'윗잠'} 변경 스크롤을 구매하세요`);sfx.err();return}
@@ -2403,7 +2403,7 @@ const ic=k=>`<img class="ic" src="${ICON[k]}" alt="">`;
 const fmt=n=>Math.floor(n).toLocaleString('en-US');
 const costHTML=c=>Object.keys(c).filter(k=>c[k]).map(k=>`<span class="${S[k]<c[k]?'no':''}">${ic(k)}${fmt(c[k])}</span>`).join(' ')||'무료';
 const can=c=>{for(const k in c)if(S[k]<c[k])return false;return true};
-function pay(c){if(!can(c)){toast('재료가 부족합니다');sfx.err();return false}for(const k in c)S[k]-=c[k];return true}
+async function pay(c,grant={}){if(!can(c)){toast('재료가 부족합니다');sfx.err();return false}if(AUTH&&AUTH.token){const r=await api('wallet/spend',{cost:c,grant});if(!r.ok){toast(r.err==='insufficient'?'재료가 부족합니다':'서버 결제 처리에 실패했습니다');sfx.err();return false}for(const k of ['gold','ess','ore'])if(r.fields&&Number.isFinite(r.fields[k]))S[k]=r.fields[k];save();return true}for(const k in c)S[k]-=c[k];for(const k in grant)S[k]=(S[k]||0)+grant[k];return true}
 const btn=(label,a,on=true,cls='')=>`<button class="${cls} ${on?'':'dis'}" data-a="${a}">${label}</button>`;
 const statLine=it=>{const s=itemStats(it);return Object.keys(s).map(k=>`${STN[k]} +${s[k]}`).join(' · ')};
 const elTag=el=>`<span class="tag" style="color:${EL[el].c[1]}">${EL[el].n}</span>`;
@@ -2575,7 +2575,7 @@ const ACT={
     save();closePanel();banner(`환생 ${S.rebirth}회!`,`마력·생명력 영구 +${S.rebirth*15}%${S.rebirth===1?' · 신발 칸 개방':''}`);
     G.flash=.6;G.flashCol='#3ff0e0';shake(14);sfx.circle();levelFx&&levelFx();fadeTo(enterTown)},
 
-  buyStatReset(){if(!pay({gold:STAT_RESET_GOLD}))return;S.statReset=(S.statReset||0)+1;sfx.buy();toast(`스탯 초기화권을 샀어요 · 보유 ${S.statReset}개`)},
+  async buyStatReset(){if(!await pay({gold:STAT_RESET_GOLD}))return;S.statReset=(S.statReset||0)+1;sfx.buy();toast(`스탯 초기화권을 샀어요 · 보유 ${S.statReset}개`)},
   statReset(){if(!(S.statReset>0))return;if(!ui.srArm){ui.srArm=true;setTimeout(()=>{ui.srArm=false;refreshPanel()},3000);return}ui.srArm=false;const n=S.st.int+S.st.vit+S.st.crit+S.st.wis;if(!n)return;S.statReset--;S.st={int:0,vit:0,crit:0,wis:0};S.pts+=n;recalc();if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp)}sfx.ui();toast(`능력치 포인트 ${n}점을 돌려받았어요`)},
   stat(k){
     if(AUTH&&AUTH.token){api('stats/allocate',{stat:k}).then(r=>{if(!r.ok){toast(r.err==='no_points'?'능력치 포인트가 없습니다':'스탯 변경 실패');return}S.pts=r.pts;S.st=Object.assign({int:0,vit:0,crit:0,wis:0},r.st||{});recalc();save();sfx.ui()});return}
@@ -2583,7 +2583,7 @@ const ACT={
   },
   circle(){const c=S.circle;if(c>=9||S.affPend)return sfx.err();if(S.lvl<CIRC_LVL[c+1]||S.mast<CIRC_MAST[c+1]){toast('레벨이나 수련치가 모자랍니다');return sfx.err()}S.circle++;S.mast=0;if(S.circle===4||S.circle===7)S.affPend=(S.affPend||0)+1;recalc();G.p.mp=D.maxMp;sfx.circle();
     banner(`${S.circle}서클 · ${CT[S.circle]}`,PASS[S.circle]?`${PASS[S.circle][0]}: ${PASS[S.circle][1]}`:'새로운 마나의 고리가 심장에 새겨졌습니다');levelFx();G.flash=.3;G.flashCol=AURA[S.circle];if(S.affPend)toast('새 속성을 깨울 수 있습니다. 엘드린에게서 고르세요')},
-  reinf(id){const it=Object.values(S.eq).find(i=>i&&i.id===+id)||S.inv.find(i=>i.id===+id);if(!it||it.my||it.up>=MAX_UP||FORGE.on)return;if(!pay(reinfCost(it)))return;
+  async reinf(id){const it=Object.values(S.eq).find(i=>i&&i.id===+id)||S.inv.find(i=>i.id===+id);if(!it||it.my||it.up>=MAX_UP||FORGE.on)return;if(!await pay(reinfCost(it)))return;
     const before=it.up,ok=Math.random()<enhRate(it.up);let drop=!ok&&enhDrop(it.up),broke=!ok&&Math.random()<destroyRate(it.up),saved=false;
     if(broke&&ui.useProt&&S.prot>0){S.prot--;broke=false;saved=true}
     if(ok)it.up++;else if(broke){if(S.eq[it.slot]===it)S.eq[it.slot]=null;S.inv=S.inv.filter(x=>x!==it)}else if(drop)it.up--;
@@ -2595,9 +2595,9 @@ const ACT={
   usePotScrollTop(id){rerollItemPotential(id,false)},
   usePotScrollBottom(id){rerollItemPotential(id,true)},
   prot(){ui.useProt=!ui.useProt;sfx.ui()},
-  buyProt(){if(!pay(protCost()))return;S.prot++;sfx.buy();toast('파괴 방지권을 샀습니다')},
+  async buyProt(){if(!await pay(protCost()))return;S.prot++;sfx.buy();toast('파괴 방지권을 샀습니다')},
   aff(el){if(S.job){toast('2차 전직 후에는 다른 속성을 깨울 수 없습니다');return sfx.err()}if(!S.affPend||S.aff.includes(el))return;S.aff.push(el);S.affPend--;sfx.circle();toast(`${EL[el].n} 속성이 깨어났습니다`);const s0=START[el];if(!S.grim[s0]){S.grim[s0]=1;toast(`마법서 ${SP[s0].n}을(를) 받았습니다`)}},
-  craft(id){const sp=SP[id];if(!sp||(sp.o&&sp.o.job)||!canUse(sp))return sfx.err();if(S.circle<sp.c){toast(`${sp.c}서클이 필요합니다`);return sfx.err()}if(!pay(craftCost(sp)))return;S.grim[id]=1;sfx.buy();toast(`마법서 제작: ${sp.n}`);const i=S.slots.slice(0,D.slots).indexOf(null);if(i>=0)S.slots[i]=id},
+  async craft(id){const sp=SP[id];if(!sp||(sp.o&&sp.o.job)||!canUse(sp))return sfx.err();if(S.circle<sp.c){toast(`${sp.c}서클이 필요합니다`);return sfx.err()}if(!await pay(craftCost(sp)))return;S.grim[id]=1;sfx.buy();toast(`마법서 제작: ${sp.n}`);const i=S.slots.slice(0,D.slots).indexOf(null);if(i>=0)S.slots[i]=id},
   devCode(){if(AUTH&&AUTH.dev){DEV.on=true;recalc();openPanel('dev')}else toast('개발자 계정에서만 쓸 수 있어요')},
   devOpen(){if(DEV.on)openPanel('dev')},
   altarPut(id){if(S.adv2Entered||(S.adv2Offer||[]).length>=3)return sfx.err();const i=S.inv.findIndex(it=>it.id===+id&&it.my&&MYTH[it.my]);if(i<0)return sfx.err();S.adv2Offer.push(S.inv.splice(i,1)[0]);sfx.item()},
@@ -2621,13 +2621,13 @@ const ACT={
     else if(k==='off'){setDevForCurrentCharacter(false);DEV.god=false;DEV.ohk=false;recalc();save();closePanel();toast('이 캐릭터의 개발자 모드를 껐어요');return}
     recalc();save()},
   nick(){const n=cleanNick(prompt('새 닉네임 (최대 10글자)',S.nick||''));if(n){S.nick=n;toast(`닉네임: ${n}`)}},
-  blinkUp(){if((S.blinkLv||0)>=BLINK_MAX)return;if(!pay(blinkCost()))return;S.blinkLv=(S.blinkLv||0)+1;sfx.buy();toast(`순간이동 Lv.${S.blinkLv} · 쿨타임 ${blinkCD().toFixed(2)}초`)},
-  enh(id){const sp=SP[id];if(!sp||!canUse(sp)||(S.grim[id]||0)>=10)return sfx.err();if(!pay(enhCost(sp)))return;S.grim[id]++;sfx.buy();toast(`${sp.n} Lv.${S.grim[id]}`)},
+  async blinkUp(){if((S.blinkLv||0)>=BLINK_MAX)return;if(!await pay(blinkCost()))return;S.blinkLv=(S.blinkLv||0)+1;sfx.buy();toast(`순간이동 Lv.${S.blinkLv} · 쿨타임 ${blinkCD().toFixed(2)}초`)},
+  async enh(id){const sp=SP[id];if(!sp||!canUse(sp)||(S.grim[id]||0)>=10)return sfx.err();if(!await pay(enhCost(sp)))return;S.grim[id]++;sfx.buy();toast(`${sp.n} Lv.${S.grim[id]}`)},
   slot(id){const sp=SP[id];if(!sp||!canUse(sp)){toast('2차 전직 후에는 선택 속성의 마법만 사용할 수 있습니다');return sfx.err()}const i=S.slots.indexOf(id);if(i>=0&&i<D.slots)S.slots[i]=null;else{if(i>=0)S.slots[i]=null;const j=S.slots.slice(0,D.slots).indexOf(null);if(j<0){toast('빈 슬롯이 없습니다. 다른 마법을 먼저 해제하세요');return sfx.err()}S.slots[j]=id}sfx.ui()},
   ltab(t){ui.lunaTab=t;sfx.ui()},tab(t){ui.tab=t;sfx.ui()},gf(t){ui.gf=t;sfx.ui()},
-  pot(k){const key=k+'Pot';if(S[key]>=9)return sfx.err();if(!pay({gold:20,ess:1}))return;S[key]++;sfx.buy()},
-  potg(k){const key=k+'Pot';if(S[key]>=9)return sfx.err();if(!pay({gold:45}))return;S[key]++;sfx.buy()},
-  forge(slot){if(S.inv.length>=BAG()){toast('가방이 가득 찼습니다');return sfx.err()}const il=Math.max(1,S.maxFloor);if(!pay({gold:80+il*20,ore:4+(il>>1)}))return;const it=mkItem(il,1,slot);S.inv.push(it);sfx.buy();toast(`제작 완료: <span style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</span>`)},
+  async pot(k){const key=k+'Pot';if(S[key]>=9)return sfx.err();if(!await pay({gold:20,ess:1}))return;S[key]++;sfx.buy()},
+  async potg(k){const key=k+'Pot';if(S[key]>=9)return sfx.err();if(!await pay({gold:45}))return;S[key]++;sfx.buy()},
+  async forge(slot){if(S.inv.length>=BAG()){toast('가방이 가득 찼습니다');return sfx.err()}const il=Math.max(1,S.maxFloor);if(!await pay({gold:80+il*20,ore:4+(il>>1)}))return;const it=mkItem(il,1,slot);S.inv.push(it);sfx.buy();toast(`제작 완료: <span style="color:${RAR[it.r].c}">[${RAR[it.r].n}] ${itemName(it)}</span>`)},
   sel(id){ui.sel=+id;sfx.ui()},
   equip(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;const it=S.inv[i];if(it.slot==='shoes'&&!S.shoesUnlocked){toast('환생하면 신발 칸이 열려요');return sfx.err()}const old=S.eq[it.slot];S.inv.splice(i,1);if(old)S.inv.push(old);S.eq[it.slot]=it;recalc();sfx.buy()},
   unequip(k){const it=S.eq[k];if(!it||S.inv.length>=BAG())return;S.eq[k]=null;S.inv.push(it);recalc();sfx.ui()},
@@ -2637,10 +2637,10 @@ const ACT={
   async claim(i){if(AUTH&&AUTH.token){const r=await api('quest/claim',{index:+i});if(!r.ok){toast(r.err==='quest_not_complete'?'퀘스트가 아직 완료되지 않았습니다':'퀘스트 보상 처리에 실패했습니다');return}coRecv(null,{k:'loot',fields:r.fields,rewards:r.rewards});return}const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(questXpReward(q))},
   deepEnter(room){closePanel();fadeTo(()=>enterDungeonRoom(+room))},
   deepTown(){closePanel();fadeTo(enterUnderdeepTown)},
-  deepPotion(k){const key=k==='hp'?'hpPot':'mpPot';if(!['hp','mp'].includes(k)||S[key]>=9||!pay({gold:900,ess:10}))return sfx.err();S[key]++;sfx.buy();toast(`${k==='hp'?'체력':'마나'} 물약을 샀습니다`)},
-  deepMat(k){if(!['ess','ore'].includes(k)||!pay({gold:12000}))return sfx.err();S[k]+=50;sfx.buy();toast(`${k==='ess'?'정수':'광석'} +50`)},
-  deepCraft(slot){if(!['staff','robe','ring','shoes'].includes(slot)||S.inv.length>=BAG()||!pay({gold:40000,ore:100,ess:100}))return sfx.err();S.inv.push(mkItem(100,4,slot));sfx.buy();toast(`${SLOTN[slot]} 전설 장비를 제작했습니다`)},
-  deepRest(){if(!G.p||!pay({gold:5000}))return sfx.err();G.p.hp=D.maxHp;G.p.mp=D.maxMp;if(G.p.cd)for(const id in G.p.cd)G.p.cd[id]=0;G.p.bcd=0;sfx.clear();toast('HP·MP와 쿨타임을 모두 정비했습니다')},
+  async deepPotion(k){const key=k==='hp'?'hpPot':'mpPot';if(!['hp','mp'].includes(k)||S[key]>=9||!await pay({gold:900,ess:10}))return sfx.err();S[key]++;sfx.buy();toast(`${k==='hp'?'체력':'마나'} 물약을 샀습니다`)},
+  async deepMat(k){if(!['ess','ore'].includes(k)||!await pay({gold:12000},{[k]:50}))return sfx.err();sfx.buy();toast(`${k==='ess'?'정수':'광석'} +50`)},
+  async deepCraft(slot){if(!['staff','robe','ring','shoes'].includes(slot)||S.inv.length>=BAG()||!await pay({gold:40000,ore:100,ess:100}))return sfx.err();S.inv.push(mkItem(100,4,slot));sfx.buy();toast(`${SLOTN[slot]} 전설 장비를 제작했습니다`)},
+  async deepRest(){if(!G.p||!await pay({gold:5000}))return sfx.err();G.p.hp=D.maxHp;G.p.mp=D.maxMp;if(G.p.cd)for(const id in G.p.cd)G.p.cd[id]=0;G.p.bcd=0;sfx.clear();toast('HP·MP와 쿨타임을 모두 정비했습니다')},
   enter(f){f=+f;const bossShortcut=f>=5&&f<=100&&f%5===0&&(f===5?S.maxFloor>=4:f-5<=S.maxFloor);if(!(DEV.on&&f>=1&&f<=100)&&!(f===1||f===Math.min(100,S.maxFloor+1)||(f%10===1&&f<=91&&f-1<=S.maxFloor)||bossShortcut))return;closePanel();sfx.portal();fadeTo(()=>enterFloor(f))},
   reset(){if(ui.resetArm){CLOUD.dead=true;api('delchar',{}).then(r=>{if(r.ok){try{localStorage.removeItem(SAVE_KEY)}catch(e){}location.reload()}else{CLOUD.dead=false;toast('삭제 실패: '+(r.err||'서버'))}})}else{ui.resetArm=true}}
 };
