@@ -103,7 +103,8 @@ export function blinkCooldownMs(save) {
   const job = s.job === "wind" ? 0.5 : 1;
   const shoes = s.eq && s.eq.shoes;
   const stride = shoes && shoes.my === "uqStride" ? 0.65 : 1;
-  return Math.round(2500 * (1 - cdr * 0.5) * (1 - 0.035 * level) * job * stride);
+  const baseCooldown = level <= 10 ? 2500 * (1 - 0.035 * level) : 1625 - (level - 10) * (1225 / 90);
+  return Math.round(baseCooldown * (1 - cdr * 0.5) * job * stride);
 }
 
 export function resolveBlink(save, movement = {}, now = Date.now()) {
