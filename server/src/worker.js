@@ -186,7 +186,7 @@ export class Town extends DurableObject {
       } else if (!["wood", "iron"].includes(kind)) return this.send(ws, { t: "chest", ok: 0, kind, msg: "일반 상자 종류가 올바르지 않습니다" });
       const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/chest-reward", {
         method: "POST",
-        body: JSON.stringify({ u: a.u, zone, floor, kind }),
+        body: JSON.stringify({ u: a.u, zone, floor, kind, runId: state.runId }),
       }).then((r) => r.json()).catch(() => ({}));
       if (!granted.ok) return this.send(ws, { t: "chest", ok: 0, kind, msg: granted.err === "already_claimed" ? "이미 보상을 받았습니다" : "상자 보상 처리에 실패했습니다" });
       this.send(ws, { t: "chest", ok: 1, kind, fields: granted.fields, rewards: granted.rewards });
@@ -550,7 +550,7 @@ const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
 const REWARD_FIELDS = ["lvl", "xp", "pts", "st"];
-const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "inv", "uid"];
+const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "underdeepBestRoom", "inv", "uid"];
 function pickRewardFields(save, keys) {
   const out = {};
   for (const key of keys) if (save && save[key] !== undefined) out[key] = JSON.parse(JSON.stringify(save[key]));
