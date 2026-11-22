@@ -554,7 +554,7 @@ const ID_RE = /^[가-힣a-z0-9_]{2,12}$/;
 const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
-const REWARD_FIELDS = ["lvl", "xp", "pts", "st", "quests"];
+const REWARD_FIELDS = ["lvl", "xp", "pts", "st", "quests", "gold", "ess", "ore"];
 const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "underdeepBestRoom", "maxFloor", "inv", "uid"];
 function pickRewardFields(save, keys) {
   const out = {};
@@ -968,6 +968,58 @@ export class Accounts extends DurableObject {
       acc.serverRewardFields = rewardFields(acc.save);
       await this.ctx.storage.put("u:" + acc.u, acc);
       return json({ ok: 1, stat: allocated.stat, pts: allocated.pts, st: acc.save.st });
+    }
+    if (path === "/api/wallet/spend") {
+      if (!acc.save) return json({ err: "character_required" }, 409);
+      const cost = b.cost && typeof b.cost === "object" ? b.cost : {};
+      const grant = b.grant && typeof b.grant === "object" ? b.grant : {};
+      const walletKeys = ["gold", "ess", "ore"];
+      for (const key of Object.keys(cost)) if (!walletKeys.includes(key)) return json({ err: "invalid_cost" }, 400);
+      for (const key of Object.keys(grant)) if (!["ess", "ore"].includes(key)) return json({ err: "invalid_grant" }, 400);
+      const next = { ...acc.save };
+      for (const key of walletKeys) {
+        const amount = cost[key] === undefined ? 0 : Number(cost[key]);
+        if (!Number.isSafeInteger(amount) || amount < 0 || amount > 2_000_000_000) return json({ err: "invalid_cost" }, 400);
+        if ((next[key] || 0) < amount) return json({ err: "insufficient" }, 409);
+        next[key] = (next[key] || 0) - amount;
+      }
+      for (const key of ["ess", "ore"]) {
+        const amount = grant[key] === undefined ? 0 : Number(grant[key]);
+        if (!Number.isSafeInteger(amount) || amount < 0 || amount > 2_000_000_000) return json({ err: "invalid_grant" }, 400);
+        next[key] = Math.min(2_000_000_000, (next[key] || 0) + amount);
+      }
+      acc.save = next;
+      acc.serverRewardFields = rewardFields(acc.save);
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, fields: rewardSyncFields(acc.save) });
+    }
+    if (path === "/api/items/sell") {
+      if (!acc.save || !Array.isArray(acc.save.inv)) return json({ err: "character_required" }, 409);
+      const ids = Array.isArray(b.ids) ? [...new Set(b.ids.map((id) => Number(id)).filter((id) => Number.isSafeInteger(id) && id > 0))].slice(0, 32) : [];
+      if (!ids.length) return json({ err: "no_items" }, 400);
+      const inv = [...acc.save.inv];
+      let gold = 0, sold = 0;
+      for (const id of ids) {
+        const index = inv.findIndex((item) => Number(item && item.id) === id);
+        if (index < 0) continue;
+        const item = inv[index];
+        if (item.my) return json({ err: "cannot_sell_mythic" }, 400);
+        const price = Math.round((6 + Number(item.il || 1) * 3) * (Number(item.r || 0) + 1) ** 2 * (1 + Number(item.up || 0) * 0.2));
+        gold += Math.max(0, Math.min(2_000_000_000, price));
+        inv.splice(index, 1);
+        sold++;
+        if (id >= SERVER_ITEM_ID_BASE) {
+          if (!acc.serverItemLedger || !acc.serverItemLedger[String(id)] || !acc.serverItemLedger[String(id)].active) return json({ err: "unowned_server_item" }, 400);
+          acc.serverItemLedger[String(id)].active = false;
+        }
+      }
+      if (!sold) return json({ err: "items_not_found" }, 404);
+      acc.save = { ...acc.save, inv, gold: Math.min(2_000_000_000, (acc.save.gold || 0) + gold) };
+      const soldIds = new Set(ids.map(String));
+      acc.pendingServerItems = (acc.pendingServerItems || []).filter((item) => !soldIds.has(String(item.id)));
+      acc.serverRewardFields = rewardFields(acc.save);
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, fields: rewardSyncFields(acc.save), rewards: { gold, sold } });
     }
     if (path === "/api/quest/claim") {
       ensureServerQuests(acc);
