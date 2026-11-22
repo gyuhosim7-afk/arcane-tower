@@ -566,7 +566,7 @@ const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
 const SERVER_QUEST_EXCLUDED = new Set(["riftfang", "abyssalArcanist", "obsidianGuard", "dreadMarshal", "voidTyrant", "underdeepGatekeeper", "underdeepCore", "underdeepLord", "underdeepOrigin"]);
 function makeServerQuest(save) {
   const floor = Math.max(1, Math.min(100, Math.floor(save.maxFloor || 1)));
-  const xp = Math.round(xpRequired(Math.max(1, Math.min(200, save.lvl || 1))) * 0.15);
+  const xp = Math.min(2_000_000_000, Math.round(xpRequired(Math.max(1, Math.min(200, save.lvl || 1))) * 0.15));
   const roll = Math.random();
   if (roll < 0.55) {
     let pool = Object.entries(MONSTERS).filter(([key, monster]) => !SERVER_QUEST_EXCLUDED.has(key) && !monster.boss && !monster.raidElite && !monster.raidBoss && monster.ai !== "bomb" && (monster.r || 1) <= floor + 10 && (monster.r || 1) >= Math.max(1, floor - 15));
