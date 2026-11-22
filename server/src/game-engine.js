@@ -285,9 +285,9 @@ export function applyPartyHits(state, hits) {
 }
 
 export function partyHealthRecords(state) {
-  return Object.values(state && state.enemies || {}).map((enemy) => ({
+  return Object.values(state && state.enemies || {}).filter((enemy) => !enemy.dead && enemy.hp > 0).map((enemy) => ({
     id: enemy.id, type: enemy.type, x: enemy.x, y: enemy.y, face: enemy.face,
-    elite: enemy.elite, frozen: enemy.frozen, hp: enemy.hp, maxHp: enemy.maxHp, xp: partyMonsterXp(enemy.type, state.floor, enemy.elite, state.zone), dead: !!enemy.dead,
+    elite: enemy.elite, frozen: enemy.frozen, hp: enemy.hp, maxHp: enemy.maxHp, xp: partyMonsterXp(enemy.type, state.floor, enemy.elite, state.zone), dead: false,
   }));
 }
 
