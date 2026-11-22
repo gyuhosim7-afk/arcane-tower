@@ -166,9 +166,9 @@ export function allocateServerStat(save, stat) {
   return { save: { ...save, st, pts: pts - 1 }, stat, value: st[stat], pts: pts - 1 };
 }
 
-function rewardItem(floor, shoesUnlocked, rng) {
+function rewardItem(floor, shoesUnlocked, rng, minR = 0) {
   const x = rng() * 100, bonus = Math.min(1.5, floor / 100);
-  const rarity = x < 0.8 + bonus ? 4 : x < 4 + bonus * 3 ? 3 : x < 15 + bonus * 6 ? 2 : x < 42 ? 1 : 0;
+  const rarity = Math.max(minR, x < 0.8 + bonus ? 4 : x < 4 + bonus * 3 ? 3 : x < 15 + bonus * 6 ? 2 : x < 42 ? 1 : 0);
   const slots = shoesUnlocked ? ["robe", "staff", "ring", "shoes"] : ["robe", "staff", "ring"];
   const slot = slots[Math.floor(rng() * slots.length)];
   const item = { slot, r: rarity, il: Math.max(1, floor), up: 0, v: Math.floor(rng() * 5), a: {} };
@@ -220,6 +220,40 @@ export function applyMonsterRewards(save, type, floor, elite = false, zone = "to
     }
   }
   return { save: next, rewards: { ...rewards, itemAdded }, level: next.lvl, xp: next.xp, pts: next.pts || 0 };
+}
+
+
+export function applyChestRewards(save, kind, floor, zone = "tower", rng = Math.random) {
+  if (!save || !Array.isArray(save.inv) || !["wood", "iron", "gold"].includes(kind)) return { error: "invalid_chest" };
+  const f = zone === "underdeep" ? Math.min(100, 90 + Math.max(1, Math.floor(floor))) : Math.max(1, Math.min(100, Math.floor(floor)));
+  const mult = { wood: 1, iron: 3, gold: 10 }[kind];
+  const rewards = {
+    gold: Math.round((15 + f * 5) * mult * (0.8 + rng() * 0.4)),
+    ess: ({ wood: 1, iron: 3, gold: 8 }[kind]) + Math.floor(f / 15),
+    ore: ({ wood: 1, iron: 4, gold: 10 }[kind]) + Math.floor(f / 12),
+    hpPot: 0, mpPot: 0, prot: 0, itemAdded: 0, autoSold: 0,
+  };
+  if (rng() < 0.4) rewards[rng() < 0.5 ? "hpPot" : "mpPot"] = 1;
+  if (kind === "gold" || (kind === "iron" && rng() < 0.12)) rewards.prot = 1;
+  const count = kind === "wood" ? 1 + (rng() < 0.5 ? 1 : 0) : kind === "iron" ? 2 + (rng() < 0.8 ? 2 : 0) : 4;
+  const minR = { wood: 0, iron: 1, gold: 2 }[kind];
+  const next = { ...save, inv: [...save.inv] };
+  for (const key of ["gold", "ess", "ore", "hpPot", "mpPot", "prot"]) next[key] = clampInt(next[key] || 0, 0, 2_000_000_000) + rewards[key];
+  const itemsAdded = [];
+  for (let i = 0; i < count; i++) {
+    const item = rewardItem(f, !!save.shoesUnlocked, rng, minR);
+    const uid = clampInt(next.uid || 1, 1, Number.MAX_SAFE_INTEGER - 1);
+    item.id = uid;
+    next.uid = uid + 1;
+    if (next.inv.length < 32) { next.inv.push(item); itemsAdded.push(item); }
+    else {
+      const sell = Math.round((6 + item.il * 3) * (item.r + 1) ** 2);
+      next.gold += sell;
+      rewards.autoSold += sell;
+    }
+  }
+  rewards.itemAdded = itemsAdded.length;
+  return { save: next, rewards, itemsAdded };
 }
 
 export function partyMonsterMaxHp(type, floor, level, elite, partySize, zone = "tower") {
