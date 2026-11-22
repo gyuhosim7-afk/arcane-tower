@@ -34,7 +34,7 @@ export function createServerCharacter(save) {
     st: { int: clampInt(st.int || 0, 0, 10000), wis: clampInt(st.wis || 0, 0, 10000) },
     eq: cleanEq,
     circle: clampInt(save.circle || 1, 1, 9),
-    blinkLv: clampInt(save.blinkLv || 0, 0, 10),
+    blinkLv: clampInt(save.blinkLv || 0, 0, 100),
     job: typeof save.job === "string" ? save.job.slice(0, 16) : "",
   };
 }
