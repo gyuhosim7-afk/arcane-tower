@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, applyUnderdeepClearRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -205,15 +205,7 @@ export class Town extends DurableObject {
         const key = "solo-health:" + a.u;
         const previous = await this.ctx.storage.get(key);
         const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: 1 }, now);
-        state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
-        if (!snapshot.cl) { state.chestKind = null; state.chestDecided = false; }
-        else if (state.cleared && !state.chestDecided) {
-          state.chestDecided = true;
-          if (a.p.zone === "underdeep") state.chestKind = state.floor % 5 === 0 && state.bossKilled ? "gold" : null;
-          else if (state.floor % 5 === 0) state.chestKind = state.bossKilled ? "gold" : null;
-          else if (state.eliteKilled) state.chestKind = "iron";
-          else { const roll = Math.random(); state.chestKind = roll < 0.06 ? "iron" : roll < 0.36 ? "wood" : null; }
-        }
+        updateServerClearState(state, snapshot, a.p.zone);
         await this.ctx.storage.put(key, state);
         this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
         this.save(x);
@@ -326,7 +318,7 @@ export class Town extends DurableObject {
         if (m.d.k === "go") {
           if (!["tower", "underdeep", "town"].includes(m.d.z) || !Number.isInteger(m.d.fl) || m.d.fl < 0 || m.d.fl > 999) return;
           d = { k: "go", z: m.d.z, fl: m.d.fl };
-          await this.ctx.storage.put("party-health:" + a.party, { zone: m.d.z, floor: m.d.fl, enemies: {} });
+          await this.ctx.storage.put("party-health:" + a.party, { zone: m.d.z, floor: m.d.fl, enemies: {}, runId: crypto.randomUUID(), clearRewardSent: {} });
           this.send(ws, { t: "prel", from: a.id, d: { k: "ready" } });
         } else {
           if (now - (a.partySnapshotAt || 0) < 80) return;
@@ -336,7 +328,7 @@ export class Town extends DurableObject {
           const key = "party-health:" + a.party;
           const previous = await this.ctx.storage.get(key);
           const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: members.length }, now);
-           state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
+           updateServerClearState(state, snapshot, a.p.zone);
           await this.ctx.storage.put(key, state);
           d = { ...snapshot, e: partyHealthRows(state), kd: [] };
           const auth = { t: "prel", from: a.id, d: { k: "auth", h: partyHealthRecords(state), kd: [] } };
@@ -541,6 +533,23 @@ function pickRewardFields(save, keys) {
 }
 const rewardFields = (save) => pickRewardFields(save, REWARD_FIELDS);
 const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
+function updateServerClearState(state, snapshot, zone) {
+  const wasCleared = !!state.cleared;
+  state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
+  if (!snapshot.cl) {
+    if (wasCleared) { state.runId = crypto.randomUUID(); state.clearRewardSent = {}; }
+    state.chestKind = null;
+    state.chestDecided = false;
+  } else if (state.cleared && !state.chestDecided) {
+    state.chestDecided = true;
+    if (zone === "underdeep") state.chestKind = state.floor % 5 === 0 && state.bossKilled ? "gold" : null;
+    else if (state.floor % 5 === 0) state.chestKind = state.bossKilled ? "gold" : null;
+    else if (state.eliteKilled) state.chestKind = "iron";
+    else { const roll = Math.random(); state.chestKind = roll < 0.06 ? "iron" : roll < 0.36 ? "wood" : null; }
+  }
+  return state;
+}
+
 const SERVER_ITEM_ID_BASE = 900_000_000_000;
 function serverItemRecord(item) {
   return { slot: item.slot, r: item.r, il: item.il, v: item.v, my: item.my || null, a: JSON.parse(JSON.stringify(item.a || {})), active: true };
