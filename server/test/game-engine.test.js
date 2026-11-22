@@ -21,6 +21,25 @@ test("server creates encounter health; client cannot supply monster HP", () => {
   assert.equal(started.state.monsterMaxHp, 5000);
 });
 
+test("server can start encounters for real catalog monsters and bosses", () => {
+  const slime = startEncounter(character, "slime", 10000);
+  assert.equal(slime.state.monsterName, "슬라임");
+  assert.equal(slime.state.monsterHp, MONSTERS.slime.hp);
+  assert.equal(slime.state.rewardXp, MONSTERS.slime.xp);
+  const boss = startEncounter(character, "kingslime", 10000);
+  assert.equal(boss.state.monsterBoss, true);
+  assert.equal(boss.state.monsterHp, MONSTERS.kingslime.hp);
+});
+
+test("real monster kill reward is calculated by the server catalog", () => {
+  const strong = { ...character, lvl: 200, st: { int: 10000 } };
+  const started = startEncounter(strong, "slime", 10000).state;
+  const won = resolveAttack(strong, started, 11000);
+  assert.equal(won.state.status, "won");
+  assert.deepEqual(won.result.rewards, { xp: MONSTERS.slime.xp });
+  assert.equal(resolveAttack(strong, won.state, 12000).error, "no_active_encounter");
+});
+
 test("attack damage is computed from server-side character snapshot", () => {
   const started = startEncounter(character, "training_dummy", 10000).state;
   const first = resolveAttack(character, started, 11000);

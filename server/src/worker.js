@@ -551,8 +551,14 @@ export class Accounts extends DurableObject {
       const resolved = resolveAttack(acc.serverCharacter, acc.combat, Date.now());
       if (resolved.error) return json({ err: resolved.error }, resolved.error === "cooldown" ? 429 : 409);
       acc.combat = resolved.state;
+      // 처치 보상은 서버 상태에만 누적한다. 승리 상태는 재공격할 수 없어 중복 지급되지 않는다.
+      if (resolved.result.rewards && resolved.result.rewards.xp > 0) {
+        acc.serverProgress = acc.serverProgress || { xp: 0, kills: 0 };
+        acc.serverProgress.xp = Math.min(2_000_000_000, (acc.serverProgress.xp || 0) + resolved.result.rewards.xp);
+        acc.serverProgress.kills = Math.min(2_000_000_000, (acc.serverProgress.kills || 0) + 1);
+      }
       await this.ctx.storage.put("u:" + acc.u, acc);
-      return json({ ok: 1, combat: acc.combat, result: resolved.result });
+      return json({ ok: 1, combat: acc.combat, result: resolved.result, serverProgress: acc.serverProgress || { xp: 0, kills: 0 } });
     }
     if (path === "/api/load") {
       if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
