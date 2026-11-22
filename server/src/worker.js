@@ -504,6 +504,35 @@ function pickRewardFields(save, keys) {
 }
 const rewardFields = (save) => pickRewardFields(save, REWARD_FIELDS);
 const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
+const SERVER_ITEM_ID_BASE = 900_000_000_000;
+function serverItemRecord(item) {
+  return { slot: item.slot, r: item.r, il: item.il, v: item.v, my: item.my || null, a: JSON.parse(JSON.stringify(item.a || {})), active: true };
+}
+function listedItems(save) {
+  return [...(Array.isArray(save && save.inv) ? save.inv : []), ...Object.values(save && save.eq || {}).filter(Boolean)];
+}
+function validateServerItemOwnership(save, account) {
+  const seen = new Set(), ledger = account.serverItemLedger || {};
+  for (const item of listedItems(save)) {
+    const id = Number(item && item.id);
+    if (!Number.isSafeInteger(id) || id < 1) return "invalid_item_id";
+    if (seen.has(id)) return "duplicate_item_id";
+    seen.add(id);
+    if (id < SERVER_ITEM_ID_BASE) continue; // legacy/client items are migrated separately
+    const record = ledger[String(id)];
+    if (!record || !record.active) return "unowned_server_item";
+    const sameBase = item.slot === record.slot && item.r === record.r && item.v === record.v && (item.my || null) === record.my;
+    const sameStats = JSON.stringify(item.a || {}) === JSON.stringify(record.a || {});
+    const sameLevel = item.il === record.il;
+    if (!sameBase || (!sameStats || !sameLevel) && !(item.my && item.il === save.lvl)) return "server_item_modified";
+    if (item.my && item.il === save.lvl && (!sameStats || !sameLevel)) {
+      record.il = item.il;
+      record.a = JSON.parse(JSON.stringify(item.a || {}));
+    }
+  }
+  return null;
+}
+
 const isUnique = (my) => typeof my === "string" && /^uq/.test(my);
 // 아이템 하나가 게임에서 나올 수 있는 모양인지 검사 (조작 아이템 차단). dev면 통과.
 function itemLegit(it, dev) {
@@ -651,6 +680,16 @@ export class Accounts extends DurableObject {
       const granted = applyMonsterRewards(target.save, String(b.type || ""), num(b.floor, 1, 100), !!b.elite, b.zone === "underdeep" ? "underdeep" : "tower");
       if (granted.error) return json({ err: granted.error }, 400);
       target.save = granted.save;
+      target.serverItemLedger = target.serverItemLedger || {};
+      target.pendingServerItems = target.pendingServerItems || [];
+      if (granted.rewards.itemAdded && granted.rewards.item) {
+        const item = granted.rewards.item;
+        const id = Math.max(SERVER_ITEM_ID_BASE, target.serverItemNextId || SERVER_ITEM_ID_BASE);
+        item.id = id;
+        target.serverItemNextId = id + 1;
+        target.serverItemLedger[String(id)] = serverItemRecord(item);
+        target.pendingServerItems.push(JSON.parse(JSON.stringify(item)));
+      }
       target.serverCharacter = createServerCharacter(target.save);
       target.serverRewardFields = rewardFields(target.save);
       target.serverProgress = target.serverProgress || { xp: 0, kills: 0 };
@@ -728,9 +767,20 @@ export class Accounts extends DurableObject {
     if (path === "/api/save") {
       const incoming = b.save, why = checkSave(incoming, acc.save, dev(acc.u), (Date.now() - (acc.saved || 0)) / 60000);
       if (why) return json({ err: "bad", why }, 400);
-      const s = { ...incoming };
+      const s = { ...incoming, inv: [...(incoming.inv || [])] };
       // 보상/스탯 API가 서버에서 확정한 필드는 브라우저 저장으로 되돌릴 수 없다.
       if (acc.serverRewardFields) Object.assign(s, rewardFields(acc.serverRewardFields));
+      const ownershipError = validateServerItemOwnership(s, acc);
+      if (ownershipError) return json({ err: "bad", why: ownershipError }, 400);
+      const currentIds = new Set(listedItems(s).map((item) => String(item.id)));
+      const pending = acc.pendingServerItems || [];
+      for (const item of pending) {
+        if (!currentIds.has(String(item.id))) return json({ err: "loot_sync_pending" }, 409);
+      }
+      for (const [id, record] of Object.entries(acc.serverItemLedger || {})) {
+        if (record.active && !currentIds.has(id)) record.active = false;
+      }
+      acc.pendingServerItems = [];
       if (!acc.save && s.pid) {
         // 이 기기 캐릭터를 처음 올릴 때: 같은 캐릭터를 두 계정에 복사하지 못하게 막는다
         const owner = await this.ctx.storage.get("pid:" + s.pid);
@@ -738,6 +788,7 @@ export class Accounts extends DurableObject {
         await this.ctx.storage.put("pid:" + s.pid, acc.u);
       }
       acc.save = s; acc.saved = Date.now();
+      acc.serverItemLedger = acc.serverItemLedger || {};
       // New characters get a first snapshot; an existing snapshot is never replaced by browser saves.
       if (!acc.serverCharacter) {
         acc.serverCharacter = createServerCharacter(s);
@@ -753,6 +804,9 @@ export class Accounts extends DurableObject {
       acc.save = null;
       acc.serverCharacter = null;
       acc.serverCharacterMigratedAt = null;
+      acc.serverItemLedger = {};
+      acc.pendingServerItems = [];
+      acc.serverItemNextId = SERVER_ITEM_ID_BASE;
       acc.combat = null;
       acc.movement = null;
       const rk = (await this.ctx.storage.get("rank")) || {};
