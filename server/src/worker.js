@@ -102,12 +102,19 @@ export class Town extends DurableObject {
   partyList(pid) {
     return pid ? this.all().filter((x) => x.a.party === pid) : [];
   }
-  partySync(pid) {
+  async partySync(pid) {
     let mem = this.partyList(pid);
-    if (mem.length === 1) { mem[0].a.party = null; this.save(mem[0]); this.send(mem[0].w, { t: "party", members: [] }); return; }
-    if (mem.length && !mem.some((x) => x.a.id === pid)) {
-      // 파티장이 나가면 남은 사람 중 한 명이 파티장
-      const np = mem[0].a.id;
+    if (!mem.length) { await this.ctx.storage.delete("party-health:" + pid); return; }
+    if (mem.length === 1) {
+      mem[0].a.party = null; this.save(mem[0]);
+      this.send(mem[0].w, { t: "party", members: [] });
+      await this.ctx.storage.delete("party-health:" + pid);
+      return;
+    }
+    if (!mem.some((x) => x.a.id === pid)) {
+      // 파티장이 나가면 새 파티장으로 교체하고 이전 전투 상태는 폐기한다.
+      const oldPid = pid, np = mem[0].a.id;
+      await this.ctx.storage.delete(["party-health:" + oldPid, "party-health:" + np]);
       for (const x of mem) { x.a.party = np; this.save(x); }
       pid = np; mem = this.partyList(pid);
     }
@@ -215,7 +222,7 @@ export class Town extends DurableObject {
       if (!y.a.party) { y.a.party = y.a.id; this.save(y); }
       if (this.partyList(y.a.party).length >= PARTY_MAX) { this.save(x); return this.send(ws, { t: "sys", m: "파티가 가득 찼습니다" }); }
       a.party = y.a.party; this.save(x);
-      this.partySync(a.party);
+      await this.partySync(a.party);
     } else if (m.t === "pno") {
       const y = this.find(a.pinv);
       a.pinv = null; this.save(x);
@@ -225,7 +232,7 @@ export class Town extends DurableObject {
       if (!pid) return;
       a.party = null; this.save(x);
       this.send(ws, { t: "party", members: [] });
-      this.partySync(pid);
+      await this.partySync(pid);
     }
     // 파티 전투 중계: 파티장 스냅샷은 파티장만, 공격 요청은 파티원만 보낼 수 있다.
     // 파티원 피해량은 클라이언트 수치를 버리고 인증된 서버 캐릭터 능력치로 다시 계산한다.
@@ -404,7 +411,7 @@ export class Town extends DurableObject {
     }
     if (a.duel) { const o = this.find(a.duel); if (o && o.a.duel === a.id) { o.a.duel = null; this.save(o); this.send(o.w, { t: "dend", res: "quit" }); if (Date.now() - (a.dt0 || 0) > 5000) await this.pvpRecord(o.a.u, a.u); } }
     this.sendTo(this.all(), { t: "bye", id: a.id });
-    if (a.party) this.partySync(a.party);
+    if (a.party) await this.partySync(a.party);
   }
   async webSocketClose(ws) { await this.leave(ws); try { ws.close(); } catch {} }
   async webSocketError(ws) { await this.leave(ws); }
