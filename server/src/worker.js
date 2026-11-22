@@ -1,6 +1,7 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, applyUnderdeepClearRewards, applyTowerClearRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
+import { MONSTERS } from "./monsters.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, applyUnderdeepClearRewards, applyTowerClearRewards, applyServerXp, xpRequired, serverMythItem, allocateServerStat } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -553,7 +554,7 @@ const ID_RE = /^[가-힣a-z0-9_]{2,12}$/;
 const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
-const REWARD_FIELDS = ["lvl", "xp", "pts", "st"];
+const REWARD_FIELDS = ["lvl", "xp", "pts", "st", "quests"];
 const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "underdeepBestRoom", "maxFloor", "inv", "uid"];
 function pickRewardFields(save, keys) {
   const out = {};
@@ -562,6 +563,58 @@ function pickRewardFields(save, keys) {
 }
 const rewardFields = (save) => pickRewardFields(save, REWARD_FIELDS);
 const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
+const SERVER_QUEST_EXCLUDED = new Set(["riftfang", "abyssalArcanist", "obsidianGuard", "dreadMarshal", "voidTyrant", "underdeepGatekeeper", "underdeepCore", "underdeepLord", "underdeepOrigin"]);
+function makeServerQuest(save) {
+  const floor = Math.max(1, Math.min(100, Math.floor(save.maxFloor || 1)));
+  const xp = Math.min(2_000_000_000, Math.round(xpRequired(Math.max(1, Math.min(200, save.lvl || 1))) * 0.15));
+  const roll = Math.random();
+  if (roll < 0.55) {
+    let pool = Object.entries(MONSTERS).filter(([key, monster]) => !SERVER_QUEST_EXCLUDED.has(key) && !monster.boss && !monster.raidElite && !monster.raidBoss && monster.ai !== "bomb" && (monster.r || 1) <= floor + 10 && (monster.r || 1) >= Math.max(1, floor - 15));
+    if (!pool.length) pool = Object.entries(MONSTERS).filter(([key, monster]) => !SERVER_QUEST_EXCLUDED.has(key) && !monster.boss && !monster.raidElite && !monster.raidBoss);
+    const [mon, data] = pool[Math.floor(Math.random() * pool.length)] || ["slime", { hp: 20 }];
+    const big = (data.hp || 0) >= 120;
+    const n = big ? 3 + Math.floor(Math.random() * 4) : 8 + Math.floor(Math.random() * 11);
+    return { type: "kill", mon, n, cur: 0, done: false, xp, gold: Math.round(n * (5 + floor * 3) * (big ? 3 : 1)), ess: 2 + Math.floor(n / 4), ore: 0 };
+  }
+  if (roll < 0.85) {
+    const n = 2 + Math.floor(Math.random() * 3);
+    return { type: "floor", n, cur: 0, done: false, xp, gold: 50 + n * (25 + floor * 10), ess: 3 + n, ore: 0 };
+  }
+  return { type: "boss", n: 1, cur: 0, done: false, xp, gold: 200 + floor * 40, ess: 10, ore: 8 };
+}
+function ensureServerQuests(target) {
+  if (!target || !target.save) return [];
+  if (!Array.isArray(target.serverQuests)) {
+    const old = Array.isArray(target.save.quests) ? target.save.quests.slice(0, 3) : [];
+    target.serverQuests = old.map((q) => {
+      if (!q || !["kill", "floor", "boss"].includes(q.type)) return null;
+      if (q.type === "kill" && (!MONSTERS[q.mon] || MONSTERS[q.mon].boss || SERVER_QUEST_EXCLUDED.has(q.mon))) return null;
+      const n = Math.max(1, Math.min(100, Math.floor(Number(q.n) || 1)));
+      const cur = Math.max(0, Math.min(n, Math.floor(Number(q.cur) || 0)));
+      return { type: q.type, ...(q.type === "kill" ? { mon: q.mon } : {}), n, cur, done: !!q.done || cur >= n, xp: Math.max(0, Math.min(2_000_000_000, Math.floor(Number(q.xp) || Math.round(xpRequired(target.save.lvl || 1) * 0.15)))), gold: Math.max(0, Math.min(2_000_000_000, Math.floor(Number(q.gold) || 0))), ess: Math.max(0, Math.min(2_000_000_000, Math.floor(Number(q.ess) || 0))), ore: Math.max(0, Math.min(2_000_000_000, Math.floor(Number(q.ore) || 0))) };
+    }).filter(Boolean);
+    while (target.serverQuests.length < 3) target.serverQuests.push(makeServerQuest(target.save));
+  }
+  target.save.quests = target.serverQuests.map((q) => ({ ...q }));
+  return target.serverQuests;
+}
+function progressServerQuests(target, event, monsterType = "") {
+  const quests = ensureServerQuests(target);
+  let changed = false;
+  for (const quest of quests) {
+    if (quest.done) continue;
+    const matches = event === "kill" ? quest.type === "kill" && quest.mon === monsterType
+      : event === "boss" ? quest.type === "boss"
+      : event === "floor" ? quest.type === "floor" : false;
+    if (!matches) continue;
+    quest.cur = Math.min(quest.n, quest.cur + 1);
+    if (quest.cur >= quest.n) quest.done = true;
+    changed = true;
+  }
+  if (changed) target.save.quests = quests.map((q) => ({ ...q }));
+  return changed;
+}
+
 function updateServerClearState(state, snapshot, zone, now) {
   const wasCleared = !!state.cleared;
   state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
@@ -766,6 +819,10 @@ export class Accounts extends DurableObject {
       const granted = applyMonsterRewards(target.save, String(b.type || ""), num(b.floor, 1, 100), !!b.elite, b.zone === "underdeep" ? "underdeep" : "tower");
       if (granted.error) return json({ err: granted.error }, 400);
       target.save = granted.save;
+      ensureServerQuests(target);
+      const monsterType = String(b.type || "");
+      progressServerQuests(target, "kill", monsterType);
+      if (MONSTERS[monsterType] && MONSTERS[monsterType].boss) progressServerQuests(target, "boss");
       target.serverItemLedger = target.serverItemLedger || {};
       target.pendingServerItems = target.pendingServerItems || [];
       if (granted.rewards.itemAdded && granted.rewards.item) {
@@ -798,6 +855,8 @@ export class Accounts extends DurableObject {
       const granted = applyTowerClearRewards(target.save, floor);
       if (granted.error) return json({ err: granted.error }, 400);
       target.save = granted.save;
+      ensureServerQuests(target);
+      progressServerQuests(target, "floor");
       target.towerClaims[claimKey] = true;
       target.serverRewardFields = rewardFields(target.save);
       await this.ctx.storage.put("u:" + u, target);
@@ -910,8 +969,35 @@ export class Accounts extends DurableObject {
       await this.ctx.storage.put("u:" + acc.u, acc);
       return json({ ok: 1, stat: allocated.stat, pts: allocated.pts, st: acc.save.st });
     }
+    if (path === "/api/quest/claim") {
+      ensureServerQuests(acc);
+      const index = Math.floor(num(b.index, 0, 2));
+      const quest = acc.serverQuests[index];
+      if (!quest || !quest.done) return json({ err: "quest_not_complete" }, 409);
+      const xp = Math.round((quest.xp || 0) * 0.2);
+      const progressed = applyServerXp(acc.save, xp);
+      if (progressed.error) return json({ err: progressed.error }, 400);
+      const next = { ...progressed.save, gold: Math.min(2_000_000_000, (progressed.save.gold || 0) + (quest.gold || 0)), ess: Math.min(2_000_000_000, (progressed.save.ess || 0) + (quest.ess || 0)), ore: Math.min(2_000_000_000, (progressed.save.ore || 0) + (quest.ore || 0)) };
+      const quests = acc.serverQuests.filter((_, i) => i !== index);
+      quests.push(makeServerQuest(next));
+      acc.serverQuests = quests;
+      next.quests = quests.map((q) => ({ ...q }));
+      acc.save = next;
+      acc.serverCharacter = createServerCharacter(acc.save);
+      acc.serverRewardFields = rewardFields(acc.save);
+      acc.serverProgress = acc.serverProgress || { xp: 0, kills: 0 };
+      acc.serverProgress.xp = Math.min(2_000_000_000, (acc.serverProgress.xp || 0) + xp);
+      acc.saved = Date.now();
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, fields: rewardSyncFields(acc.save), rewards: { xp, gold: quest.gold || 0, ess: quest.ess || 0, ore: quest.ore || 0 } });
+    }
     if (path === "/api/load") {
       if (this.ensureServerCharacter(acc)) await this.ctx.storage.put("u:" + acc.u, acc);
+      if (acc.save) {
+        ensureServerQuests(acc);
+        acc.serverRewardFields = rewardFields(acc.save);
+        await this.ctx.storage.put("u:" + acc.u, acc);
+      }
       return json({ ok: 1, u: acc.u, name: acc.name || acc.u, dev: dev(acc.u), save: acc.save || null, serverCharacterReady: !!acc.serverCharacter });
     }
     if (path === "/api/logout") {
@@ -943,6 +1029,8 @@ export class Accounts extends DurableObject {
         await this.ctx.storage.put("pid:" + s.pid, acc.u);
       }
       acc.save = s; acc.saved = Date.now();
+      ensureServerQuests(acc);
+      acc.serverRewardFields = rewardFields(acc.save);
       acc.serverItemLedger = acc.serverItemLedger || {};
       // New characters get a first snapshot; an existing snapshot is never replaced by browser saves.
       if (!acc.serverCharacter) {

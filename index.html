@@ -2634,7 +2634,7 @@ const ACT={
   sell(id){const i=S.inv.findIndex(x=>x.id===+id);if(i<0)return;if(S.inv[i].my){toast('신화 장비는 판매할 수 없습니다');return sfx.err()}S.gold+=sellPrice(S.inv[i]);S.inv.splice(i,1);ui.sel=null;sfx.coin()},
   sellR(r){S.sellR=+r},
   sellJunk(){let g=0;const sr=S.sellR??1;S.inv=S.inv.filter(it=>{if(!it.my&&it.r<=sr){g+=sellPrice(it);return false}return true});S.gold+=g;if(g){sfx.coin();toast(`골드 +${g}`)}},
-  claim(i){const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(questXpReward(q))},
+  async claim(i){if(AUTH&&AUTH.token){const r=await api('quest/claim',{index:+i});if(!r.ok){toast(r.err==='quest_not_complete'?'퀘스트가 아직 완료되지 않았습니다':'퀘스트 보상 처리에 실패했습니다');return}coRecv(null,{k:'loot',fields:r.fields,rewards:r.rewards});return}const q=S.quests[+i];if(!q||!q.done)return;S.gold+=q.gold;S.ess+=q.ess;S.ore+=q.ore||0;S.quests.splice(+i,1);S.quests.push(mkQuest());sfx.clear();gainXp(questXpReward(q))},
   deepEnter(room){closePanel();fadeTo(()=>enterDungeonRoom(+room))},
   deepTown(){closePanel();fadeTo(enterUnderdeepTown)},
   deepPotion(k){const key=k==='hp'?'hpPot':'mpPot';if(!['hp','mp'].includes(k)||S[key]>=9||!pay({gold:900,ess:10}))return sfx.err();S[key]++;sfx.buy();toast(`${k==='hp'?'체력':'마나'} 물약을 샀습니다`)},
@@ -2981,7 +2981,7 @@ function coSnapshot(){const e=[],b=[];for(const x of G.en){if(x.dead)continue;if
 function coRecv(from,d){if(!d)return;
   if(d.k==='loot'){
     const f=d.fields||{};
-    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','hpPot','mpPot','prot','underdeepBestRoom','maxFloor','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
+    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','hpPot','mpPot','prot','underdeepBestRoom','maxFloor','quests','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
     if(f.st)S.st=Object.assign({int:0,vit:0,crit:0,wis:0},f.st);
     recalc();
     if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
