@@ -1,6 +1,6 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower } from "./game-engine.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -242,15 +242,7 @@ export class Town extends DurableObject {
         if (leader.a.p.zone !== a.p.zone || leader.a.p.fl !== a.p.fl) return;
         if (now - (a.partyHitAt || 0) < 180) return;
         a.partyHitAt = now;
-        const power = num(a.combatDamage, 1, 100000);
-        const seen = new Set(), hits = [];
-        for (const row of (Array.isArray(m.d.h) ? m.d.h : []).slice(0, 8)) {
-          if (!Array.isArray(row) || row.length < 2) continue;
-          const nid = Number(row[0]);
-          if (!Number.isSafeInteger(nid) || nid < 1 || seen.has(nid)) continue;
-          seen.add(nid);
-          hits.push([nid, power]);
-        }
+        const hits = sanitizePartyHits(m.d.h, a.combatDamage, 8);
         if (!hits.length) return;
         d = { k: "h", h: hits };
         this.save(x);

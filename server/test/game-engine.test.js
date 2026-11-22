@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -51,6 +51,13 @@ test("party combat damage is derived from the server character snapshot", () => 
   assert.equal(serverAttackPower(character), 45);
   const saved = createServerCharacter({ ...character, lvl: 20, st: { int: 10 }, eq: { staff: { v: 5, il: 12 } } });
   assert.equal(serverAttackPower(saved), 87);
+});
+
+test("party hit sanitizer ignores client damage, duplicates, and invalid target IDs", () => {
+  const rows = [[4, 999999999], [4, 1], [0, 500], [-1, 500], ["bad", 500], [9, 0], [10, 123]];
+  assert.deepEqual(sanitizePartyHits(rows, 45), [[4, 45], [9, 45], [10, 45]]);
+  assert.deepEqual(sanitizePartyHits(rows, 45, 2), [[4, 45], [9, 45]]);
+  assert.deepEqual(sanitizePartyHits("not-an-array", 45), []);
 });
 
 test("server enforces attack cooldown", () => {
