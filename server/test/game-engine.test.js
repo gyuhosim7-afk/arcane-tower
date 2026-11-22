@@ -78,7 +78,7 @@ test("party monster HP is initialized from server catalog and floor scaling", ()
   const duo = partyMonsterMaxHp("kingslime", 1, 10, false, 2, "tower");
   const trio = partyMonsterMaxHp("kingslime", 1, 10, false, 3, "tower");
   assert.ok(solo > 0);
-  assert.ok(duo < solo);
+  assert.ok(duo > solo);
   assert.ok(trio > duo);
   assert.equal(partyMonsterMaxHp("not-a-monster", 1, 10, false, 2), 0);
 });
