@@ -576,7 +576,7 @@ function updateServerClearState(state, snapshot, zone, now) {
     state.chestDecided = false;
   } else if (state.cleared && !state.chestDecided) {
     state.chestDecided = true;
-    if (zone === "underdeep") state.chestKind = state.floor % 5 === 0 && state.bossKilled ? "gold" : null;
+    if (zone === "underdeep") state.chestKind = state.bossKilled ? "gold" : null;
     else if (state.floor % 5 === 0) state.chestKind = state.bossKilled ? "gold" : null;
     else if (state.eliteKilled) state.chestKind = "iron";
     else { const roll = Math.random(); state.chestKind = roll < 0.06 ? "iron" : roll < 0.36 ? "wood" : null; }
@@ -784,7 +784,7 @@ export class Accounts extends DurableObject {
       return json({ ok: 1, fields, rewards, level: granted.level, xp: granted.xp, pts: granted.pts });
     }
     if (path === "/internal/underdeep-clear-reward") {
-      const u = String(b.u || ""), room = num(b.room, 1, 20) | 0, runId = String(b.runId || "");
+      const u = String(b.u || ""), room = num(b.room, 1, 18) | 0, runId = String(b.runId || "");
       if (!/^[a-z0-9_]{2,12}$/.test(u) || !/^[0-9a-f-]{36}$/.test(runId)) return json({ err: "invalid_underdeep_reward" }, 400);
       const target = await this.ctx.storage.get("u:" + u);
       if (!target || !target.save) return json({ err: "character_required" }, 404);
