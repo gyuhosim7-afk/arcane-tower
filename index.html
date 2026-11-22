@@ -2040,6 +2040,12 @@ function openChest(c){
   if(c.open)return;c.open=true;c.pr='';c.label=CHEST_N[c.chest];setLabels();const f=lootFloor(),x=c.x,y=c.y-6;
   const col=c.chest==='gold'?EL.holy.c:c.chest==='iron'?EL.ice.c:['#fff6c0','#ffd84a','#c9972a','#6b3418'];
   pillarFx(x,y+6,c.chest==='gold'?10:6,c.chest==='gold'?160:90,col,.9);flashFx(x,y-4,10,col[1],.4);burst(x,y,30,col,120,.7,{drag:2});sfx.clear();shake(c.chest==='gold'?6:2);
+  if(AUTH&&AUTH.token){
+    if(!NET.on||!netSend({t:'chest',zone:G.zone,fl:netFl(),kind:c.chest})){
+      c.open=false;c.pr='[F] 열기';setLabels();toast('서버 연결 후 상자를 열 수 있습니다');return;
+    }
+    return;
+  }
   const gold=Math.round((15+f*5)*({wood:1,iron:3,gold:10})[c.chest]*rnd(.8,1.2));
   for(let i=0;i<({wood:3,iron:6,gold:12})[c.chest];i++)drop('gold',x,y,Math.ceil(gold/({wood:3,iron:6,gold:12})[c.chest]));
   drop('ess',x,y,({wood:1,iron:3,gold:8})[c.chest]+(f/15|0));drop('ore',x,y,({wood:1,iron:4,gold:10})[c.chest]+(f/12|0));
@@ -2829,6 +2835,10 @@ function netMsg(m){
   else if(m.t==='pinv'){NET.req=NET.req.filter(r=>r.k!=='p');NET.req.push({k:'p',from:m.from,nick:m.nick});toast(`${m.nick} 님의 파티 초대 · [친구] 메뉴에서 수락`);chatLine('알림',m.nick+' 님이 파티에 초대했습니다 ([친구] 메뉴)','#ffe27a');sfx.ui()}
   else if(m.t==='prel'){coRecv(m.from,m.d);return}
   else if(m.t==='solo'){soloRecv(m.d);return}
+  else if(m.t==='chest'){
+    if(!m.ok){const chest=G.map&&G.map.inter.find(q=>q.chest===m.kind&&q.open);if(chest){chest.open=false;chest.pr='[F] 열기';setLabels()}toast(m.msg||'상자 보상 처리에 실패했습니다');return}
+    coRecv(null,{k:'loot',fields:m.fields,rewards:m.rewards});return
+  }
   else if(m.t==='drel'){duelRecv(m.d);return}
   else if(m.t==='dreq'){NET.req=NET.req.filter(r=>r.k!=='d');NET.req.push({k:'d',from:m.from,nick:m.nick});toast(`${m.nick} 님의 결투 신청 · [친구] 메뉴에서 수락`);chatLine('알림',m.nick+' 님이 결투를 신청했습니다 ([친구] 메뉴)','#ffe27a');sfx.ui()}
   else if(m.t==='dstart'){NET.req=NET.req.filter(r=>r.k!=='d');duelStart(m)}
@@ -2949,7 +2959,7 @@ function soHit(e,d){SO.pend[e.nid]=(SO.pend[e.nid]||0)+d}
 function soloSnapshot(){
   const e=[];
   for(const x of G.en){if(x.dead)continue;if(!x.nid)x.nid=++SO.nid;e.push([x.nid,x.type,x.x|0,x.y|0,Math.max(0,Math.round(x.hp/x.max*1000)),x.face<0?-1:1,x.elite?1:0,x.frozen>0?1:0])}
-  netSend({t:'solo',d:{k:'s',z:G.zone,fl:netFl(),e,b:[]}});
+  netSend({t:'solo',d:{k:'s',z:G.zone,fl:netFl(),e,b:[],cl:G.wave&&G.wave.cleared?1:0}});
 }
 function soloRecv(d){
   if(!d)return;
@@ -2971,7 +2981,7 @@ function coSnapshot(){const e=[],b=[];for(const x of G.en){if(x.dead)continue;if
 function coRecv(from,d){if(!d)return;
   if(d.k==='loot'){
     const f=d.fields||{};
-    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
+    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','hpPot','mpPot','prot','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
     if(f.st)S.st=Object.assign({int:0,vit:0,crit:0,wis:0},f.st);
     recalc();
     if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
