@@ -1,6 +1,7 @@
 // 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
-import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, applyUnderdeepClearRewards, applyTowerClearRewards, serverMythItem, allocateServerStat } from "./game-engine.js";
+import { MONSTERS } from "./monsters.js";
+import { startEncounter, resolveAttack, resolveBlink, blinkCooldownMs, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyMonsterRewards, applyChestRewards, applyUnderdeepClearRewards, applyTowerClearRewards, applyServerXp, xpRequired, serverMythItem, allocateServerStat } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -553,7 +554,7 @@ const ID_RE = /^[가-힣a-z0-9_]{2,12}$/;
 const PW_OK = (p) => p.length >= 8 && p.length <= 64 && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
 const SLOTS = ["staff", "robe", "ring", "shoes"];
 const CIRC_LVL = [0, 0, 10, 20, 32, 45, 58, 70, 82, 95]; // 서클 c 올리려면 레벨 CIRC_LVL[c] 이상
-const REWARD_FIELDS = ["lvl", "xp", "pts", "st"];
+const REWARD_FIELDS = ["lvl", "xp", "pts", "st", "quests"];
 const REWARD_SYNC_FIELDS = [...REWARD_FIELDS, "gold", "ess", "ore", "potScroll", "epotScroll", "hpPot", "mpPot", "prot", "underdeepBestRoom", "maxFloor", "inv", "uid"];
 function pickRewardFields(save, keys) {
   const out = {};
@@ -562,6 +563,58 @@ function pickRewardFields(save, keys) {
 }
 const rewardFields = (save) => pickRewardFields(save, REWARD_FIELDS);
 const rewardSyncFields = (save) => pickRewardFields(save, REWARD_SYNC_FIELDS);
+const SERVER_QUEST_EXCLUDED = new Set(["riftfang", "abyssalArcanist", "obsidianGuard", "dreadMarshal", "voidTyrant", "underdeepGatekeeper", "underdeepCore", "underdeepLord", "underdeepOrigin"]);
+function makeServerQuest(save) {
+  const floor = Math.max(1, Math.min(100, Math.floor(save.maxFloor || 1)));
+  const xp = Math.round(xpRequired(Math.max(1, Math.min(200, save.lvl || 1))) * 0.15);
+  const roll = Math.random();
+  if (roll < 0.55) {
+    let pool = Object.entries(MONSTERS).filter(([key, monster]) => !SERVER_QUEST_EXCLUDED.has(key) && !monster.boss && !monster.raidElite && !monster.raidBoss && monster.ai !== "bomb" && (monster.r || 1) <= floor + 10 && (monster.r || 1) >= Math.max(1, floor - 15));
+    if (!pool.length) pool = Object.entries(MONSTERS).filter(([key, monster]) => !SERVER_QUEST_EXCLUDED.has(key) && !monster.boss && !monster.raidElite && !monster.raidBoss);
+    const [mon, data] = pool[Math.floor(Math.random() * pool.length)] || ["slime", { hp: 20 }];
+    const big = (data.hp || 0) >= 120;
+    const n = big ? 3 + Math.floor(Math.random() * 4) : 8 + Math.floor(Math.random() * 11);
+    return { type: "kill", mon, n, cur: 0, done: false, xp, gold: Math.round(n * (5 + floor * 3) * (big ? 3 : 1)), ess: 2 + Math.floor(n / 4), ore: 0 };
+  }
+  if (roll < 0.85) {
+    const n = 2 + Math.floor(Math.random() * 3);
+    return { type: "floor", n, cur: 0, done: false, xp, gold: 50 + n * (25 + floor * 10), ess: 3 + n, ore: 0 };
+  }
+  return { type: "boss", n: 1, cur: 0, done: false, xp, gold: 200 + floor * 40, ess: 10, ore: 8 };
+}
+function ensureServerQuests(target) {
+  if (!target || !target.save) return [];
+  if (!Array.isArray(target.serverQuests)) {
+    const old = Array.isArray(target.save.quests) ? target.save.quests.slice(0, 3) : [];
+    target.serverQuests = old.map((q) => {
+      if (!q || !["kill", "floor", "boss"].includes(q.type)) return null;
+      if (q.type === "kill" && (!MONSTERS[q.mon] || MONSTERS[q.mon].boss || SERVER_QUEST_EXCLUDED.has(q.mon))) return null;
+      const n = Math.max(1, Math.min(100, Math.floor(Number(q.n) || 1)));
+      const cur = Math.max(0, Math.min(n, Math.floor(Number(q.cur) || 0)));
+      return { type: q.type, ...(q.type === "kill" ? { mon: q.mon } : {}), n, cur, done: !!q.done || cur >= n, xp: Math.max(0, Math.min(2_000_000_000, Math.floor(Number(q.xp) || Math.round(xpRequired(target.save.lvl || 1) * 0.15)))), gold: Math.max(0, Math.min(2_000_000_000, Math.floor(Number(q.gold) || 0))), ess: Math.max(0, Math.min(2_000_000_000, Math.floor(Number(q.ess) || 0))), ore: Math.max(0, Math.min(2_000_000_000, Math.floor(Number(q.ore) || 0))) };
+    }).filter(Boolean);
+    while (target.serverQuests.length < 3) target.serverQuests.push(makeServerQuest(target.save));
+  }
+  target.save.quests = target.serverQuests.map((q) => ({ ...q }));
+  return target.serverQuests;
+}
+function progressServerQuests(target, event, monsterType = "") {
+  const quests = ensureServerQuests(target);
+  let changed = false;
+  for (const quest of quests) {
+    if (quest.done) continue;
+    const matches = event === "kill" ? quest.type === "kill" && quest.mon === monsterType
+      : event === "boss" ? quest.type === "boss"
+      : event === "floor" ? quest.type === "floor" : false;
+    if (!matches) continue;
+    quest.cur = Math.min(quest.n, quest.cur + 1);
+    if (quest.cur >= quest.n) quest.done = true;
+    changed = true;
+  }
+  if (changed) target.save.quests = quests.map((q) => ({ ...q }));
+  return changed;
+}
+
 function updateServerClearState(state, snapshot, zone, now) {
   const wasCleared = !!state.cleared;
   state.cleared = !!(snapshot.cl && state.seenEnemyCount > 0 && state.killCount >= state.seenEnemyCount && Object.values(state.enemies).every((enemy) => enemy.dead || enemy.hp <= 0));
