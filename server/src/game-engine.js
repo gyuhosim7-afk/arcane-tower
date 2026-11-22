@@ -266,6 +266,7 @@ function serverMythItem(key, level) {
       : stat === "mp" ? value / 30 * (10 + il * 3) : value;
     a[stat] = Math.round(scaled * mul * 10) / 10;
   }
+  delete a.cdr; // 클라이언트의 ensureItemPotentials와 동일하게 제거
   return { slot: def.slot, r: def.uq ? 6 : 5, il, up: 0, my: key, a };
 }
 
