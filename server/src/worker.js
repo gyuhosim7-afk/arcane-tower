@@ -1,6 +1,6 @@
-// 아케인 타워 서버: 접속자 목록, 마을 위치·채팅, 귓속말, 파티, 거래.
-// 전투와 저장은 각자 기기에서 하고, 서버는 친구끼리 메시지를 이어 준다.
+// 아케인 타워 서버: 계정·저장·마을 통신과 서버 권한 게임 로직.
 import { DurableObject } from "cloudflare:workers";
+import { startEncounter, resolveAttack } from "./game-engine.js";
 
 const MAX_PLAYERS = 60;
 const PARTY_MAX = 4;
@@ -499,6 +499,25 @@ export class Accounts extends DurableObject {
     }
     const acc = await this.session(b.token);
     if (!acc) return json({ err: "session" }, 401);
+    if (path === "/api/combat/state") {
+      return json({ ok: 1, combat: acc.combat || null });
+    }
+    if (path === "/api/combat/start") {
+      if (!acc.save) return json({ err: "character_required" }, 400);
+      const started = startEncounter(acc.save, String(b.encounter || ""), Date.now());
+      if (started.error) return json({ err: started.error }, 400);
+      acc.combat = started.state;
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, combat: acc.combat });
+    }
+    if (path === "/api/combat/attack") {
+      if (!acc.save || !acc.combat) return json({ err: "no_active_encounter" }, 409);
+      const resolved = resolveAttack(acc.save, acc.combat, Date.now());
+      if (resolved.error) return json({ err: resolved.error }, resolved.error === "cooldown" ? 429 : 409);
+      acc.combat = resolved.state;
+      await this.ctx.storage.put("u:" + acc.u, acc);
+      return json({ ok: 1, combat: acc.combat, result: resolved.result });
+    }
     if (path === "/api/load") return json({ ok: 1, u: acc.u, name: acc.name || acc.u, dev: dev(acc.u), save: acc.save || null });
     if (path === "/api/logout") {
       await this.ctx.storage.delete("tok:" + acc.tok); acc.tok = null;
