@@ -57,14 +57,17 @@ export function resolveAttack(save, combat, now = Date.now()) {
 export function blinkCooldownMs(save) {
   const s = save || {};
   const stats = s.st || {};
-  const wisdom = clampInt(stats.wis || 0, 0, 10000);
+  const level = clampInt(s.lvl || 1, 1, 200);
+  const pointScale = level < 60 ? 1 : level < 90 ? 1 + 0.2 * (level - 59) / 30 : level < 120 ? 1.2 - 0.2 * (level - 90) / 30 : 1;
+  const gearWisdom = Object.values(s.eq || {}).reduce((sum, item) => sum + clampInt(item && item.a && item.a.wis || 0, 0, 10000), 0);
+  const wisdom = clampInt(stats.wis || 0, 0, 10000) * pointScale + gearWisdom;
   const circle = clampInt(s.circle || 1, 1, 9);
   const cdr = Math.min(0.5, wisdom * 0.01 + (circle >= 9 ? 0.15 : 0));
   const level = clampInt(s.blinkLv || 0, 0, 10);
   const job = s.job === "wind" ? 0.5 : 1;
   const shoes = s.eq && s.eq.shoes;
   const stride = shoes && shoes.my === "uqStride" ? 0.65 : 1;
-  return Math.max(500, Math.round(2500 * (1 - cdr * 0.5) * (1 - 0.035 * level) * job * stride));
+  return Math.max(350, Math.round(2500 * (1 - cdr * 0.5) * (1 - 0.035 * level) * job * stride));
 }
 
 export function resolveBlink(save, movement = {}, now = Date.now()) {
