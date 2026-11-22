@@ -1,0 +1,31 @@
+name: Validate server migration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "server/**"
+      - ".github/workflows/validate-server.yml"
+  push:
+    branches: [server-authoritative-migration]
+    paths:
+      - "server/**"
+      - ".github/workflows/validate-server.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install server dependencies
+        working-directory: server
+        run: npm install --no-audit --no-fund
+      - name: Run server tests
+        working-directory: server
+        run: npm test
+      - name: Build obfuscated client bundle
+        working-directory: server
+        run: npm run build
