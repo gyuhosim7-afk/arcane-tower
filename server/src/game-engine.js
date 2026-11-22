@@ -51,3 +51,30 @@ export function resolveAttack(save, combat, now = Date.now()) {
   };
   return { state: next, result: { damage, monsterHp, monsterMaxHp: combat.monsterMaxHp, status: next.status } };
 }
+
+
+// 서버가 마지막 순간이동 시각을 소유한다. 브라우저의 p.bcd 값은 판정에 사용하지 않는다.
+export function blinkCooldownMs(save) {
+  const s = save || {};
+  const stats = s.st || {};
+  const wisdom = clampInt(stats.wis || 0, 0, 10000);
+  const circle = clampInt(s.circle || 1, 1, 9);
+  const cdr = Math.min(0.5, wisdom * 0.01 + (circle >= 9 ? 0.15 : 0));
+  const level = clampInt(s.blinkLv || 0, 0, 10);
+  const job = s.job === "wind" ? 0.5 : 1;
+  const shoes = s.eq && s.eq.shoes;
+  const stride = shoes && shoes.my === "uqStride" ? 0.65 : 1;
+  return Math.max(500, Math.round(2500 * (1 - cdr * 0.5) * (1 - 0.035 * level) * job * stride));
+}
+
+export function resolveBlink(save, movement = {}, now = Date.now()) {
+  if (!save || !Number.isInteger(save.lvl)) return { error: "character_required" };
+  const cooldownMs = blinkCooldownMs(save);
+  const lastBlinkAt = clampInt(movement.lastBlinkAt || 0, 0, Number.MAX_SAFE_INTEGER);
+  const remainingMs = Math.max(0, cooldownMs - (now - lastBlinkAt));
+  if (remainingMs > 0) return { error: "cooldown", cooldownMs, remainingMs, state: movement };
+  return {
+    state: { ...movement, lastBlinkAt: now },
+    result: { accepted: true, cooldownMs, nextAvailableAt: now + cooldownMs },
+  };
+}
