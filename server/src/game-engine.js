@@ -90,8 +90,7 @@ export function sanitizePartySnapshot(snapshot, zone, floor) {
     const color = /^#[0-9a-f]{3,8}$/i.test(String(rawColor)) ? String(rawColor) : "#ffffff";
     bullets.push([Math.max(0, Math.min(4000, Math.round(x))), Math.max(0, Math.min(4000, Math.round(y))), Math.max(-2000, Math.min(2000, Math.round(vx))), Math.max(-2000, Math.min(2000, Math.round(vy))), Math.max(1, Math.min(30, radius)), color, Math.max(0, Math.min(50000, Math.round(damage))), rboss ? 1 : 0]);
   }
-  const seen = new Set(enemies.map((row) => row[0]));
-  const kills = (Array.isArray(snapshot.kd) ? snapshot.kd : []).slice(0, 80).map(Number).filter((id) => Number.isSafeInteger(id) && seen.has(id));
+  const kills = (Array.isArray(snapshot.kd) ? snapshot.kd : []).slice(0, 80).map(Number).filter((id) => Number.isSafeInteger(id) && id > 0 && id <= 10000000);
   return { k: "s", z: zone, fl: floor, e: enemies, b: bullets, cl: snapshot.cl ? 1 : 0, kd: kills };
 }
 
