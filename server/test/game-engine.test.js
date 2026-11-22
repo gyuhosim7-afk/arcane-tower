@@ -1,7 +1,7 @@
 import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
+import { startEncounter, resolveAttack, blinkCooldownMs, resolveBlink, createServerCharacter, serverAttackPower, sanitizePartyHits, sanitizePartySnapshot, partyMonsterMaxHp, partyMonsterXp, createPartyHealthState, applyPartyHits, partyHealthRows, partyHealthRecords, applyChestRewards, applyServerXp, xpRequired, allocateServerStat, rollMonsterRewards, applyMonsterRewards } from "../src/game-engine.js";
 
 const character = {
   lvl: 10,
@@ -253,4 +253,26 @@ test("server combat records omit dead enemies after returning confirmed kill IDs
   const killed = applyPartyHits(state, [[12, 100000]]);
   assert.deepEqual(killed.kills, [12]);
   assert.equal(partyHealthRecords(killed.state).some((row) => row.id === 12), false);
+});
+
+test("server chest rewards create the correct currency, protection, and equipment payload", () => {
+  const save = { ...character, gold: 0, ess: 0, ore: 0, hpPot: 0, mpPot: 0, prot: 0, inv: [], uid: 1, shoesUnlocked: false };
+  const result = applyChestRewards(save, "gold", 5, "tower", () => 0.99);
+  assert.ok(result.save.gold > 0);
+  assert.equal(result.save.ess, 8);
+  assert.equal(result.save.ore, 10);
+  assert.equal(result.save.prot, 1);
+  assert.equal(result.itemsAdded.length, 4);
+  assert.equal(result.rewards.itemAdded, 4);
+  assert.ok(result.itemsAdded.every((item) => item.r >= 2));
+});
+
+test("server chest rewards auto-sell equipment when the bag is full", () => {
+  const inv = Array.from({ length: 32 }, (_, i) => ({ id: i + 1, slot: "staff", r: 0, il: 1, up: 0, v: 0, a: {} }));
+  const save = { ...character, gold: 0, ess: 0, ore: 0, hpPot: 0, mpPot: 0, prot: 0, inv, uid: 33 };
+  const result = applyChestRewards(save, "wood", 1, "tower", () => 0.99);
+  assert.equal(result.itemsAdded.length, 0);
+  assert.ok(result.rewards.autoSold > 0);
+  assert.equal(result.save.inv.length, 32);
+  assert.ok(result.save.gold > result.rewards.gold);
 });
