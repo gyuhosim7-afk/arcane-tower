@@ -1,3 +1,4 @@
+import { MONSTERS } from "../src/monsters.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { startEncounter, resolveAttack } from "../src/game-engine.js";
@@ -38,4 +39,12 @@ test("victory state cannot be attacked again", () => {
   const won = resolveAttack({ ...character, lvl: 200, st: { int: 10000 } }, started, 11000);
   assert.equal(won.state.status, "won");
   assert.equal(resolveAttack(character, won.state, 12000).error, "no_active_encounter");
+});
+
+test("server monster catalog includes source game baseline stats", () => {
+  assert.equal(MONSTERS.slime.hp, 28);
+  assert.equal(MONSTERS.slime.dmg, 6);
+  assert.equal(MONSTERS.kingslime.boss, 1);
+  assert.equal(MONSTERS.ymir.boss, 1);
+  assert.ok(Object.keys(MONSTERS).length >= 30);
 });
