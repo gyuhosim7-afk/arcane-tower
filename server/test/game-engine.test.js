@@ -70,7 +70,7 @@ test("party snapshot sanitizer rejects spoofed zones and bounds enemy and projec
   }, "tower", 4);
   assert.deepEqual(safe.e, [[1, "slime", 4000, 0, 1000, 1, 1, 0]]);
   assert.deepEqual(safe.b, [[4000, 0, 2000, -2000, 30, "#ffffff", 50000, 1]]);
-  assert.deepEqual(safe.kd, [1]);
+  assert.deepEqual(safe.kd, [1, 2]);
 });
 
 test("server enforces attack cooldown", () => {
