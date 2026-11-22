@@ -1,9 +1,12 @@
-// 서버 권한 전투 엔진의 1차 이전 단계.
-// 클라이언트는 행동만 요청하고, 피해량·몬스터 HP·공격 간격은 서버가 결정한다.
-// 실제 필드/보스 데이터 이전 전까지는 검증용 훈련용 허수아비만 허용한다.
-const ENCOUNTERS = Object.freeze({
-  training_dummy: Object.freeze({ name: "훈련용 허수아비", maxHp: 5000, defense: 0, attackCooldownMs: 700 }),
-});
+// 서버가 몬스터 체력·공격 간격·처치 경험치를 소유한다.
+import { MONSTERS } from "./monsters.js";
+const TRAINING_DUMMY = Object.freeze({ name: "훈련용 허수아비", maxHp: 5000, defense: 0, xp: 0, attackCooldownMs: 700 });
+function encounterSpec(id) {
+  if (id === "training_dummy") return TRAINING_DUMMY;
+  const monster = MONSTERS[id];
+  if (!monster) return null;
+  return { name: monster.n, maxHp: Math.max(1, Math.floor(monster.hp)), defense: 0, xp: Math.max(0, Math.floor(monster.xp || 0)), boss: !!monster.boss, attackCooldownMs: 700 };
+}
 
 const clampInt = (v, min, max) => Number.isFinite(v) ? Math.max(min, Math.min(max, Math.floor(v))) : min;
 
@@ -37,7 +40,7 @@ export function createServerCharacter(save) {
 }
 
 export function startEncounter(save, encounterId, now = Date.now()) {
-  const spec = ENCOUNTERS[encounterId];
+  const spec = encounterSpec(encounterId);
   if (!spec) return { error: "encounter_not_allowed" };
   if (!save || !Number.isInteger(save.lvl) || save.lvl < 1 || save.lvl > 200) return { error: "invalid_character" };
   return {
@@ -58,7 +61,7 @@ export function startEncounter(save, encounterId, now = Date.now()) {
 
 export function resolveAttack(save, combat, now = Date.now()) {
   if (!combat || combat.status !== "active") return { error: "no_active_encounter" };
-  const spec = ENCOUNTERS[combat.encounterId];
+  const spec = encounterSpec(combat.encounterId);
   if (!spec) return { error: "invalid_encounter" };
   if (now - combat.lastAttackAt < spec.attackCooldownMs) return { error: "cooldown" };
 
@@ -78,7 +81,8 @@ export function resolveAttack(save, combat, now = Date.now()) {
     turns: combat.turns + 1,
     status: monsterHp === 0 ? "won" : "active",
   };
-  return { state: next, result: { damage, monsterHp, monsterMaxHp: combat.monsterMaxHp, status: next.status } };
+  const rewards = monsterHp === 0 ? { xp: Math.max(0, Math.floor(combat.rewardXp || 0)) } : null;
+  return { state: next, result: { damage, monsterHp, monsterMaxHp: combat.monsterMaxHp, status: next.status, rewards } };
 }
 
 
