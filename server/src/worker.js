@@ -148,6 +148,7 @@ export class Town extends DurableObject {
       if (!who.u) { this.send(ws, { t: "sys", m: "로그인이 필요합니다" }); try { ws.close(4001, "auth"); } catch {} return; }
       for (const y of this.all()) if (y.a.u === who.u && y.w !== ws) { try { y.w.close(4002, "dup"); } catch {} await this.leave(y.w); }
       a.u = who.u; m.nick = who.name;
+      await this.ctx.storage.delete("solo-health:" + who.u);
       a.blinkCooldownMs = num(who.blinkCooldownMs, 500, 10000);
       a.combatDamage = num(who.combatDamage, 1, 100000);
       a.combatLevel = num(who.combatLevel, 1, 200) | 0;
@@ -162,9 +163,53 @@ export class Town extends DurableObject {
       this.save(x);
       this.send(ws, { t: "all", me: a.id, list: others().map((y) => y.a.p) });
       this.sendTo(others(), { t: "join", p: a.p });
+      this.send(ws, { t: "solo", d: { k: "ready" } });
       return;
     }
     if (!a.p) return;
+
+    // 솔로 전투도 서버가 몬스터 HP와 처치 보상을 소유한다.
+    if (m.t === "solo") {
+      if (a.party || !m.d || typeof m.d !== "object" || raw.length > 19000) return;
+      if (!["tower", "underdeep"].includes(a.p.zone)) return;
+      if (m.d.k === "s") {
+        if (now - (a.soloSnapshotAt || 0) < 80) return;
+        const snapshot = sanitizePartySnapshot(m.d, a.p.zone, a.p.fl);
+        if (!snapshot) return;
+        a.soloSnapshotAt = now;
+        const key = "solo-health:" + a.u;
+        const previous = await this.ctx.storage.get(key);
+        const state = createPartyHealthState(snapshot, previous, { zone: a.p.zone, floor: a.p.fl, level: a.combatLevel || 1, partySize: 1 }, now);
+        await this.ctx.storage.put(key, state);
+        this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(state), kd: [] } });
+        this.save(x);
+        return;
+      }
+      if (m.d.k === "h") {
+        if (now - (a.soloHitAt || 0) < 180) return;
+        a.soloHitAt = now;
+        const hits = sanitizePartyHits(m.d.h, a.combatDamage, 8);
+        if (!hits.length) return;
+        const key = "solo-health:" + a.u;
+        const state = await this.ctx.storage.get(key);
+        if (!state || state.zone !== a.p.zone || state.floor !== a.p.fl) return;
+        const resolved = applyPartyHits(state, hits);
+        await this.ctx.storage.put(key, resolved.state);
+        this.send(ws, { t: "solo", d: { k: "auth", h: partyHealthRecords(resolved.state), kd: resolved.kills } });
+        for (const enemyId of resolved.kills) {
+          const enemy = resolved.state.enemies[enemyId];
+          if (!enemy) continue;
+          const granted = await this.env.ACC.get(this.env.ACC.idFromName("acc")).fetch("https://acc/internal/party-reward", {
+            method: "POST",
+            body: JSON.stringify({ u: a.u, killId: crypto.randomUUID(), type: enemy.type, floor: resolved.state.floor, zone: resolved.state.zone, elite: !!enemy.elite }),
+          }).then((r) => r.json()).catch(() => ({}));
+          if (granted.ok && granted.fields) this.send(ws, { t: "solo", d: { k: "loot", fields: granted.fields, rewards: granted.rewards } });
+        }
+        this.save(x);
+        return;
+      }
+      return;
+    }
 
     if (m.t === "mv") {
       const nx = num(m.x, 0, 4000), ny = num(m.y, 0, 4000);
