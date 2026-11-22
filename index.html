@@ -1511,7 +1511,8 @@ function kill(e){
   if(hasM('pharaohRobe')&&G.p)G.p.hp=Math.min(D.maxHp,G.p.hp+D.maxHp*.03);
   if(hasM('slimeRing')&&!e.boss){const x=e.x,y=e.y-e.r;later(.08,()=>{boom(x,y,26,EL.none.c,false);aoe(x,y,30,D.pow*3,{el:'none',proc:1,kb:80})})}
   if(hasM('lichTome')&&Math.random()<.3){G.pr.push(mkBolt('dark',e.x,e.y-e.r,rnd(TAU),170,D.pow*5,{homing:1,size:2,life:3,kb:30}));burst(e.x,e.y-e.r,10,['#9ad8d0','#ffffff'],50,.4)}
-  if(!e.noDrop){
+  const serverPartyKill=!!e.ghost||(typeof CO!=='undefined'&&CO.auth&&coMates().length>0);
+  if(!e.noDrop&&!serverPartyKill){
     const xp=Math.round(e.xp),n=e.boss?10:xp>20?3:xp>8?2:1;for(let i=0;i<n;i++)drop('xp',e.x,e.y,Math.ceil(xp/n));
     if(e.boss)drop('scroll',e.x,e.y,pick(['potScroll','epotScroll']));
     if(Math.random()<.6||e.boss||e.elite)drop('gold',e.x,e.y,Math.round((2+f*1.2)*rnd(.7,1.4)*(e.boss?14:e.elite?6:1)));
@@ -2566,7 +2567,10 @@ const ACT={
 
   buyStatReset(){if(!pay({gold:STAT_RESET_GOLD}))return;S.statReset=(S.statReset||0)+1;sfx.buy();toast(`스탯 초기화권을 샀어요 · 보유 ${S.statReset}개`)},
   statReset(){if(!(S.statReset>0))return;if(!ui.srArm){ui.srArm=true;setTimeout(()=>{ui.srArm=false;refreshPanel()},3000);return}ui.srArm=false;const n=S.st.int+S.st.vit+S.st.crit+S.st.wis;if(!n)return;S.statReset--;S.st={int:0,vit:0,crit:0,wis:0};S.pts+=n;recalc();if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp)}sfx.ui();toast(`능력치 포인트 ${n}점을 돌려받았어요`)},
-  stat(k){if(S.pts>0){S.pts--;S.st[k]++;recalc();sfx.ui()}},
+  stat(k){
+    if(AUTH&&AUTH.token){api('stats/allocate',{stat:k}).then(r=>{if(!r.ok){toast(r.err==='no_points'?'능력치 포인트가 없습니다':'스탯 변경 실패');return}S.pts=r.pts;S.st=Object.assign({int:0,vit:0,crit:0,wis:0},r.st||{});recalc();save();sfx.ui()});return}
+    if(S.pts>0){S.pts--;S.st[k]++;recalc();sfx.ui()}
+  },
   circle(){const c=S.circle;if(c>=9||S.affPend)return sfx.err();if(S.lvl<CIRC_LVL[c+1]||S.mast<CIRC_MAST[c+1]){toast('레벨이나 수련치가 모자랍니다');return sfx.err()}S.circle++;S.mast=0;if(S.circle===4||S.circle===7)S.affPend=(S.affPend||0)+1;recalc();G.p.mp=D.maxMp;sfx.circle();
     banner(`${S.circle}서클 · ${CT[S.circle]}`,PASS[S.circle]?`${PASS[S.circle][0]}: ${PASS[S.circle][1]}`:'새로운 마나의 고리가 심장에 새겨졌습니다');levelFx();G.flash=.3;G.flashCol=AURA[S.circle];if(S.affPend)toast('새 속성을 깨울 수 있습니다. 엘드린에게서 고르세요')},
   reinf(id){const it=Object.values(S.eq).find(i=>i&&i.id===+id)||S.inv.find(i=>i.id===+id);if(!it||it.my||it.up>=MAX_UP||FORGE.on)return;if(!pay(reinfCost(it)))return;
@@ -2939,6 +2943,26 @@ function coSnapshot(){const e=[],b=[];for(const x of G.en){if(x.dead)continue;if
   for(const q of G.ep){if(b.length>=110)break;b.push([q.x|0,q.y|0,q.vx|0,q.vy|0,q.r,q.col,q.dmg|0,q.boss?1:0])}
   netSend({t:'prel',d:{k:'s',z:G.zone,fl:netFl(),e,b,cl:G.wave&&G.wave.cleared?1:0,kd:CO.kills.splice(0)}})}
 function coRecv(from,d){if(!d)return;
+  if(d.k==='loot'){
+    const f=d.fields||{};
+    for(const k of ['lvl','xp','pts','gold','ess','ore','potScroll','epotScroll','inv','uid'])if(f[k]!==undefined)S[k]=f[k];
+    if(f.st)S.st=Object.assign({int:0,vit:0,crit:0,wis:0},f.st);
+    recalc();
+    if(G.p){G.p.hp=Math.min(G.p.hp,D.maxHp);G.p.mp=Math.min(G.p.mp,D.maxMp)}
+    save();
+    const r=d.rewards||{},parts=[];
+    if(r.xp)parts.push('경험치 +'+r.xp);
+    if(r.gold)parts.push('골드 +'+r.gold);
+    if(r.ess)parts.push('정수 +'+r.ess);
+    if(r.ore)parts.push('광석 +'+r.ore);
+    if(r.potScroll)parts.push('윗잠 스크롤 +1');
+    if(r.epotScroll)parts.push('아랫잠 스크롤 +1');
+    if(r.itemAdded)parts.push('장비 획득');
+    if(r.autoSold)parts.push('가방 초과 자동 판매 +'+r.autoSold);
+    if(r.xp&&S.lvl>=MAX_LVL)toast('서버 보상 반영 · 최대 레벨');
+    else if(parts.length)toast('서버 보상: '+parts.join(' · '));
+    return;
+  }
   if(d.k==='ready'){if(coLead())CO.auth=true;return}
   if(d.k==='auth'){
     CO.auth=true;
