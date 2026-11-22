@@ -2026,8 +2026,8 @@ function updUnderdeep(dt){
   if(!w.q.length&&!w.elite&&(!w.boss||w.bossSp)&&G.en.length===0&&G.pending===0){
     w.cleared=true;S.underdeepBestRoom=Math.max(S.underdeepBestRoom||0,room);const bonus=15000+room*6500;S.gold+=bonus;S.ess+=20+room*5;S.ore+=12+room*3;
     m.inter=[];
-    if(w.boss){drop('item',m.pw/2,m.ph/2,0,mkItem(100,4));drop('item',m.pw/2,m.ph/2,0,mkItem(100,3));spawnChest('gold',m.pw/2,m.ph/2+24);
-      const uks=Object.keys(MYTH).filter(k=>MYTH[k].uq&&MYTH[k].boss===w.boss),uk=uks.length?pick(uks):null;if(uk&&Math.random()<UNIQUE_RATE)later(.8,()=>{drop('item',m.pw/2,m.ph/2-10,0,mkMyth(uk));G.flash=.6;G.flashCol='#3ff0e0';shake(16);banner('유니크 등장!',MYTH[uk].n);sfx.circle();for(let i=0;i<5;i++)later(i*.15,()=>ringFx(m.pw/2,m.ph/2,60+i*30,['#ffffff','#3ff0e0','#3ff0e0','#0a2a2a'],.8,{top:1}))})}
+    if(w.boss){if(!(AUTH&&AUTH.token)){drop('item',m.pw/2,m.ph/2,0,mkItem(100,4));drop('item',m.pw/2,m.ph/2,0,mkItem(100,3))}spawnChest('gold',m.pw/2,m.ph/2+24);
+      const uks=Object.keys(MYTH).filter(k=>MYTH[k].uq&&MYTH[k].boss===w.boss),uk=uks.length?pick(uks):null;if(!(AUTH&&AUTH.token)&&uk&&Math.random()<UNIQUE_RATE)later(.8,()=>{drop('item',m.pw/2,m.ph/2-10,0,mkMyth(uk));G.flash=.6;G.flashCol='#3ff0e0';shake(16);banner('유니크 등장!',MYTH[uk].n);sfx.circle();for(let i=0;i<5;i++)later(i*.15,()=>ringFx(m.pw/2,m.ph/2,60+i*30,['#ffffff','#3ff0e0','#3ff0e0','#0a2a2a'],.8,{top:1}))})}
     if(room<DEEP_MAX)m.inter.push({x:m.pw/2,y:66,r:24,label:`제${room+1}실`,pr:'[F] 다음 방으로',portal:['#c94cff','#7a26c8','#ffffff'],act:()=>{sfx.portal();fadeTo(()=>enterDungeonRoom(room+1))}});
     if(room===10){syncTownLinks();m.inter.push({x:m.pw/2,y:66,r:24,label:'지하 교역 마을',pr:'[F] 입장',portal:['#ff7ad9','#c94cff','#ffffff'],act:()=>fadeTo(enterUnderdeepTown)})}
     m.inter.push({x:m.pw/2,y:m.ph-44,r:24,label:'성역 마을',pr:'[F] 귀환',portal:['#5ed36b','#b8f27a','#ffffff'],act:()=>{sfx.portal();fadeTo(enterTown)}});
