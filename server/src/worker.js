@@ -171,12 +171,15 @@ export class Town extends DurableObject {
       this.save(x);
       this.sendTo(others().filter((y) => y.a.p.zone === a.p.zone && y.a.p.fl === a.p.fl), { t: "mv", id: a.id, x: a.p.x, y: a.p.y, f: a.p.f, w: a.p.w });
     } else if (m.t === "st") {
-      const p = a.p;
+      const p = a.p, oldZone = p.zone, oldFloor = p.fl;
       p.zone = ZONES.includes(m.zone) ? m.zone : p.zone; p.fl = num(m.fl, 0, 999) | 0;
       p.hp = num(m.hp, 0, 1e9); p.mhp = num(m.mhp, 1, 1e9); p.lv = num(m.lv, 1, 999) | 0;
       p.title = clean(m.title, 16); p.el = ELS.includes(m.el) ? m.el : p.el; p.job = clean(m.job, 10);
       p.rb = m.rb >= 0 && m.rb <= 6 ? m.rb | 0 : -1;
-      if (m.x !== undefined) { p.x = num(m.x, 0, 4000); p.y = num(m.y, 0, 4000); }
+      // 같은 구역·층에서 상태 갱신 메시지로 좌표를 순간이동시키는 우회를 차단한다.
+      if (m.x !== undefined && (p.zone !== oldZone || p.fl !== oldFloor)) {
+        p.x = num(m.x, 0, 4000); p.y = num(m.y, 0, 4000); a.lastMoveAt = now; a.blinkAt = now;
+      }
       this.save(x);
       this.sendTo(others(), { t: "st", p });
     } else if (m.t === "chat") {
