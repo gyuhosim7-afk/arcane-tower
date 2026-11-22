@@ -7,6 +7,35 @@ const ENCOUNTERS = Object.freeze({
 
 const clampInt = (v, min, max) => Number.isFinite(v) ? Math.max(min, Math.min(max, Math.floor(v))) : min;
 
+// Import a bounded legacy snapshot once; later browser saves cannot overwrite it.
+export function createServerCharacter(save) {
+  if (!save || !Number.isInteger(save.lvl) || save.lvl < 1 || save.lvl > 200) return null;
+  const st = save.st && typeof save.st === "object" ? save.st : {};
+  const eq = save.eq && typeof save.eq === "object" ? save.eq : {};
+  const cleanEq = {};
+  for (const [slot, item] of Object.entries(eq)) {
+    if (!item || typeof item !== "object") continue;
+    cleanEq[slot] = {
+      v: clampInt(item.v || 0, 0, 10000),
+      il: clampInt(item.il || 1, 1, 200),
+      my: typeof item.my === "string" ? item.my.slice(0, 32) : undefined,
+      a: item.a && typeof item.a === "object"
+        ? Object.fromEntries(Object.entries(item.a).slice(0, 24).map(([k, v]) => [String(k).slice(0, 24), clampInt(v, -10000, 10000)]))
+        : {},
+    };
+  }
+  return {
+    lvl: clampInt(save.lvl, 1, 200),
+    hp: clampInt(save.hp || 100, 1, 1000000),
+    mhp: clampInt(save.mhp || save.hp || 100, 1, 1000000),
+    st: { int: clampInt(st.int || 0, 0, 10000), wis: clampInt(st.wis || 0, 0, 10000) },
+    eq: cleanEq,
+    circle: clampInt(save.circle || 1, 1, 9),
+    blinkLv: clampInt(save.blinkLv || 0, 0, 10),
+    job: typeof save.job === "string" ? save.job.slice(0, 16) : "",
+  };
+}
+
 export function startEncounter(save, encounterId, now = Date.now()) {
   const spec = ENCOUNTERS[encounterId];
   if (!spec) return { error: "encounter_not_allowed" };
