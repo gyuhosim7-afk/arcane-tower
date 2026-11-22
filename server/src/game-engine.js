@@ -314,10 +314,6 @@ export function applyChestRewards(save, kind, floor, zone = "tower", rng = Math.
     const boss = floor % 10 === 5 ? SERVER_MIDS[Math.floor((floor - 5) / 10)] : SERVER_BOSSES[Math.floor(floor / 10) - 1];
     const key = Object.keys(SERVER_MYTH).find((candidate) => SERVER_MYTH[candidate].boss === boss && !SERVER_MYTH[candidate].uq);
     if (key && rng() < 0.01) mythKey = key;
-  } else if (zone === "underdeep" && kind === "gold" && floor % 5 === 0) {
-    const boss = SERVER_UNDERDEEP_BOSSES[floor - 1];
-    const keys = Object.keys(SERVER_MYTH).filter((candidate) => SERVER_MYTH[candidate].boss === boss && SERVER_MYTH[candidate].uq);
-    if (keys.length && rng() < 0.02) mythKey = keys[Math.floor(rng() * keys.length)];
   }
   if (mythKey) {
     const myth = serverMythItem(mythKey, save.lvl || 1);
@@ -326,6 +322,36 @@ export function applyChestRewards(save, kind, floor, zone = "tower", rng = Math.
     if (next.inv.length < 32) itemsAdded.push(myth), next.inv.push(myth);
     else { const sell = Math.round((6 + myth.il * 3) * (myth.r + 1) ** 2); next.gold += sell; rewards.autoSold += sell; }
     rewards.myth = mythKey;
+  }
+  rewards.itemAdded = itemsAdded.length;
+  return { save: next, rewards, itemsAdded };
+}
+
+
+export function applyUnderdeepClearRewards(save, room, rng = Math.random) {
+  if (!save || !Array.isArray(save.inv) || !Number.isInteger(room) || room < 1 || room > 20) return { error: "invalid_underdeep_room" };
+  const rewards = { gold: 15000 + room * 6500, ess: 20 + room * 5, ore: 12 + room * 3, itemAdded: 0, autoSold: 0, myth: null };
+  const next = { ...save, inv: [...save.inv], underdeepBestRoom: Math.max(save.underdeepBestRoom || 0, room) };
+  next.gold = clampInt(next.gold || 0, 0, 2_000_000_000) + rewards.gold;
+  next.ess = clampInt(next.ess || 0, 0, 2_000_000_000) + rewards.ess;
+  next.ore = clampInt(next.ore || 0, 0, 2_000_000_000) + rewards.ore;
+  const itemsAdded = [];
+  const addItem = (item) => {
+    const uid = clampInt(next.uid || 1, 1, Number.MAX_SAFE_INTEGER - 1);
+    item.id = uid; next.uid = uid + 1;
+    if (next.inv.length < 32) { next.inv.push(item); itemsAdded.push(item); }
+    else { const sell = Math.round((6 + item.il * 3) * (item.r + 1) ** 2); next.gold += sell; rewards.autoSold += sell; }
+  };
+  const boss = SERVER_UNDERDEEP_BOSSES[room - 1];
+  if (boss) {
+    addItem(rewardItem(100, !!save.shoesUnlocked, rng, 4));
+    addItem(rewardItem(100, !!save.shoesUnlocked, rng, 3));
+    const keys = Object.keys(SERVER_MYTH).filter((candidate) => SERVER_MYTH[candidate].boss === boss && SERVER_MYTH[candidate].uq);
+    if (keys.length && rng() < 0.02) {
+      const key = keys[Math.floor(rng() * keys.length)];
+      addItem(serverMythItem(key, save.lvl || 1));
+      rewards.myth = key;
+    }
   }
   rewards.itemAdded = itemsAdded.length;
   return { save: next, rewards, itemsAdded };
