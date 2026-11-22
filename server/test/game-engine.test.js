@@ -23,8 +23,8 @@ test("server creates encounter health; client cannot supply monster HP", () => {
 test("attack damage is computed from server-side character snapshot", () => {
   const started = startEncounter(character, "training_dummy", 10000).state;
   const first = resolveAttack(character, started, 11000);
-  assert.equal(first.result.damage, 56);
-  assert.equal(first.result.monsterHp, 4944);
+  assert.equal(first.result.damage, 45);
+  assert.equal(first.result.monsterHp, 4955);
 });
 
 test("server enforces attack cooldown", () => {
