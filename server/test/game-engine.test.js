@@ -276,3 +276,14 @@ test("server chest rewards auto-sell equipment when the bag is full", () => {
   assert.equal(result.save.inv.length, 32);
   assert.ok(result.save.gold > result.rewards.gold);
 });
+
+test("server combat state records boss and elite kills for chest eligibility", () => {
+  const snapshot = { e: [[31, "kingslime", 100, 200, 1000, 1, 0, 0], [32, "golem", 120, 210, 1000, 1, 1, 0]] };
+  const state = createPartyHealthState(snapshot, null, { zone: "tower", floor: 5, level: 10, partySize: 1 }, 1000);
+  assert.equal(state.seenEnemyCount, 2);
+  const hits = Array.from({ length: 20 }, () => [31, 100000]).concat([[32, 100000]]);
+  const result = applyPartyHits(state, hits);
+  assert.equal(result.state.bossKilled, true);
+  assert.equal(result.state.eliteKilled, true);
+  assert.equal(result.state.killCount, 2);
+});
